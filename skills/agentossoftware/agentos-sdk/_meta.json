@@ -1,0 +1,11 @@
+{
+  "owner": "agentossoftware",
+  "slug": "agentos-sdk",
+  "displayName": "Agentos Sdk",
+  "latest": {
+    "version": "3.4.0",
+    "publishedAt": 1770223705429,
+    "commit": null
+  },
+  "history": []
+}
