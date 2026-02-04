@@ -1,7 +1,7 @@
 {
   "name": "skill-scaffold",
-  "version": "1.0.1",
-  "description": "AI agent skill scaffolding CLI. Create Clawdbot, Moltbot, Claude, and MCP skills instantly. Vibe coding ready.",
+  "version": "1.0.3",
+  "description": "AI agent skill scaffolding CLI. Create OpenClaw, Moltbot, Claude, and MCP skills instantly. Vibe coding ready.",
   "main": "bin/skill-scaffold.js",
   "bin": {
     "skill-scaffold": "bin/skill-scaffold.js",
@@ -16,8 +16,9 @@
     "skill",
     "scaffold",
     "scaffolding",
-    "clawdbot",
+    "openclaw",
     "moltbot",
+    "openclaw",
     "claude",
     "cursor",
     "mcp",

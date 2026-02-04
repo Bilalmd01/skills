@@ -1,25 +1,32 @@
 ---
 name: skill-scaffold
-description: AI agent skill scaffolding CLI. Create Clawdbot, Moltbot, Claude, and MCP skills instantly. Perfect for vibe coding.
-author: tytaninc7
-version: 1.0.0
+description: AI agent skill scaffolding CLI. Create OpenClaw, Moltbot, Claude, and MCP skills instantly. npx skill-scaffold. Perfect for vibe coding.
+author: NextFrontierBuilds
+version: 1.0.2
 keywords:
   - ai
-  - agent
+  - ai-agent
+  - ai-coding
   - skill
   - scaffold
   - generator
-  - clawdbot
+  - openclaw
   - moltbot
+  - openclaw
   - mcp
   - claude
+  - claude-code
   - cursor
+  - copilot
   - vibe-coding
+  - cli
+  - devtools
+  - agentic
 ---
 
 # Skill Scaffold
 
-Create AI agent skills in seconds. Supports Clawdbot/Moltbot, MCP servers, and generic skill structures.
+Create AI agent skills in seconds. Supports OpenClaw/Moltbot, MCP servers, and generic skill structures.
 
 ## Trigger Words
 
@@ -28,7 +35,7 @@ Use this skill when the user mentions:
 - "scaffold a skill"
 - "new skill template"
 - "skill generator"
-- "make a clawdbot skill"
+- "make a openclaw skill"
 - "mcp server template"
 
 ## Quick Start
@@ -37,21 +44,21 @@ Use this skill when the user mentions:
 # Install globally
 npm install -g skill-scaffold
 
-# Create a Clawdbot skill
+# Create a OpenClaw skill
 skill-scaffold my-awesome-skill
 
 # Create an MCP server
 skill-scaffold my-api --template mcp
 
 # With all options
-skill-scaffold weather-bot --template clawdbot --cli --description "Weather alerts for agents"
+skill-scaffold weather-bot --template openclaw --cli --description "Weather alerts for agents"
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `skill-scaffold <name>` | Create skill with default (clawdbot) template |
+| `skill-scaffold <name>` | Create skill with default (openclaw) template |
 | `skill-scaffold <name> --template mcp` | Create MCP server scaffold |
 | `skill-scaffold <name> --template generic` | Create minimal skill |
 | `skill-scaffold <name> --cli` | Include CLI binary scaffold |
@@ -59,8 +66,8 @@ skill-scaffold weather-bot --template clawdbot --cli --description "Weather aler
 
 ## Templates
 
-### Clawdbot (default)
-Full skill structure for Clawdbot/Moltbot agents:
+### OpenClaw (default)
+Full skill structure for OpenClaw/Moltbot agents:
 - SKILL.md with YAML frontmatter, trigger words, commands table
 - README.md with badges, installation, features
 - scripts/ folder for helpers
@@ -80,7 +87,7 @@ Minimal structure:
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--template <type>` | Template: clawdbot, mcp, generic | clawdbot |
+| `--template <type>` | Template: openclaw, mcp, generic | openclaw |
 | `--author <name>` | Author name | NextFrontierBuilds |
 | `--description <text>` | Skill description | Auto-generated |
 | `--dir <path>` | Output directory | Current directory |
@@ -107,7 +114,7 @@ skill-scaffold awesome-cli --cli --description "Does awesome things"
 
 ```
 my-skill/
-├── SKILL.md       # Main documentation (Clawdbot reads this)
+├── SKILL.md       # Main documentation (OpenClaw reads this)
 ├── README.md      # GitHub/npm readme
 ├── scripts/       # Helper scripts (optional)
 └── bin/           # CLI binary (if --cli flag used)
@@ -126,4 +133,4 @@ my-skill/
 
 - Skill names must be lowercase with hyphens only
 - SEO keywords are auto-included in generated files
-- Works with Clawdbot, Moltbot, and any agent that reads SKILL.md
+- Works with OpenClaw, Moltbot, and any agent that reads SKILL.md
