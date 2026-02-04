@@ -1,8 +1,14 @@
 ---
 name: clawdaddy
-description: The world's #1 AI-friendly domain registrar. Check availability, purchase domains, configure DNS, and manage nameservers - all without CAPTCHAs or signup.
+description: The world's #1 AI-friendly domain registrar. Check availability, purchase domains with USDC or cards, configure DNS, and manage nameservers - all without CAPTCHAs or signup.
 homepage: https://clawdaddy.app
 emoji: 🦞
+metadata:
+  clawdbot:
+    primaryEnv: any
+    requires:
+      bins: []
+      env: []
 ---
 
 # ClawDaddy - AI-Friendly Domain Registrar
@@ -20,31 +26,26 @@ No CAPTCHAs. No signup required for lookups. Bearer tokens for management.
 | Task | Endpoint | Auth |
 |------|----------|------|
 | Check availability | `GET /api/lookup/{domain}` | None |
-| Check availability (TXT) | `GET /api/lookup/{domain}?format=txt` | None |
+| Brainstorm available domains | `POST /api/brainstorm` | None |
 | Get purchase quote | `GET /api/purchase/{domain}/quote` | None |
-| Purchase domain | `POST /api/purchase/{domain}` | None |
-| Get domain info | `GET /api/manage/{domain}` | Bearer token |
-| List DNS records | `GET /api/manage/{domain}/dns` | Bearer token |
-| Add DNS record | `POST /api/manage/{domain}/dns` | Bearer token |
-| Update DNS record | `PUT /api/manage/{domain}/dns?id={id}` | Bearer token |
-| Delete DNS record | `DELETE /api/manage/{domain}/dns?id={id}` | Bearer token |
-| Get nameservers | `GET /api/manage/{domain}/nameservers` | Bearer token |
+| Purchase domain | `POST /api/purchase/{domain}?method=x402\|stripe` | None |
+| Manage domain | `GET /api/manage/{domain}` | Bearer token |
+| Configure DNS | `POST /api/manage/{domain}/dns` | Bearer token |
 | Update nameservers | `PUT /api/manage/{domain}/nameservers` | Bearer token |
-| Get settings | `GET /api/manage/{domain}/settings` | Bearer token |
-| Update settings | `PATCH /api/manage/{domain}/settings` | Bearer token |
-| Get transfer code | `GET /api/manage/{domain}/transfer` | Bearer token |
-| Initiate transfer | `POST /api/manage/{domain}/transfer` | Bearer token |
 | Recover token | `POST /api/recover` | None |
 
 ---
 
 ## 1. Check Domain Availability
 
+**When:** User asks "Is example.com available?" or "Check if mycoolapp.io is taken"
+
 ```
 GET https://clawdaddy.app/api/lookup/example.com
 ```
 
-**Response:**
+### JSON Response
+
 ```json
 {
   "fqdn": "example.com",
@@ -56,22 +57,14 @@ GET https://clawdaddy.app/api/lookup/example.com
     "currency": "USD",
     "period": "year"
   },
-  "renewal": {
-    "amount": 19.99,
-    "currency": "USD",
-    "period": "year"
-  },
   "checked_at": "2026-01-15T10:30:00.000Z",
   "source": "namecom",
-  "cache": {
-    "hit": false,
-    "ttl_seconds": 120,
-    "stale": false
-  }
+  "cache": { "hit": false, "ttl_seconds": 120 }
 }
 ```
 
-**TXT format (easier to parse):**
+### TXT Response
+
 ```
 GET https://clawdaddy.app/api/lookup/example.com?format=txt
 ```
@@ -83,26 +76,56 @@ status=available
 premium=false
 price_amount=12.99
 price_currency=USD
-price_period=year
-renewal_amount=19.99
 checked_at=2026-01-15T10:30:00Z
-source=namecom
-cache_hit=false
-ttl_seconds=120
 ```
 
-**Status values:**
-| Status | available | Meaning |
-|--------|-----------|---------|
+### Status Values
+
+| Status | `available` | Meaning |
+|--------|-------------|---------|
 | `available` | `true` | Can be registered |
 | `registered` | `false` | Already taken |
-| `unknown` | `false` | Error or timeout |
+| `unknown` | `false` | Error/timeout |
+
+**Key:** The `available` field is ALWAYS boolean (`true`/`false`), never undefined.
 
 ---
 
-## 2. Purchase a Domain
+## 2. Brainstorm Available Domains
+
+Use this when you need a list of **available** domains, fast.
+
+```
+POST https://clawdaddy.app/api/brainstorm
+```
+
+### Example Request
+
+```json
+{
+  "prompt": "AI tool for async standups",
+  "count": 8,
+  "mode": "balanced",
+  "max_price": 30,
+  "tlds": ["com", "io", "ai"],
+  "style": "brandable",
+  "must_include": ["standup"]
+}
+```
+
+### Modes
+
+- `fast`: cache only (lowest latency)
+- `balanced`: cache + live Name.com search
+- `deep`: adds generated checks for more creativity
+
+---
+
+## 3. Purchase a Domain
 
 ### Step 1: Get Quote
+
+**When:** User wants to buy a domain, get the price first.
 
 ```
 GET https://clawdaddy.app/api/purchase/example.com/quote
@@ -113,78 +136,102 @@ GET https://clawdaddy.app/api/purchase/example.com/quote
   "domain": "example.com",
   "available": true,
   "priceUsd": 12.99,
-  "marginUsd": 0,
-  "totalUsd": 12.99,
+  "marginUsd": 2.00,
+  "totalUsd": 14.99,
   "validUntil": "2026-01-15T10:35:00.000Z",
   "paymentMethods": {
-    "stripe": {
-      "enabled": true,
-      "currency": "USD",
-      "endpoint": "/api/purchase/example.com"
-    }
+    "x402": { "enabled": true, "currency": "USDC", "network": "base" },
+    "stripe": { "enabled": true, "currency": "USD" }
   }
 }
 ```
 
-Note: During Lobster Launch Special, `marginUsd` is $0! You pay exactly what we pay.
+### Step 2a: Purchase via x402 (USDC on Base)
 
-### Step 2: Initiate Purchase
+**Best for:** AI agents with crypto wallets
 
 ```
-POST https://clawdaddy.app/api/purchase/example.com
+POST https://clawdaddy.app/api/purchase/example.com?method=x402
 ```
 
-**Response:**
+First request returns HTTP 402 with payment requirements:
+
 ```json
 {
-  "method": "stripe",
-  "checkoutUrl": "https://checkout.stripe.com/c/pay/cs_live_...",
-  "sessionId": "cs_live_...",
-  "quote": {
-    "domain": "example.com",
-    "totalUsd": 12.99
+  "error": "Payment Required",
+  "x402": {
+    "version": "2.0",
+    "accepts": [{
+      "scheme": "exact",
+      "network": "eip155:8453",
+      "maxAmountRequired": "14990000",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "payTo": "0x..."
+    }]
   }
 }
 ```
 
-### Step 3: Complete Payment
-
-Direct the user to the `checkoutUrl` to complete payment via Stripe.
-
-After successful payment:
-- Domain is registered immediately
-- Management token is displayed on the success page
-- Email confirmation is sent with token backup
-
-### Step 4: Store Token for Your Agent
-
-After purchase, users should add the token to their environment:
+After paying USDC on Base, retry with payment proof:
 
 ```
-# Add to ~/.openclaw/.env or project .env file
-CLAWDADDY_TOKEN=clwd_abc123xyz...
+POST https://clawdaddy.app/api/purchase/example.com?method=x402
+x-payment: <payment_proof_from_x402>
 ```
 
-Your agent can then use `$CLAWDADDY_TOKEN` in API calls.
+### Step 2b: Purchase via Stripe (Cards)
+
+**Best for:** Human users or agents without crypto
+
+```
+POST https://clawdaddy.app/api/purchase/example.com?method=stripe
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+Returns Stripe checkout URL:
+
+```json
+{
+  "checkoutUrl": "https://checkout.stripe.com/...",
+  "sessionId": "cs_..."
+}
+```
+
+### Success Response (Both Methods)
+
+```json
+{
+  "success": true,
+  "domain": "example.com",
+  "registrationId": "12345",
+  "expiresAt": "2027-01-15T10:30:00.000Z",
+  "nameservers": ["ns1.name.com", "ns2.name.com"],
+  "managementToken": "clwd_abc123xyz...",
+  "manageUrl": "https://clawdaddy.app/api/manage/example.com"
+}
+```
+
+**CRITICAL:** Save the `managementToken` immediately! It's required for all management operations and cannot be retrieved without recovery.
 
 ---
 
-**⚠️ CRITICAL: The management token is shown once on the success page. Users should save it immediately or add it to their .env file.**
-
----
-
-## 3. Domain Management
+## 4. Domain Management
 
 All management endpoints require the Authorization header:
+
 ```
-Authorization: Bearer $CLAWDADDY_TOKEN
+Authorization: Bearer clwd_your_management_token
 ```
 
 ### Get Domain Overview
 
 ```
 GET https://clawdaddy.app/api/manage/example.com
-Authorization: Bearer $CLAWDADDY_TOKEN
+Authorization: Bearer clwd_abc123...
 ```
 
 ```json
@@ -201,31 +248,16 @@ Authorization: Bearer $CLAWDADDY_TOKEN
 }
 ```
 
----
-
 ### DNS Records
 
-#### List All Records
-
+**List all records:**
 ```
-GET https://clawdaddy.app/api/manage/example.com/dns
-Authorization: Bearer $CLAWDADDY_TOKEN
+GET /api/manage/{domain}/dns
 ```
 
-```json
-{
-  "records": [
-    {"id": 1, "host": "@", "type": "A", "answer": "1.2.3.4", "ttl": 300},
-    {"id": 2, "host": "www", "type": "CNAME", "answer": "example.com", "ttl": 300}
-  ]
-}
+**Create a record:**
 ```
-
-#### Add Record
-
-```
-POST https://clawdaddy.app/api/manage/example.com/dns
-Authorization: Bearer $CLAWDADDY_TOKEN
+POST /api/manage/{domain}/dns
 Content-Type: application/json
 
 {
@@ -236,11 +268,9 @@ Content-Type: application/json
 }
 ```
 
-#### Update Record
-
+**Update a record:**
 ```
-PUT https://clawdaddy.app/api/manage/example.com/dns?id=123
-Authorization: Bearer $CLAWDADDY_TOKEN
+PUT /api/manage/{domain}/dns?id=123
 Content-Type: application/json
 
 {
@@ -249,44 +279,41 @@ Content-Type: application/json
 }
 ```
 
-All fields are optional - only include what you want to change.
-
-#### Delete Record
-
+**Delete a record:**
 ```
-DELETE https://clawdaddy.app/api/manage/example.com/dns?id=123
-Authorization: Bearer $CLAWDADDY_TOKEN
+DELETE /api/manage/{domain}/dns?id=123
 ```
 
 **Supported record types:** `A`, `AAAA`, `CNAME`, `MX`, `TXT`, `NS`, `SRV`
 
-**Common DNS configurations:**
+### Common DNS Configurations
 
-| Purpose | Record |
-|---------|--------|
-| Point to server | `{"host": "@", "type": "A", "answer": "1.2.3.4"}` |
-| IPv6 | `{"host": "@", "type": "AAAA", "answer": "2001:db8::1"}` |
-| www subdomain | `{"host": "www", "type": "CNAME", "answer": "example.com"}` |
-| Email (Google) | `{"host": "@", "type": "MX", "answer": "aspmx.l.google.com", "priority": 1}` |
-| SPF record | `{"host": "@", "type": "TXT", "answer": "v=spf1 include:_spf.google.com ~all"}` |
-| Domain verification | `{"host": "@", "type": "TXT", "answer": "google-site-verification=abc123"}` |
-
----
-
-### Nameservers
-
-#### Get Current Nameservers
-
-```
-GET https://clawdaddy.app/api/manage/example.com/nameservers
-Authorization: Bearer $CLAWDADDY_TOKEN
+**Point to a server (A record):**
+```json
+{"host": "@", "type": "A", "answer": "123.45.67.89", "ttl": 300}
 ```
 
-#### Update Nameservers
+**Add www subdomain (CNAME):**
+```json
+{"host": "www", "type": "CNAME", "answer": "example.com", "ttl": 300}
+```
+
+**Add email (MX record):**
+```json
+{"host": "@", "type": "MX", "answer": "mail.example.com", "ttl": 300, "priority": 10}
+```
+
+**Verify domain (TXT record):**
+```json
+{"host": "@", "type": "TXT", "answer": "google-site-verification=abc123", "ttl": 300}
+```
+
+### Update Nameservers
+
+**When:** User wants to use Cloudflare, Vercel, or another DNS provider
 
 ```
-PUT https://clawdaddy.app/api/manage/example.com/nameservers
-Authorization: Bearer $CLAWDADDY_TOKEN
+PUT /api/manage/{domain}/nameservers
 Content-Type: application/json
 
 {
@@ -303,26 +330,19 @@ Content-Type: application/json
 |----------|-------------|
 | Cloudflare | `ns1.cloudflare.com`, `ns2.cloudflare.com` |
 | Vercel | `ns1.vercel-dns.com`, `ns2.vercel-dns.com` |
-| Netlify | `dns1.p01.nsone.net`, `dns2.p01.nsone.net` |
-| AWS Route53 | Check your hosted zone for specific NS records |
-| Google Cloud | `ns-cloud-X.googledomains.com` (X = a1-e4) |
-
----
+| AWS Route53 | Check your hosted zone |
+| Google Cloud | `ns-cloud-X.googledomains.com` |
 
 ### Domain Settings
 
-#### Get Settings
-
+**Get settings:**
 ```
-GET https://clawdaddy.app/api/manage/example.com/settings
-Authorization: Bearer $CLAWDADDY_TOKEN
+GET /api/manage/{domain}/settings
 ```
 
-#### Update Settings
-
+**Update settings:**
 ```
-PATCH https://clawdaddy.app/api/manage/example.com/settings
-Authorization: Bearer $CLAWDADDY_TOKEN
+PATCH /api/manage/{domain}/settings
 Content-Type: application/json
 
 {
@@ -331,91 +351,114 @@ Content-Type: application/json
 }
 ```
 
-**Settings:**
-- `locked`: Domain transfer lock (recommended: true)
-- `autorenewEnabled`: Auto-renew before expiration
-
----
-
 ### Transfer Domain Out
 
-#### Get Auth Code
-
+**Get auth code:**
 ```
-GET https://clawdaddy.app/api/manage/example.com/transfer
-Authorization: Bearer $CLAWDADDY_TOKEN
+GET /api/manage/{domain}/transfer
 ```
 
-#### Initiate Transfer (Unlock + Get Code)
-
+**Prepare for transfer (unlock + get code):**
 ```
-POST https://clawdaddy.app/api/manage/example.com/transfer
-Authorization: Bearer $CLAWDADDY_TOKEN
+POST /api/manage/{domain}/transfer
 ```
 
 **Note:** Domains cannot be transferred within 60 days of registration (ICANN policy).
 
 ---
 
-## 4. Token Recovery
+## 5. Token Recovery
 
-Lost your management token? Request a new one:
+**When:** User lost their management token
 
 ```
 POST https://clawdaddy.app/api/recover
 Content-Type: application/json
 
 {
-  "email": "you@example.com",
+  "email": "user@example.com",
   "domain": "example.com"
 }
 ```
 
-Omit `domain` to recover tokens for all domains associated with the email.
-
-**Response:**
+For x402 purchases:
 ```json
 {
-  "success": true,
-  "message": "If we have domains registered with this email, you'll receive an email shortly."
+  "wallet": "0x123...",
+  "domain": "example.com"
 }
 ```
 
-**⚠️ Important:** Token recovery generates a NEW token. Your old token will be invalidated.
+**IMPORTANT:** Recovery generates a NEW token. Old tokens are invalidated.
 
-**Rate limit:** 5 requests per 5 minutes per IP.
+Rate limit: 5 requests per 5 minutes per IP.
 
 ---
 
-## Complete Workflow Example
+## Workflow Examples
+
+### Check and Buy Domain
 
 ```
-1. CHECK AVAILABILITY
-   GET /api/lookup/coolstartup.com
-   → {"available": true, "price": {"amount": 12.99}}
+User: "Buy coolstartup.com for me"
 
-2. GET QUOTE
-   GET /api/purchase/coolstartup.com/quote
-   → {"totalUsd": 12.99} (Lobster Launch: $0 markup!)
+1. GET /api/lookup/coolstartup.com
+   → available: true, price: $12.99
 
-3. INITIATE PURCHASE
-   POST /api/purchase/coolstartup.com
-   → {"checkoutUrl": "https://checkout.stripe.com/..."}
-   → Direct user to complete payment
+2. GET /api/purchase/coolstartup.com/quote
+   → totalUsd: $14.99
 
-4. USER COMPLETES PAYMENT
-   → Token shown on success page
-   → User adds to .env: CLAWDADDY_TOKEN=clwd_abc123...
+3. POST /api/purchase/coolstartup.com?method=x402
+   → 402 Payment Required
+   → Pay USDC on Base
+   → Retry with x-payment header
+   → Success! Token: "clwd_abc123..."
 
-5. CONFIGURE DNS
-   POST /api/manage/coolstartup.com/dns
-   Authorization: Bearer $CLAWDADDY_TOKEN
-   {"host": "@", "type": "A", "answer": "1.2.3.4"}
+4. "I've registered coolstartup.com! Save this token: clwd_abc123..."
+```
 
-6. OR POINT TO CLOUDFLARE
-   PUT /api/manage/coolstartup.com/nameservers
-   Authorization: Bearer $CLAWDADDY_TOKEN
-   {"nameservers": ["ns1.cloudflare.com", "ns2.cloudflare.com"]}
+### Point Domain to Vercel
+
+```
+User: "Point mydomain.com to Vercel"
+
+1. PUT /api/manage/mydomain.com/nameservers
+   Authorization: Bearer clwd_abc123...
+   {"nameservers": ["ns1.vercel-dns.com", "ns2.vercel-dns.com"]}
+
+2. "Done! mydomain.com now uses Vercel's nameservers. Add the domain in your Vercel dashboard."
+```
+
+### Set Up Basic DNS
+
+```
+User: "Point example.com to my server at 1.2.3.4"
+
+1. POST /api/manage/example.com/dns
+   Authorization: Bearer clwd_token...
+   {"host": "@", "type": "A", "answer": "1.2.3.4", "ttl": 300}
+
+2. POST /api/manage/example.com/dns
+   {"host": "www", "type": "CNAME", "answer": "example.com", "ttl": 300}
+
+3. "Done! example.com and www.example.com now point to 1.2.3.4"
+```
+
+### Add Email Records
+
+```
+User: "Set up Google Workspace email for mydomain.com"
+
+1. POST /api/manage/mydomain.com/dns
+   {"host": "@", "type": "MX", "answer": "aspmx.l.google.com", "ttl": 300, "priority": 1}
+
+2. POST /api/manage/mydomain.com/dns
+   {"host": "@", "type": "MX", "answer": "alt1.aspmx.l.google.com", "ttl": 300, "priority": 5}
+
+3. POST /api/manage/mydomain.com/dns
+   {"host": "@", "type": "TXT", "answer": "v=spf1 include:_spf.google.com ~all", "ttl": 300}
+
+4. "Email records configured for Google Workspace!"
 ```
 
 ---
@@ -432,26 +475,25 @@ All errors return JSON:
 
 | Status | Meaning |
 |--------|---------|
-| 400 | Bad request - invalid input or domain format |
-| 401 | Unauthorized - missing or invalid management token |
-| 404 | Not found - domain doesn't exist or not managed by you |
-| 429 | Rate limited - too many requests |
-| 500 | Server error - try again later |
+| `400` | Bad request (invalid input) |
+| `401` | Unauthorized (missing/invalid token) |
+| `402` | Payment required (x402 flow) |
+| `404` | Domain not found |
+| `500` | Server error |
 
 ---
 
-## Human Dashboard
+## Key Points
 
-Users can also manage domains via web UI at:
-```
-https://clawdaddy.app/manage
-```
-
-Enter the management token to access DNS, nameservers, and settings.
+- **No signup required** for lookups and purchases
+- **Two payment methods**: x402 (USDC on Base) for agents, Stripe for humans
+- **Save your management token** - it's the only way to manage your domain
+- **Bearer auth for management** - include `Authorization: Bearer clwd_...` header
+- **JSON responses** - use `?format=json` for lookups
 
 ---
 
 ## Source
 
 ClawDaddy: https://clawdaddy.app
-Full API Docs: https://clawdaddy.app/llms.txt
+Documentation: https://clawdaddy.app/llms.txt
