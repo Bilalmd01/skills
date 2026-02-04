@@ -38,7 +38,8 @@ curl "https://app.nextbrowser.com/api/v1/browser/profiles" -H "Authorization: x-
 curl -X POST "https://app.nextbrowser.com/api/v1/browser/profiles" \
   -H "Authorization: x-api-key $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name": "<profile-name>", "browser_settings": {"os_type": "<os-type>", "browser_type": "chrome"}, "proxy_settings":{"protocol":"<http|https|socks5>","country":"<iso-2-country-code>","mode":"built-in"}}'
+  -d '{"name": "<profile-name>", "browser_settings": {"os_type": "<os-type>", "browser_type": "chrome"},
+   "proxy_settings":{"protocol":"<http|https|socks5>","country":"<iso-2-country-code>","mode":"built-in"}}'
 
 # Delete profile
 curl -X DELETE "https://app.nextbrowser.com/api/v1/browser/profiles/<profile-id>" \
@@ -78,7 +79,7 @@ curl "https://app.nextbrowser.com/api/v1/chat/tasks/<task-id>" -H "Authorization
     "success": true,
     "payload": {
         "status": "finished",
-        "output": "The current price for a new 2024 MacBook Air 13-inch with M3 chip (16GB RAM, 512GB storage, Starlight color) on Amazon is CAD 2,046.01, including AppleCare+ for 3 years. There is also a renewed option available for CAD 1,106.32 (8GB RAM, 512GB SSD, Space Gray) with limited stock. Prices are listed in Canadian dollars and may vary based on offers and availability.",
+        "output": "The current price for a new 2024 MacBook Air 13-inch with M3 chip on Amazon is CAD 2,046.01",
         "isSuccess": true
     },
     "errors": {},
