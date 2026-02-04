@@ -3,11 +3,16 @@
   "slug": "tensorpm",
   "displayName": "AI-Driven Project Management: TensorPM",
   "latest": {
-    "version": "1.1.4",
-    "publishedAt": 1770153942826,
-    "commit": "https://github.com/clawdbot/skills/commit/607fbc8deb98b636894ee2c1a917eef688b52c4b"
+    "version": "1.1.7",
+    "publishedAt": 1770209358575,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.4",
+      "publishedAt": 1770153942826,
+      "commit": "https://github.com/clawdbot/skills/commit/607fbc8deb98b636894ee2c1a917eef688b52c4b"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1770123950897,
