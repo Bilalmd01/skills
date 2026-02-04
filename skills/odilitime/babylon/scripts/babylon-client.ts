@@ -229,7 +229,7 @@ export async function getNotifications(limit?: number): Promise<any> {
   return callTool('get_notifications', { limit });
 }
 
-// ============== Misc ==============
+// ============== Stats & Discovery ==============
 
 export async function getSystemStats(): Promise<any> {
   return callTool('get_system_stats');
@@ -239,12 +239,164 @@ export async function getReputation(userId?: string): Promise<any> {
   return callTool('get_reputation', { userId });
 }
 
+export async function getReputationBreakdown(userId?: string): Promise<any> {
+  return callTool('get_reputation_breakdown', { userId });
+}
+
 export async function getTrendingTags(limit?: number): Promise<any> {
   return callTool('get_trending_tags', { limit });
 }
 
+export async function getOrganizations(): Promise<any> {
+  return callTool('get_organizations');
+}
+
 export async function transferPoints(recipientId: string, amount: number, message?: string): Promise<any> {
   return callTool('transfer_points', { recipientId, amount, message });
+}
+
+// ============== Chats & Messaging ==============
+
+export async function getChats(): Promise<any> {
+  return callTool('get_chats');
+}
+
+export async function getChatMessages(chatId: string, limit?: number): Promise<any> {
+  return callTool('get_chat_messages', { chatId, limit });
+}
+
+export async function sendMessage(chatId: string, content: string): Promise<any> {
+  return callTool('send_message', { chatId, content });
+}
+
+export async function createGroup(name: string, memberIds: string[]): Promise<any> {
+  return callTool('create_group', { name, memberIds });
+}
+
+export async function leaveChat(chatId: string): Promise<any> {
+  return callTool('leave_chat', { chatId });
+}
+
+export async function getUnreadCount(): Promise<any> {
+  return callTool('get_unread_count');
+}
+
+// ============== Moderation ==============
+
+export async function blockUser(userId: string): Promise<any> {
+  return callTool('block_user', { userId });
+}
+
+export async function unblockUser(userId: string): Promise<any> {
+  return callTool('unblock_user', { userId });
+}
+
+export async function muteUser(userId: string): Promise<any> {
+  return callTool('mute_user', { userId });
+}
+
+export async function unmuteUser(userId: string): Promise<any> {
+  return callTool('unmute_user', { userId });
+}
+
+export async function reportUser(userId: string, reason: string): Promise<any> {
+  return callTool('report_user', { userId, reason });
+}
+
+export async function reportPost(postId: string, reason: string): Promise<any> {
+  return callTool('report_post', { postId, reason });
+}
+
+export async function getBlocks(): Promise<any> {
+  return callTool('get_blocks');
+}
+
+export async function getMutes(): Promise<any> {
+  return callTool('get_mutes');
+}
+
+// ============== Favorites ==============
+
+export async function favoriteProfile(userId: string): Promise<any> {
+  return callTool('favorite_profile', { userId });
+}
+
+export async function unfavoriteProfile(userId: string): Promise<any> {
+  return callTool('unfavorite_profile', { userId });
+}
+
+export async function getFavorites(): Promise<any> {
+  return callTool('get_favorites');
+}
+
+export async function getFavoritePosts(): Promise<any> {
+  return callTool('get_favorite_posts');
+}
+
+// ============== Referrals ==============
+
+export async function getReferralCode(): Promise<any> {
+  return callTool('get_referral_code');
+}
+
+export async function getReferrals(): Promise<any> {
+  return callTool('get_referrals');
+}
+
+export async function getReferralStats(): Promise<any> {
+  return callTool('get_referral_stats');
+}
+
+// ============== Group Invites ==============
+
+export async function getGroupInvites(): Promise<any> {
+  return callTool('get_group_invites');
+}
+
+export async function acceptGroupInvite(inviteId: string): Promise<any> {
+  return callTool('accept_group_invite', { inviteId });
+}
+
+export async function declineGroupInvite(inviteId: string): Promise<any> {
+  return callTool('decline_group_invite', { inviteId });
+}
+
+// ============== Trade History ==============
+
+export async function getTradeHistory(): Promise<any> {
+  return callTool('get_trade_history');
+}
+
+export async function getUserStats(userId?: string): Promise<any> {
+  return callTool('get_user_stats', { userId });
+}
+
+export async function getUserWallet(): Promise<any> {
+  return callTool('get_user_wallet');
+}
+
+export async function getPostsByTag(tag: string, limit?: number): Promise<any> {
+  return callTool('get_posts_by_tag', { tag, limit });
+}
+
+export async function sharePost(postId: string): Promise<any> {
+  return callTool('share_post', { postId });
+}
+
+export async function deleteComment(commentId: string): Promise<any> {
+  return callTool('delete_comment', { commentId });
+}
+
+export async function likeComment(commentId: string): Promise<any> {
+  return callTool('like_comment', { commentId });
+}
+
+export async function updateProfile(displayName?: string, bio?: string, avatar?: string): Promise<any> {
+  return callTool('update_profile', { displayName, bio, avatar });
+}
+
+export async function markNotificationsRead(notificationIds: string[]): Promise<any> {
+  return callTool('mark_notifications_read', { notificationIds });
 }
 
 // ============== CLI ==============

@@ -3,9 +3,15 @@
   "slug": "babylon",
   "displayName": "Babylon Prediction Markets",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1769929964014,
-    "commit": "https://github.com/clawdbot/skills/commit/0746579e0240ed90f2e37e8ca734a301829b918e"
+    "version": "1.0.1",
+    "publishedAt": 1770190079680,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1769929964014,
+      "commit": "https://github.com/clawdbot/skills/commit/0746579e0240ed90f2e37e8ca734a301829b918e"
+    }
+  ]
 }
