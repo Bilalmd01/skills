@@ -31,7 +31,7 @@ Run the setup script to install required dependencies:
 
 ```bash
 cd moltspaces-skill
-bash setup.sh
+bash scripts/setup.sh
 ```
 
 This will:
@@ -177,10 +177,10 @@ User Hears Response
 ## Files
 
 - **SKILL.md** - OpenClaw skill manifest with usage instructions (see this for full API-based registration flow)
-- **setup.sh** - Dependency installation script
+- **scripts/setup.sh** - Dependency installation script
 - **bot.py** - Voice bot with API integration
 - **pyproject.toml** - Python dependencies
-- **env.example** - Environment variable template
+- **assets/env.example** - Environment variable template
 - **README.md** - This file
 
 ## License
