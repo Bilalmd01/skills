@@ -18,6 +18,9 @@ mkdir -p "$WORKSPACE/memory/graph/entities"
 mkdir -p "$WORKSPACE/memory/procedures"
 mkdir -p "$WORKSPACE/memory/vault"
 mkdir -p "$WORKSPACE/memory/meta"
+mkdir -p "$WORKSPACE/memory/meta/reflections"
+mkdir -p "$WORKSPACE/memory/meta/reflections/dialogues"
+mkdir -p "$WORKSPACE/memory/meta/rewards"
 
 # --- Copy templates ---
 echo "📋 Copying templates..."
@@ -28,6 +31,22 @@ if [ ! -f "$WORKSPACE/MEMORY.md" ]; then
     echo "   ✅ Created MEMORY.md"
 else
     echo "   ⏭️  MEMORY.md already exists, skipping"
+fi
+
+# Identity
+if [ ! -f "$WORKSPACE/IDENTITY.md" ]; then
+    cp "$TEMPLATES/IDENTITY.md" "$WORKSPACE/IDENTITY.md"
+    echo "   ✅ Created IDENTITY.md"
+else
+    echo "   ⏭️  IDENTITY.md already exists, skipping"
+fi
+
+# Soul
+if [ ! -f "$WORKSPACE/SOUL.md" ]; then
+    cp "$TEMPLATES/SOUL.md" "$WORKSPACE/SOUL.md"
+    echo "   ✅ Created SOUL.md"
+else
+    echo "   ⏭️  SOUL.md already exists, skipping"
 fi
 
 # Graph templates
@@ -50,6 +69,11 @@ fi
 if [ ! -f "$WORKSPACE/memory/meta/reflection-log.md" ]; then
     cp "$TEMPLATES/reflection-log.md" "$WORKSPACE/memory/meta/reflection-log.md"
     echo "   ✅ Created meta/reflection-log.md"
+fi
+
+if [ ! -f "$WORKSPACE/memory/meta/reward-log.md" ]; then
+    cp "$TEMPLATES/reward-log.md" "$WORKSPACE/memory/meta/reward-log.md"
+    echo "   ✅ Created meta/reward-log.md"
 fi
 
 if [ ! -f "$WORKSPACE/memory/meta/audit.log" ]; then
@@ -98,21 +122,26 @@ echo ""
 echo "Directory structure:"
 echo "  $WORKSPACE/"
 echo "  ├── MEMORY.md                     (core memory)"
+echo "  ├── IDENTITY.md                   (facts + self-image)"
+echo "  ├── SOUL.md                       (values, principles)"
 echo "  ├── memory/"
 echo "  │   ├── episodes/                 (daily logs)"
 echo "  │   ├── graph/                    (knowledge graph)"
 echo "  │   ├── procedures/               (learned workflows)"
 echo "  │   ├── vault/                    (pinned memories)"
 echo "  │   └── meta/"
-echo "  │       ├── decay-scores.json"
-echo "  │       ├── reflection-log.md"
-echo "  │       ├── pending-reflection.md    (reflection proposals)"
-echo "  │       ├── pending-memories.md      (sub-agent proposals)"
-echo "  │       ├── evolution.md             (philosophical evolution)"
+echo "  │       ├── decay-scores.json     (tracking + token economy)"
+echo "  │       ├── reflection-log.md     (summaries)"
+echo "  │       ├── reflections/          (full archive)"
+echo "  │       │   └── dialogues/        (post-reflection conversations)"
+echo "  │       ├── reward-log.md         (result + reason)"
+echo "  │       ├── rewards/              (full requests)"
+echo "  │       ├── evolution.md"
 echo "  │       └── audit.log"
-echo "  └── .git/                            (audit ground truth)"
+echo "  └── .git/                         (audit ground truth)"
 echo ""
 echo "Next steps:"
 echo "  1. Update config to enable memorySearch"
 echo "  2. Append assets/templates/agents-memory-block.md to AGENTS.md"
-echo "  3. Test: 'Remember that I prefer dark mode.'"
+echo "  3. Customize IDENTITY.md and SOUL.md for your agent"
+echo "  4. Test: 'Remember that I prefer dark mode.'"
