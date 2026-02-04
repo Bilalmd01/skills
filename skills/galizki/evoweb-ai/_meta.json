@@ -3,11 +3,16 @@
   "slug": "evoweb-ai",
   "displayName": "EvoWeb.ai Website Builder",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1769918094092,
-    "commit": "https://github.com/clawdbot/skills/commit/5591c0650500de21720d450ea7ead728f40706cd"
+    "version": "1.0.6",
+    "publishedAt": 1770193973638,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1769918094092,
+      "commit": "https://github.com/clawdbot/skills/commit/5591c0650500de21720d450ea7ead728f40706cd"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1769862441761,
