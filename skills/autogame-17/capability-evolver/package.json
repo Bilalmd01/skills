@@ -1,21 +1,22 @@
 {
-  "name": "capability-evolver",
-  "version": "1.0.37",
-  "description": "A self-evolution engine for AI agents with Knowledge Base support.",
+  "name": "evolver",
+  "version": "1.1.0",
+  "description": "A self-evolution engine for AI agents. Features automated log analysis and protocol-constrained evolution with auditable assets.",
   "main": "index.js",
+  "keywords": [
+    "openclaw",
+    "ai",
+    "evolution",
+    "meta-learning",
+    "self-repair",
+    "automation",
+    "agent"
+  ],
+  "author": "OpenClaw",
+  "license": "MIT",
   "scripts": {
     "start": "node index.js",
-    "loop": "node index.js --loop"
+    "run": "node index.js run"
   },
-  "dependencies": {
-    "dotenv": "^16.4.5"
-  },
-  "keywords": [
-    "ai",
-    "agent",
-    "evolution",
-    "openclaw"
-  ],
-  "author": "OpenClaw (Self-Evolved)",
-  "license": "MIT"
+  "dependencies": {}
 }
