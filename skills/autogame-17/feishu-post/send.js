@@ -1,10 +1,28 @@
-const { fetchWithAuth } = require('../common/feishu-client.js');
+const { fetchWithAuth } = require('./utils/feishu-client.js');
 const fs = require('fs');
 const path = require('path');
+const emojiMap = require('./emoji-map.js');
 
 // --- Upstream Logic Injection (Simplified) ---
 // Ported from upstream src/send.ts (m1heng/clawdbot-feishu)
 // Adapted for our lightweight architecture
+
+function parseContent(text) {
+    // Split by emoji pattern [xxx]
+    const regex = /(\[[^\]]+\])/g;
+    const parts = text.split(regex);
+    const content = [];
+    
+    for (const part of parts) {
+        if (!part) continue;
+        if (emojiMap[part]) {
+            content.push({ tag: 'emotion', emoji_type: emojiMap[part] });
+        } else {
+            content.push({ tag: 'text', text: part });
+        }
+    }
+    return content;
+}
 
 async function sendPost(options) {
     let contentText = options.text || '';
@@ -24,12 +42,16 @@ async function sendPost(options) {
 
     // Build Payload (RichText)
     // Upstream Logic: Wrap markdown in Post Object
+    
+    // Split text by newlines to create paragraphs
+    // Unescape literal \n if passed from command line
+    const rawLines = contentText.replace(/\\n/g, '\n').split('\n');
+    const contentBody = rawLines.map(line => parseContent(line));
+
     const postContent = {
         zh_cn: {
             title: options.title || '',
-            content: [
-                [{ tag: 'text', text: contentText }] // Simple Text Block for now
-            ]
+            content: contentBody
         }
     };
 
