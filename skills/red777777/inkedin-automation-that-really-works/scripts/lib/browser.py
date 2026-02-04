@@ -5,7 +5,7 @@ from pathlib import Path
 from contextlib import contextmanager
 
 # If using a venv, ensure Playwright is importable
-VENV_PW = os.environ.get("LINKEDIN_VENV_PACKAGES", os.path.expanduser("~/linkedin-venv/lib/python3.12/site-packages"))
+VENV_PW = os.environ.get("LINKEDIN_VENV_PACKAGES", "")
 if os.path.isdir(VENV_PW) and VENV_PW not in sys.path:
     sys.path.insert(0, VENV_PW)
 

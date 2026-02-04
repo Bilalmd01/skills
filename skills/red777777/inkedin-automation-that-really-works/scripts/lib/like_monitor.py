@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Monitor LinkedIn likes and return new ones since last check."""
+"""Monitor Andreas' LinkedIn likes and return new ones since last check."""
 import time, json, logging, os
 
 from .browser import browser_session, is_logged_in
@@ -118,8 +118,7 @@ def scan_recent_likes(max_items=15):
                     }}
                 }}
                 
-                const ownName = document.querySelector('.feed-identity-module__actor-node')?.innerText?.trim() || '';
-                if (author && author !== ownName) {{
+                if (author && author !== 'Andreas Kulpa') {{
                     const link = item.querySelector('a[href*="activity"]');
                     const url = link ? link.getAttribute('href') : '';
                     

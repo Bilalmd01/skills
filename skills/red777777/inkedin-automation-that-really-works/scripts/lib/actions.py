@@ -96,11 +96,35 @@ def create_post(text, image_path=None):
                     time.sleep(1)
                     page.set_input_files('input[type="file"]', image_path)
                     time.sleep(3)
+                    # LinkedIn may show an image editor modal — click "Weiter"/"Next"/"Done" to proceed
+                    time.sleep(2)
+                    for selector in [
+                        'button:has-text("Weiter")',
+                        'button:has-text("Next")',
+                        'button:has-text("Done")',
+                        'button:has-text("Fertig")',
+                        'button[aria-label*="Weiter"]',
+                        'button[aria-label*="Next"]',
+                        '[data-test-modal-close-btn]',
+                    ]:
+                        try:
+                            loc = page.locator(selector).first
+                            if loc.is_visible(timeout=2000):
+                                loc.click()
+                                time.sleep(2)
+                                log.info(f"Clicked image editor button: {selector}")
+                                break
+                        except Exception:
+                            continue
                 except Exception as e:
                     log.warning(f"Image upload failed: {e}")
 
             submit = selectors.find_post_submit_button(page)
-            submit.click()
+            # Handle both locator and coords dict (JS fallback)
+            if isinstance(submit, dict) and 'x' in submit:
+                page.mouse.click(submit['x'], submit['y'])
+            else:
+                submit.click()
             time.sleep(3)
             return _result(action="post")
 

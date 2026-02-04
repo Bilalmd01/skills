@@ -86,9 +86,11 @@ def find_submit_button(page, timeout=8000):
 def find_post_editor(page, timeout=10000):
     """Find the main post creation editor textbox."""
     strategies = [
+        ("placeholder-de-moechten", '[data-placeholder*="möchten"]'),
         ("placeholder-en", '[data-placeholder="What do you want to talk about?"]'),
-        ("placeholder-de", '[data-placeholder*="möchtest du"]'),
-        ("role-textbox", '[role="textbox"]'),
+        ("placeholder-de-alt", '[data-placeholder*="möchtest du"]'),
+        ("share-creation-editor", '.share-creation-state__text-editor'),
+        ("share-textbox", '.share-creation-state__text-editor [role="textbox"]'),
         ("ql-editor", '.ql-editor[contenteditable="true"]'),
     ]
     return _try_strategies(page, strategies, timeout=timeout, label="post_editor")
@@ -98,9 +100,10 @@ def find_start_post_button(page, timeout=10000):
     """Find the 'Start a post' trigger on the feed."""
     strategies = [
         ("class-trigger", 'button.share-box-feed-entry__trigger'),
-        ("aria-beitrag", 'button[aria-label*="Beitrag"]'),
-        ("aria-post", 'button[aria-label*="Start a post"]'),
-        ("text-beitrag", 'button:has-text("Beitrag")'),
+        ("share-box-top-bar", '.share-box-feed-entry__top-bar'),
+        ("placeholder-beitrag", '[placeholder*="Beitrag"]'),
+        ("text-beitrag-beginnen", ':text("Beitrag beginnen")'),
+        ("text-start-post", ':text("Start a post")'),
     ]
     return _try_strategies(page, strategies, timeout=timeout, label="start_post")
 
@@ -109,8 +112,8 @@ def find_post_submit_button(page, timeout=8000):
     """Find the post submit button in the post creation modal."""
     strategies = [
         ("class-primary", 'button.share-actions__primary-action'),
-        ("aria-posten", '.share-actions button[aria-label*="Posten"]'),
-        ("aria-post", '.share-actions button[aria-label*="Post"]'),
+        ("share-actions-posten", '.share-actions button:has-text("Posten")'),
+        ("share-actions-post", '.share-actions button:has-text("Post")'),
     ]
     return _try_strategies(page, strategies, timeout=timeout, label="post_submit")
 
@@ -440,3 +443,77 @@ def insert_mention(page, textbox, full_name, max_retries=2):
 
     # Should not reach here
     return {"success": False, "method": "unknown", "reason": "exhausted retries"}
+
+
+def find_article_title_field(page, timeout=10000):
+    """Find the article title input field."""
+    strategies = [
+        ("placeholder-titel", '[placeholder="Titel"]'),
+        ("placeholder-title", '[placeholder="Title"]'),
+        ("h1-contenteditable", 'h1[contenteditable="true"]'),
+        ("article-title", '.article-editor__title [contenteditable="true"]'),
+    ]
+    return _try_strategies(page, strategies, timeout=timeout, label="article_title")
+
+
+def find_article_body_field(page, timeout=10000):
+    """Find the article body editor field."""
+    strategies = [
+        ("placeholder-text-de", '[data-placeholder*="Text hier ein"]'),
+        ("placeholder-story", '[data-placeholder*="story"]'),
+        ("article-content", '.article-editor__content [contenteditable="true"]'),
+        ("prosemirror", '.ProseMirror[contenteditable="true"]'),
+    ]
+    try:
+        return _try_strategies(page, strategies, timeout=timeout, label="article_body")
+    except SelectorFailed:
+        # JS fallback: find the second contenteditable (first is title)
+        result = page.evaluate("""() => {
+            const ces = document.querySelectorAll('[contenteditable="true"]');
+            // Skip title (usually first or has h1-like styling)
+            for (let i = 0; i < ces.length; i++) {
+                const el = ces[i];
+                // Body is usually larger and not h1
+                if (el.tagName !== 'H1' && el.offsetHeight > 100) {
+                    return {found: true, index: i};
+                }
+            }
+            // Fallback: just return second contenteditable
+            if (ces.length >= 2) {
+                return {found: true, index: 1};
+            }
+            return {found: false};
+        }""")
+        if result.get("found"):
+            log.debug(f"[article_body] JS fallback found at index {result['index']}")
+            return page.locator('[contenteditable="true"]').nth(result['index'])
+        raise SelectorFailed("Could not find article body editor")
+
+
+def find_article_next_button(page, timeout=8000):
+    """Find the 'Weiter'/'Next' button in article editor."""
+    strategies = [
+        ("text-weiter", 'button:has-text("Weiter")'),
+        ("text-next", 'button:has-text("Next")'),
+        ("aria-weiter", 'button[aria-label*="Weiter"]'),
+    ]
+    return _try_strategies(page, strategies, timeout=timeout, label="article_next")
+
+
+def find_article_publish_button(page, timeout=8000):
+    """Find the 'Veröffentlichen'/'Publish' button for articles."""
+    strategies = [
+        ("text-veroeffentlichen", 'button:has-text("Veröffentlichen")'),
+        ("text-publish", 'button:has-text("Publish")'),
+        ("aria-publish", 'button[aria-label*="Publish"]'),
+    ]
+    return _try_strategies(page, strategies, timeout=timeout, label="article_publish")
+
+
+def click_by_coords(page, coords, wait_after=1.0):
+    """Click at coordinates returned by JS fallback strategies."""
+    if isinstance(coords, dict) and 'x' in coords and 'y' in coords:
+        page.mouse.click(coords['x'], coords['y'])
+        time.sleep(wait_after)
+        return True
+    return False
