@@ -1,7 +1,7 @@
 {
   "name": "x-algorithm",
-  "version": "1.0.0",
-  "description": "X (Twitter) algorithm rules, viral strategies, and article best practices. Boost engagement, avoid reach death, write posts that perform.",
+  "version": "1.0.2",
+  "description": "X (Twitter) algorithm rules, viral strategies, and article best practices. Boost engagement, avoid reach death, write posts that perform. Works with AI agents, Claude, Cursor.",
   "main": "SKILL.md",
   "keywords": [
     "x",
@@ -13,11 +13,18 @@
     "growth",
     "content-strategy",
     "ai-agent",
+    "ai-coding",
+    "claude",
+    "cursor",
+    "openclaw",
     "moltbot",
-    "clawdbot",
+    "openclaw",
     "marketing",
     "creator",
-    "influencer"
+    "influencer",
+    "automation",
+    "llm",
+    "vibe-coding"
   ],
   "author": "tytaninc7",
   "license": "MIT",
