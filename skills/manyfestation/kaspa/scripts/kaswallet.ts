@@ -1,10 +1,13 @@
 #!/usr/bin/env npx ts-node --esm
 /**
  * Kaspa Wallet CLI - Simplified for LLM agents
+ * Uses official Kaspa WASM SDK from https://github.com/kaspanet/rusty-kaspa/releases
+ *
  * Usage: ./kaswallet.sh <command> [args...]
  */
 
-import * as kaspa from '@kasdk/nodejs';
+// Import from official WASM SDK (downloaded by install.sh)
+import * as kaspa from '../wasm-sdk/nodejs/kaspa/kaspa.js';
 
 // ============================================================================
 // Config from environment
@@ -23,6 +26,7 @@ const sompiToKas = (s: bigint | number | string) => (Number(BigInt(s)) / 1e8).to
 const kasToSompi = (k: string | number) => BigInt(Math.round(parseFloat(String(k)) * 1e8));
 
 async function init() {
+  // WebSocket polyfill for Node.js
   if (typeof (globalThis as any).WebSocket === 'undefined') {
     const ws = await import('websocket');
     (globalThis as any).WebSocket = ws.w3cwebsocket;
@@ -137,6 +141,13 @@ async function cmdUri(address?: string, amount?: string, message?: string) {
   json({ uri: `kaspa:${addr}${params.toString() ? '?' + params : ''}` });
 }
 
+// generate-mnemonic
+async function cmdGenerateMnemonic() {
+  await init();
+  const m = kaspa.Mnemonic.random();
+  json({ mnemonic: m.phrase });
+}
+
 // ============================================================================
 // Main
 // ============================================================================
@@ -149,19 +160,23 @@ async function main() {
       case 'info': await cmdInfo(); break;
       case 'send': await cmdSend(args[0], args[1], args[2]); break;
       case 'uri': await cmdUri(args[0], args[1], args[2]); break;
+      case 'generate-mnemonic': await cmdGenerateMnemonic(); break;
       default:
-        console.log(`Kaspa Wallet CLI
+        console.log(`Kaspa Wallet CLI (Official WASM SDK)
 
 Commands:
   balance [address]              Check balance (uses wallet if no address)
   info                           Network info
   send <to> <amount|max> [fee]   Send KAS (fee in KAS, optional)
   uri [address] [amount] [msg]   Generate payment URI
+  generate-mnemonic              Generate new 24-word mnemonic
 
 Environment:
   KASPA_MNEMONIC      Wallet seed phrase
   KASPA_PRIVATE_KEY   Or private key hex
-  KASPA_NETWORK       mainnet (default), testnet-10`);
+  KASPA_NETWORK       mainnet (default), testnet-10
+
+SDK: Official Kaspa WASM SDK from github.com/kaspanet/rusty-kaspa`);
     }
   } catch (e: any) {
     json({ error: e.message || String(e) });

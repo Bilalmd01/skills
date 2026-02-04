@@ -8,8 +8,10 @@ description: Standalone Kaspa wallet CLI. Send KAS, check balances.
 ## Install
 
 ```bash
-bash install.sh
+node install.js
 ```
+
+Downloads official WASM SDK from [kaspanet/rusty-kaspa](https://github.com/kaspanet/rusty-kaspa/releases).
 
 **Requires:** Node.js >= 20
 
@@ -26,10 +28,11 @@ Optional: `KASPA_NETWORK=mainnet|testnet-10`
 ## Commands
 
 ```bash
-./kaswallet.sh balance [address]           # Check balance
-./kaswallet.sh info                        # Network status
+./kaswallet.sh balance [address]            # Check balance
+./kaswallet.sh info                         # Network status
 ./kaswallet.sh send <to> <amount|max> [fee] # Send KAS
 ./kaswallet.sh uri [address] [amount] [msg] # Payment URI
+./kaswallet.sh generate-mnemonic            # New seed phrase
 ```
 
 ## Examples
@@ -38,34 +41,37 @@ Optional: `KASPA_NETWORK=mainnet|testnet-10`
 # Check any address
 ./kaswallet.sh balance kaspa:qrc8y...
 
-# Check wallet balance (uses KASPA_MNEMONIC)
-./kaswallet.sh balance
-
 # Send 0.5 KAS
 ./kaswallet.sh send kaspa:qrc8y... 0.5
 
 # Send entire balance
 ./kaswallet.sh send kaspa:qrc8y... max
-
-# Send with priority fee (0.001 KAS extra)
-./kaswallet.sh send kaspa:qrc8y... 0.5 0.001
 ```
 
 ## Storage Mass Error
 
-If you see `Storage mass exceeds maximum`:
+If you see `Storage mass exceeds maximum` when sending a specific amount:
 
-1. **Cause:** Change output too small (< 0.2 KAS)
-2. **Auto-fix:** CLI adjusts to send full balance when change is dust
-3. **Manual fix:** Use `max` or add priority fee:
-   ```bash
-   ./kaswallet.sh send kaspa:qrc8y... 0.5 0.001  # add 0.001 KAS fee
-   ```
-4. **Retry:** If tx fails, try again with slightly higher fee (0.0005 → 0.001 → 0.002)
+**Consolidate UTXOs first** by sending `max` to your own address, then retry:
+
+```bash
+# Step 1: Get your wallet address
+./kaswallet.sh balance
+# Returns: {"address": "kaspa:qYOUR_ADDRESS...", ...}
+
+# Step 2: Consolidate by sending max to yourself
+./kaswallet.sh send kaspa:qYOUR_ADDRESS... max
+
+# Step 3: Now send the specific amount (will work)
+./kaswallet.sh send kaspa:qRECIPIENT... 0.5
+```
+
+This merges fragmented UTXOs into one, fixing the issue.
 
 ## Output
 
 All commands return JSON:
+
 ```json
 {"status":"sent","txid":"abc...","from":"kaspa:...","to":"kaspa:...","amount":"0.5","fee":"0.0002"}
 ```
@@ -74,5 +80,3 @@ Errors:
 ```json
 {"error":"Storage mass exceeds maximum"}
 ```
-
-- Transactions execute immediately (no confirmation prompt)
