@@ -26,6 +26,8 @@ This skill helps you keep the user updated on their specific research field.
         -   Check specialized platforms like arXiv, IEEE Xplore, Google Scholar (via web search), or X (Twitter) if relevant.
 
 4.  **Filter & Analyze**:
+    -   For each potential item found, use `scripts/daily_briefing.py --check-seen "URL or Unique Title"`.
+    -   If it returns "true", SKIP IT.
     -   Compare found items with what might have been seen yesterday (this requires some memory or just checking if the publication date is very recent, e.g., last 24-48 hours).
     -   **CRITICAL**: If there is *nothing significantly new* (no new major papers, no new conference announcements), **DO NOT BOTHER THE USER**.
 
@@ -36,6 +38,7 @@ This skill helps you keep the user updated on their specific research field.
         -   **Source**: URL/Journal Name
         -   **Summary**: 1-sentence summary of why it's relevant.
     -   Present this to the user.
+    -   Mark the items as seen using `scripts/daily_briefing.py --mark-seen "URL or Unique Title"`.
     -   Update the `last_checked` date using `scripts/daily_briefing.py --update-date`.
 
 ## Scripts
@@ -43,3 +46,5 @@ This skill helps you keep the user updated on their specific research field.
 -   `python scripts/daily_briefing.py --add-topic "topic"`: Adds a new research topic.
 -   `python scripts/daily_briefing.py --list-topics`: Lists current topics.
 -   `python scripts/daily_briefing.py --update-date`: Updates the last checked timestamp to now.
+-   `python scripts/daily_briefing.py --check-seen "ID"`: Checks if an item ID (URL/Title) is already in memory.
+-   `python scripts/daily_briefing.py --mark-seen "ID"`: Marks an item ID as seen.
