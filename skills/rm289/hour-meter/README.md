@@ -132,6 +132,20 @@ Set triggers at specific hours or percentages:
 
 Notifications route through any OpenClaw channel—Discord, Telegram, Signal, Slack, and more.
 
+### 📧 Email Milestone Notifications (v1.3.0)
+
+Get milestone alerts sent directly to your inbox:
+
+```bash
+meter.py create my-meter \
+  --notify-email you@example.com \
+  -d "Important milestone tracker"
+
+meter.py milestone my-meter -t hours -v 100 -m "🎉 100 hours reached!"
+```
+
+When milestones fire, you get a beautifully formatted email notification!
+
 ### 💰 Career Projection Calculator
 
 Visualize your career as **80,000 hours of inventory** (40 years × 2,000 hours/year). See your remaining earning potential with compound annual raises.
@@ -170,6 +184,41 @@ meter.py verify smoke-free "A7F3-B92C-1D4E-8F6A-7"
    export SENDGRID_API_KEY=SG.xxxxx
    meter.py lock my-meter --email you@example.com
    ```
+
+---
+
+## 📡 SendGrid Webhook Server (New in v1.2.0!)
+
+Get real-time notifications when recipients interact with your meter verification emails:
+
+```bash
+# Start webhook server with Discord webhook
+python sendgrid_webhook.py --port 8089 \
+  --discord-webhook https://discord.com/api/webhooks/xxx/yyy
+
+# Events supported:
+# ✅ delivered - Email reached recipient
+# 👀 open      - Recipient opened email  
+# 🔗 click     - Recipient clicked a link
+# ⚠️ bounce    - Email bounced
+# 🔕 unsubscribe - Recipient unsubscribed
+# 🚨 spamreport  - Marked as spam
+```
+
+Or process events manually for agent integration:
+```bash
+python sendgrid_webhook.py --process-events --json
+```
+
+### SendGrid Configuration
+
+![SendGrid Webhook Setup](docs/sendgrid-webhook-setup.png)
+
+1. Go to **SendGrid > Settings > Mail Settings > Event Webhook**
+2. Enter your webhook URL: `https://your-server.com/webhooks/sendgrid`
+3. Select all event types you want to receive
+4. Click **"Test Integration"** to verify all events fire correctly
+5. **Don't forget to click Save!**
 
 ---
 

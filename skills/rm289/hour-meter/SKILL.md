@@ -96,6 +96,32 @@ meter.py milestone <name> --type percent --value 50 --message "Halfway!"
 meter.py check-milestones  # JSON output for automation
 ```
 
+### Email Milestone Notifications (v1.3.0)
+
+Get milestone notifications sent directly to your email:
+
+```bash
+# Create meter with email notifications
+meter.py create my-meter \
+  --notify-email you@example.com \
+  --from-email verified@yourdomain.com \
+  -d "My tracked event"
+
+# Add milestones as usual
+meter.py milestone my-meter -t hours -v 24 -m "🎉 24 hours complete!"
+
+# When check-milestones runs and a milestone fires, email is sent automatically
+meter.py check-milestones
+# → Triggers milestone AND sends email notification
+```
+
+**Email includes:**
+- 🎯 Milestone message
+- ⏱️ Current elapsed time
+- 📝 Meter description
+
+Requires `SENDGRID_API_KEY` environment variable.
+
 ### Milestone Notifications: Heartbeat vs Cron
 
 **Recommended: HEARTBEAT** (~30 min resolution)
@@ -143,6 +169,63 @@ meter.py witness [--show] [--path]  # Witness file
 meter.py list                       # All meters
 meter.py career [--meter M] [--rate R] [--raise-pct P]
 meter.py export [name]              # JSON export
+```
+
+## SendGrid Email Webhook Server
+
+Receive real-time notifications when recipients open, click, bounce, or unsubscribe from your meter verification emails.
+
+### Setup
+
+```bash
+# Start webhook server with Discord webhook (recommended)
+python sendgrid_webhook.py --port 8089 --discord-webhook https://discord.com/api/webhooks/xxx/yyy
+
+# Or process events manually (for agent to post)
+python sendgrid_webhook.py --process-events
+python sendgrid_webhook.py --process-events --json
+```
+
+### Discord Webhook Setup (Recommended)
+
+1. In your Discord channel, go to **Settings > Integrations > Webhooks**
+2. Click **New Webhook**, copy the URL
+3. Pass to `--discord-webhook` or set `DISCORD_WEBHOOK_URL` env var
+
+### SendGrid Setup
+
+1. Go to **SendGrid > Settings > Mail Settings > Event Webhook**
+2. Click **"Create new webhook"** (or edit existing)
+3. Set HTTP POST URL to: `https://your-domain.com/webhooks/sendgrid`
+4. Select all event types under **Actions to be posted**:
+   - **Engagement data:** Opened, Clicked, Unsubscribed, Spam Reports, Group Unsubscribes, Group Resubscribes
+   - **Deliverability Data:** Processed, Dropped, Deferred, Bounced, Delivered
+   - **Account Data:** Account Status Change
+5. Click **"Test Integration"** to verify - this fires all event types to your webhook
+6. **Important:** Click **Save** to enable the webhook!
+7. (Optional) Enable **Signed Event Webhook** for security and set `SENDGRID_WEBHOOK_PUBLIC_KEY`
+
+![SendGrid Webhook Setup](docs/sendgrid-webhook-setup.png)
+
+### Event Types
+
+| Event | Emoji | Description |
+|-------|-------|-------------|
+| delivered | ✅ | Email reached recipient |
+| open | 👀 | Recipient opened email |
+| click | 🔗 | Recipient clicked a link |
+| bounce | ⚠️ | Email bounced |
+| unsubscribe | 🔕 | Recipient unsubscribed |
+| spamreport | 🚨 | Marked as spam |
+
+### Environment Variables
+
+```bash
+SENDGRID_WEBHOOK_PUBLIC_KEY    # For signature verification (optional)
+SENDGRID_WEBHOOK_MAX_AGE_SECONDS  # Max timestamp age (default: 300)
+WEBHOOK_PORT                   # Server port (default: 8089)
+DISCORD_WEBHOOK_URL            # Discord webhook URL
+WEBHOOK_LOG_FILE               # Log file path
 ```
 
 ## The 80,000 Hours Concept
