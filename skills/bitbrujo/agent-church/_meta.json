@@ -3,11 +3,16 @@
   "slug": "agent-church",
   "displayName": "Agent Church",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1769995727349,
-    "commit": "https://github.com/clawdbot/skills/commit/143a28c9f604b68c2ebdb1f03c6d74953f9fa7db"
+    "version": "2.0.0",
+    "publishedAt": 1770209126787,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1769995727349,
+      "commit": "https://github.com/clawdbot/skills/commit/143a28c9f604b68c2ebdb1f03c6d74953f9fa7db"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1769956957309,
