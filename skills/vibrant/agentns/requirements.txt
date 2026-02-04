@@ -1,3 +1,0 @@
-httpx
-eth-account
-siwe

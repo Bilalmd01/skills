@@ -1,188 +1,207 @@
 ---
 name: agentns
-description: Register and manage domains for AI agents via AgentNS.xyz - the first ICANN registrar built for autonomous agents. Use for domain registration, DNS management, WHOIS privacy, and domain renewal. Supports 400+ TLDs (.com, .io, .ai, .net, .xyz, .dev, and more) with USDC payments on Base blockchain. Trigger when user mentions domain registration, buying domains, DNS management, or needs a web presence for their agent or project.
-metadata:
-  homepage: https://agentns.xyz
-  twitter: https://x.com/AgentNSxyz
-  docs: https://agentns.xyz/docs
+description: Register and manage ICANN domains for AI agents. Wallet authentication (SIWE/SIWS), USDC payments on Base or Solana, full DNS management.
+homepage: https://agentns.xyz
+user-invocable: true
 ---
 
 # AgentNS - Domain Registration for AI Agents
 
-Register and manage domains via [AgentNS.xyz](https://agentns.xyz) - the first ICANN domain registrar built for autonomous agents.
+Use this skill when you need to register domains, check domain availability, or manage DNS records for an agent or project.
 
-## Quick Start
+## Installation
 
 ```bash
-# Search for available domains (checks 20 popular TLDs)
-./scripts/search-domain.sh myagent
+pip install agentns-client
 
-# Check specific domain (any of 400+ TLDs)
-curl -X POST https://agentns.xyz/domains/check \
-  -H "Content-Type: application/json" \
-  -d '{"domain": "myagent.xyz"}'
-
-# Buy domain (full workflow)
-python scripts/buy_domain.py myagent.xyz
+# For Solana wallet support:
+pip install agentns-client[solana]
 ```
 
-## Features
+## Complete Workflow
 
-- **400+ TLDs**: Register any ICANN TLD
-  - Quick search across 20 popular: .com, .io, .ai, .net, .co, .xyz, .dev, .app, .org, .tech, .club, .online, .site, .info, .me, .biz, .us, .cc, .tv, .gg
-  - Or check any of 400+ directly via API
-- **USDC Payments**: EIP-3009 gasless signatures on Base blockchain
-- **Wallet Auth**: Sign-In with Ethereum (SIWE) - no email/password needed
-- **Free WHOIS Privacy**: Included on all domains
-- **Free DNS Hosting**: 100 records per domain (A, AAAA, CNAME, MX, TXT, SRV, CAA)
-- **Full API Control**: Manage everything programmatically
+```python
+from agentns_client import AgentNSClient, load_or_create_wallet
 
-## Pricing
+# 1. Create client with wallet (auto-creates wallet.json if needed)
+account = load_or_create_wallet()
+client = AgentNSClient(account=account)
 
-- **Domain cost varies by TLD** (NameSilo cost + 20% markup, minimum $4):
-  - .com from ~$11 USDC
-  - .io from ~$32 USDC
-  - .ai from ~$89 USDC
-  - .xyz from ~$12 USDC
-- **No platform fees**
-- **WHOIS privacy + DNS hosting included free**
+# 2. Check domain availability (no auth required)
+result = client.check_domain("myagent.xyz")
+if not result.available:
+    print(f"{result.domain} is not available")
+    # Search across 20 TLDs to find alternatives
+    results = client.search_domains("myagent")
+    available = [r for r in results if r.available]
+    for r in available:
+        print(f"{r.domain}: ${r.price_usdc} USDC")
 
-## Authentication Flow
+# 3. Authenticate with wallet signature
+client.login()
 
-1. Get nonce: `GET /auth/nonce`
-2. Sign SIWE message (EIP-4361) with your wallet
-3. Verify & get JWT: `POST /auth/verify`
-4. Use JWT in `Authorization: Bearer <token>` header
+# 4. Create registrant profile (one-time, ICANN requirement)
+client.ensure_registrant({
+    "name": "Agent Smith",
+    "street_address": "123 AI Street",
+    "city": "San Francisco",
+    "state_province": "CA",
+    "postal_code": "94102",
+    "country_code": "US",
+    "email": "contact@agentns.xyz",
+    "phone": "+14155551234",
+})
 
-See `scripts/buy_domain.py` for complete implementation.
+# 5. Register domain (payment handled automatically)
+domain = client.register_domain("myagent.xyz")
+print(f"Registered: {domain.domain}")
+print(f"Expires: {domain.expires_at}")
 
-## Common Use Cases
-
-### 1. Search Domain Availability
-
-```bash
-# Quick search across 20 popular TLDs
-./scripts/search-domain.sh myproject
-
-# Check specific domain
-curl -X POST https://agentns.xyz/domains/check \
-  -d '{"domain": "myproject.xyz"}'
+# 6. Add DNS records
+client.add_dns("myagent.xyz", type="A", host="@", value="192.0.2.1")
+client.add_dns("myagent.xyz", type="CNAME", host="www", value="myagent.xyz")
+client.add_dns("myagent.xyz", type="TXT", host="@", value="v=spf1 -all")
 ```
 
-### 2. Register a Domain
+## Wallet Setup
 
-Prerequisites:
-- Ethereum wallet with USDC on Base network
-- ICANN registrant profile (created automatically)
-
-```bash
-# Full autonomous purchase
-python scripts/buy_domain.py myagent.xyz
-
-# Or check only
-python scripts/buy_domain.py myagent.xyz --check-only
+**EVM (Base network - default):**
+```python
+from agentns_client import load_or_create_wallet
+account = load_or_create_wallet("wallet.json")  # Creates if missing
+print(f"Address: {account.address}")
+# Fund with USDC on Base network before registering
 ```
 
-The script handles:
-- Wallet auth (SIWE)
-- Registrant profile creation
-- x402 payment signing
-- Domain registration
+**Solana:**
+```python
+from agentns_client import load_or_create_solana_wallet
+keypair = load_or_create_solana_wallet("solana_wallet.json")
+print(f"Address: {keypair.pubkey()}")
+# Fund with USDC on Solana before registering
+```
 
-### 3. Manage DNS Records
+## Client Methods
 
-```bash
+### Domain Operations
+
+```python
+# Check single domain (no auth)
+result = client.check_domain("example.com")
+# Returns: DomainCheck(domain, available, price_usdc)
+
+# Search across 20 TLDs (no auth)
+results = client.search_domains("mycompany")
+# Searches: com, io, net, co, ai, xyz, dev, app, org, tech,
+#           club, online, site, info, me, biz, us, cc, tv, gg
+
+# Register domain (requires auth + USDC balance)
+domain = client.register_domain("example.xyz", years=1)
+# Returns: DomainInfo(domain, owner_address, status, registered_at, expires_at)
+
+# List owned domains
+domains = client.list_domains()
+```
+
+### DNS Management
+
+```python
 # List DNS records
-curl -X GET https://agentns.xyz/domains/myagent.xyz/dns \
-  -H "Authorization: Bearer $TOKEN"
+records = client.list_dns("example.xyz")
 
-# Add A record
-curl -X POST https://agentns.xyz/domains/myagent.xyz/dns \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"type": "A", "host": "@", "value": "1.2.3.4", "ttl": 3600}'
+# Add record
+record = client.add_dns(
+    domain="example.xyz",
+    type="A",           # A, AAAA, CNAME, MX, TXT, SRV, CAA
+    host="@",           # @ for root, or subdomain name
+    value="192.0.2.1",
+    ttl=3600,           # 300-86400 seconds
+    distance=10         # Required for MX/SRV only
+)
 
 # Update record
-curl -X PUT https://agentns.xyz/domains/myagent.xyz/dns/12345 \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"value": "1.2.3.5"}'
+client.update_dns("example.xyz", record_id="12345", value="192.0.2.2")
+
+# Delete record
+client.delete_dns("example.xyz", record_id="12345")
 ```
 
-### 4. Change Nameservers
+### Nameservers
 
-```bash
-curl -X PUT https://agentns.xyz/domains/myagent.xyz/nameservers \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"nameservers": ["ns1.cloudflare.com", "ns2.cloudflare.com"]}'
+```python
+# Get current nameservers
+ns = client.get_nameservers("example.xyz")
+# Default: ["ns1.namesilo.com", "ns2.namesilo.com"]
+
+# Change to custom nameservers (e.g., Cloudflare)
+client.set_nameservers("example.xyz", [
+    "ns1.cloudflare.com",
+    "ns2.cloudflare.com"
+])
 ```
 
-## Payment Protocol
+### Registrant Profile
 
-AgentNS uses **x402** (HTTP 402 Payment Required) with **EIP-3009** USDC authorization:
+```python
+# Get profile
+profile = client.get_registrant()
 
-1. First request returns `402 Payment Required`
-2. Response includes `X-PAYMENT-REQUIRED` header with payment details
-3. Sign EIP-3009 `transferWithAuthorization` 
-4. Resubmit with `X-PAYMENT` header
-5. Payment settles atomically with registration
+# Create profile (required before first domain registration)
+profile = client.create_registrant({
+    "name": "Required Name",
+    "street_address": "123 Main St",
+    "city": "San Francisco",
+    "state_province": "CA",
+    "postal_code": "94102",
+    "country_code": "US",        # ISO 3166-1 alpha-2
+    "email": "contact@agentns.xyz",
+    "phone": "+14155551234",
+    "organization": "Optional Org",  # Optional
+    "whois_privacy": True            # Optional, default True
+})
 
-**USDC Contract:** `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (Base)
-**Chain ID:** 8453 (Base mainnet)
+# Update profile
+client.update_registrant({"email": "new@example.com"})
 
-## API Endpoints
-
-| Endpoint | Auth | Rate Limit | Description |
-|----------|------|------------|-------------|
-| `GET /health` | No | - | Health check |
-| `POST /domains/check` | No | 30/min | Check single domain |
-| `POST /domains/search` | No | 10/min | Search 20 popular TLDs |
-| `GET /auth/nonce` | No | 10/min | Get SIWE nonce |
-| `POST /auth/verify` | No | - | Verify signature → JWT |
-| `POST /registrant` | JWT | - | Create profile |
-| `POST /domains/register` | JWT + x402 | - | Register domain |
-| `GET /domains` | JWT | - | List owned domains |
-| `GET /domains/{name}/dns` | JWT | - | List DNS records |
-| `POST /domains/{name}/dns` | JWT | - | Add DNS record |
-| `PUT /domains/{name}/dns/{id}` | JWT | - | Update DNS record |
-| `DELETE /domains/{name}/dns/{id}` | JWT | - | Delete DNS record |
-| `PUT /domains/{name}/nameservers` | JWT | - | Change nameservers |
-
-## Scripts Included
-
-### buy_domain.py
-Complete autonomous domain purchase workflow with SIWE auth and x402 payment.
-
-**Usage:**
-```bash
-python scripts/buy_domain.py myagent.xyz
-python scripts/buy_domain.py myagent.xyz --years 2
-python scripts/buy_domain.py myagent.xyz --check-only
+# Get or create (recommended)
+profile = client.ensure_registrant({...})
 ```
 
-**Requirements:**
-- Python packages: `httpx`, `eth-account`, `siwe`
-- USDC on Base network (fund the auto-generated wallet)
+## Error Handling
 
-### payment_utils.py
-Shared utilities for wallet management and EIP-3009 signing.
+```python
+from agentns_client.exceptions import (
+    AgentNSError,           # Base exception
+    AuthenticationError,    # Invalid/expired JWT (401)
+    PaymentRequiredError,   # Insufficient USDC balance (402)
+    NotFoundError,          # Domain/record not found (404)
+    ConflictError,          # Profile exists, domain taken (409)
+    ValidationError,        # Invalid input (400)
+    RateLimitError,         # Too many requests (429)
+)
 
-### search-domain.sh
-Quick domain search across 20 popular TLDs.
+try:
+    domain = client.register_domain("example.xyz")
+except PaymentRequiredError as e:
+    print(f"Need {e.payment_requirement.amount} USDC")
+    print(f"Send to: {client.wallet_address}")
+except ConflictError:
+    print("Domain already registered or unavailable")
+except AuthenticationError:
+    client.login()  # Re-authenticate
+```
 
-## Security Notes
+## Important Notes
 
-- Wallet signatures required for all transactions
-- USDC payment settles atomically with registration
-- WHOIS privacy enabled by default
-- Full ownership control via wallet
-- No email or password required
+- **USDC required**: Fund your wallet with USDC on Base (EVM) or Solana before registering
+- **Registrant profile**: ICANN requires contact info - create once, reused for all domains
+- **WHOIS privacy**: Free on all domains, enabled by default
+- **400+ TLDs**: Check any TLD with `check_domain()`, search 20 popular ones with `search_domains()`
+- **Pricing**: Domain cost + 20% markup (minimum $4), paid in USDC
 
-## References
+## Resources
 
-- **Website:** https://agentns.xyz
-- **Agent Docs:** https://agentns.xyz/howtoagents.md
-- **API Docs:** https://agentns.xyz/docs
-- **Twitter:** https://x.com/AgentNSxyz
-
-## Support
-
-For issues or questions: [@AgentNSxyz](https://x.com/AgentNSxyz) on X
+- **PyPI**: https://pypi.org/project/agentns-client/
+- **GitHub**: https://github.com/vibrant/agentns_client
+- **API Docs**: https://agentns.xyz/docs
+- **Support**: [@AgentNSxyz](https://x.com/AgentNSxyz)
