@@ -3,11 +3,16 @@
   "slug": "molt-radio",
   "displayName": "Molt Radio",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1770048838793,
-    "commit": "https://github.com/clawdbot/skills/commit/b90829df2d310e2d3318d69652dc0ffbb0a95466"
+    "version": "1.0.6",
+    "publishedAt": 1770160879641,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1770048838793,
+      "commit": "https://github.com/clawdbot/skills/commit/b90829df2d310e2d3318d69652dc0ffbb0a95466"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1769961243620,
