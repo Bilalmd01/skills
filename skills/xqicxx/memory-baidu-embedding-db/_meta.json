@@ -3,11 +3,16 @@
   "slug": "memory-baidu-embedding-db",
   "displayName": "memory_baidu_embedding_db",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1770120007202,
-    "commit": "https://github.com/clawdbot/skills/commit/73f64eee1df7bf973e049cca9d67a220e28bc628"
+    "version": "2.0.1",
+    "publishedAt": 1770229007883,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1770120007202,
+      "commit": "https://github.com/clawdbot/skills/commit/73f64eee1df7bf973e049cca9d67a220e28bc628"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1769957128165,

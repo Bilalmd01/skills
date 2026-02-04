@@ -33,7 +33,7 @@ if not api_string or not secret_key:
     print("❌ 错误: 缺少必要的API凭据!")
     print("   请设置以下环境变量:")
     print("   export BAIDU_API_STRING='your_bce_v3_api_string'")
-    print("   export BAIDU_SECRET_KEY='your_secret_key'")
+    print("   export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'")
     print("   您可以从 https://console.bce.baidu.com/qianfan/ 获取API凭据")
     raise ValueError("缺少百度API凭据")
 ```

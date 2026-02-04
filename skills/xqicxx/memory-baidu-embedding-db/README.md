@@ -68,14 +68,14 @@ clawdhub install memory-baidu-embedding-db
 
 ```bash
 # Add to your ~/.bashrc or ~/.zshrc
-export BAIDU_API_STRING='bce-v3/ALTAK-<your_api_key_part>/<your_signature>'
-export BAIDU_SECRET_KEY='<your_secret_key>'
+export BAIDU_API_STRING='${BAIDU_API_STRING}'
+export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'
 ```
 
 Or set them directly before starting Clawdbot:
 ```bash
-export BAIDU_API_STRING='bce-v3/ALTAK-eg3coss9r9Ythu60cLxl8/d06e0ba81aa5e1de706143613e2816813aa38dac'
-export BAIDU_SECRET_KEY='f2e1fee8a28f492dadc76fbe00375277'
+export BAIDU_API_STRING='${BAIDU_API_STRING}'
+export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'
 ```
 
 ## 🚀 Usage
@@ -260,7 +260,7 @@ Example error message:
 ❌ 错误: 缺少必要的API凭据!
    请设置以下环境变量:
    export BAIDU_API_STRING='your_bce_v3_api_string'
-   export BAIDU_SECRET_KEY='your_secret_key'
+   export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'
    您可以从 https://console.bce.baidu.com/qianfan/ 获取API凭据
 ```
 

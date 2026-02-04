@@ -18,8 +18,8 @@ Get up and running with semantic memory for Clawdbot in under 5 minutes.
 
 ```bash
 # Replace with your actual credentials
-export BAIDU_API_STRING='bce-v3/ALTAK-eg3coss9r9Ythu60cLxl8/d06e0ba81aa5e1de706143613e2816813aa38dac'
-export BAIDU_SECRET_KEY='f2e1fee8a28f492dadc76fbe00375277'
+export BAIDU_API_STRING='${BAIDU_API_STRING}'
+export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'
 ```
 
 ## Step 3: Install the Skill

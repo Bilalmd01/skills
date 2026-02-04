@@ -10,7 +10,7 @@ if [ -z "$BAIDU_API_STRING" ] || [ -z "$BAIDU_SECRET_KEY" ]; then
     echo "❌ 错误：缺少百度API凭证"
     echo "请设置以下环境变量："
     echo "export BAIDU_API_STRING='your_bce_v3_api_string'"
-    echo "export BAIDU_SECRET_KEY='your_secret_key'"
+    echo "export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'"
     exit 1
 fi
 

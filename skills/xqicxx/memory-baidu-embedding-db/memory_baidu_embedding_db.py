@@ -61,7 +61,7 @@ class EnhancedMemoryBaiduEmbeddingDB:
             print("⚠️  警告: 缺少百度API凭据，将使用降级模式!")
             print("   请设置以下环境变量以启用完整功能:")
             print("   export BAIDU_API_STRING='your_bce_v3_api_string'")
-            print("   export BAIDU_SECRET_KEY='your_secret_key'")
+            print("   export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'")
             self.client = None
         else:
             try:
