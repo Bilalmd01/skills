@@ -1,144 +1,252 @@
-SJ-IRAC Non-Use (撤三) Cross-Examination Library
-Version: 1.0.0
-Last Updated: 2026-02-03
+SJ-IRAC Non-Use (撤三) Cross-Examination Library  
+Version: 2.0.0  
+Last Updated: 2026-02-04  
 
-Purpose
-Provide examiner-oriented, evidence-based cross-examination statements for challenging registrant’s use evidence in non-use cancellation proceedings.
-Hard Constraint: No fabrication. No speculation. Every point must be tied to a specific exhibit and a specific defect type.
+---
 
-Usage Rule
-For each exhibit, select:
-- Defect Type (A-F)
-- Ask 1–3 Key Questions
-- Conclude with "cannot prove" wording (objective, non-emotional)
-Always reference: Exhibit ID + date (if shown) + carrier (invoice/contract/screenshot/etc.)
+## 1. System Purpose
 
-========================
-A. Authenticity / Source Defects (真实性/来源瑕疵)
-========================
+This library provides examiner-oriented, evidence-based cross-examination
+arguments for challenging trademark use evidence in CNIPA non-use cancellation
+proceedings.
 
-A1. Original / verification missing
-- 该证据未见原件或可核验的来源信息，无法排除事后补制或内容被修改的可能，真实性不足以作为使用证据采信。
-- 该材料缺乏可供核验的出具主体、形成过程或对应原始记录，无法证明其为交易过程中自然形成的真实凭证。
+It applies to:
 
-Key Questions
-- 是否提供原件/原始电子文件及生成路径（后台记录/流水/系统导出）？
-- 是否可提供出具主体的真实性核验材料（税控/系统校验/第三方平台记录）？
+- Applicant-side attack
+- Respondent-side self-audit and pre-defense testing
 
-A2. Stamp/signature inconsistency
-- 证据上所载签章/签名信息与其他材料不一致，且无合理解释，真实性存疑。
-- 同一交易链条中主体签章、格式与编号规则明显不统一，缺乏连续性与自然形成痕迹。
+Hard Constraints:
 
-Key Questions
-- 签章主体与合同相对方是否一致？是否有授权链？
-- 编号规则、格式是否与该主体日常票据/合同习惯一致？
+- No fabrication
+- No speculation
+- No emotional language
+- Every point must be tied to:
+  → A specific exhibit
+  → A specific defect type
+  → A verifiable factual basis
 
-A3. Self-produced evidence without corroboration
-- 该证据属于权利人单方制作材料，缺乏第三方或客观记录印证，单独不足以证明商标真实商业使用。
+---
 
-Key Questions
-- 是否有第三方记录可交叉验证（物流、税控、平台订单、付款流水）？
+## 2. Mandatory Usage Rules
 
-========================
-B. Relevance Defects (关联性瑕疵)
-========================
+For each exhibit:
 
-B1. Goods/services unclear
-- 证据所载商品/服务名称、规格或描述不清，无法对应核定使用商品/服务，关联性不足。
-- 证据仅能证明发生某种交易或宣传行为，但无法证明系针对核定商品/服务的商标使用。
+1. Identify Defect Type (A–F)
+2. Select 1–3 Key Questions
+3. Draft an objective closing clause
+4. Reference:
+   - Exhibit ID
+   - Formation Date (if shown)
+   - Carrier (contract / invoice / screenshot / etc.)
 
-Key Questions
-- 商品/服务描述能否与核定项目逐一对应？是否有型号、SKU、清单、服务内容说明？
-- 是否存在“同名不同物”或“非核定范围”的情形？
+Generic attacks are prohibited.
 
-B2. Mark not shown or not linked to the goods
-- 证据未能体现争议商标标识，或无法证明该标识系用于涉案商品/服务之上，难以构成商标法意义上的使用证明。
-- 即便材料中出现文字/图形，也缺乏与具体商品、交易或服务提供行为的绑定关系，不能证明商标使用。
+---
 
-Key Questions
-- 商标是否在商品包装、标签、服务页面、交易凭证中明确呈现？
-- 是否能证明该标识与交易标的为同一对象？
+## 3. Defect Classification Framework (A–F)
 
-B3. Subject mismatch (user identity)
-- 证据所载使用主体与商标注册人不一致，且未见许可、授权或实际控制关系证明，无法证明系权利人或其合法授权主体的使用。
+==================================================
+A. Authenticity / Source Defects
+真实性 / 来源瑕疵
+==================================================
 
-Key Questions
-- 是否提供许可合同/授权声明及备案或相应证明？
-- 使用主体与权利人的关系链如何形成、是否在使用期内有效？
+### A1. Original / Verification Missing
 
-========================
-C. Temporal Defects (时间效力瑕疵)
-========================
+Standard Clauses:
 
-C1. Outside the use period
-- 证据形成时间不在指定使用期间内，无法证明解释期内的连续使用事实。
-- 该材料即便能证明其他时期存在行为，也不能替代指定期间内的使用证明。
+- 该证据未提供原件或可核验来源信息，无法排除事后补制或内容修改的可能，真实性不足以采信。
+- 该材料缺乏形成过程、原始载体或系统记录支撑，难以认定为交易过程中自然形成的真实凭证。
 
-Key Questions
-- 材料形成日期是否明确可核验？是否可证明在指定期间内发生？
-- 是否存在时间戳缺失、可编辑、无法溯源的问题？
+Key Questions:
 
-C2. Unclear or editable timestamps
-- 截图/网页/电子材料的时间信息缺乏可核验性，且存在可编辑风险，时间效力不足。
+- 是否提供原始文件及生成路径（系统导出/后台记录/日志）？
+- 是否存在可独立核验的第三方记录？
 
-Key Questions
-- 是否提供后台导出记录、第三方存证、服务器日志、哈希/时间戳存证？
-- 是否能证明截图所示内容在指定期间内实际在线存在？
+---
 
-========================
-D. Completeness Defects (完整性瑕疵)
-========================
+### A2. Stamp / Signature Inconsistency
 
-D1. Single-link evidence (no chain)
-- 证据仅能证明链条中的单一环节（如宣传或合同），缺乏订单/付款/交付等闭环材料印证，难以证明真实商业使用。
-- 缺少能将“商标—商品/服务—交易行为—时间”四要素闭合的证据组合，证明力不足。
+Standard Clauses:
 
-Key Questions
-- 是否存在对应订单、付款、物流、签收、对账等闭环材料？
-- 合同是否实际履行？是否有履行痕迹？
+- 证据所载签章、签名与其他材料明显不一致，且无合理解释，真实性存疑。
+- 同一交易链条中编号规则、格式体系缺乏连续性，自然形成痕迹不足。
 
-D2. Missing attachments / annexes
-- 合同/项目材料未提交附件、清单或履行文件，无法确定标的、数量、价格、履行时间，完整性不足。
+Key Questions:
 
-Key Questions
-- 是否提供合同附件、订单明细、交付清单、服务验收材料？
+- 是否存在授权链证明？
+- 编号规则是否符合该主体长期使用习惯？
 
-========================
-E. Logical / Commercial Reasonableness Defects (逻辑/交易合理性瑕疵)
-========================
+---
 
-E1. Unreasonable transaction pattern
-- 证据所示交易金额、频次、相对方结构或业务逻辑缺乏合理性，且缺少独立第三方印证，难以采信为真实市场交易。
-- 若无进一步证据解释交易背景与履行过程，该材料的商业合理性不足以支撑真实使用认定。
+### A3. Self-Produced Evidence Without Corroboration
 
-Key Questions
-- 相对方为何选择该商品/服务？是否有往来记录、对账、付款凭证？
-- 交易是否与权利人经营规模、渠道模式相匹配？
+Standard Clauses:
 
-E2. Circular or internal transactions
-- 证据显示交易更接近内部流转或关联交易，但缺少面向市场的真实交易特征，难以证明商标在市场中真实使用。
+- 该证据属于权利人单方制作材料，缺乏第三方印证，单独不足以证明真实商业使用。
 
-Key Questions
-- 是否存在独立交易对手与真实支付？是否有第三方物流/平台记录？
+Key Questions:
 
-========================
-F. Cross-Examination Resistance Defects (抗反问能力不足)
-========================
+- 是否存在物流、税控、平台、支付流水等交叉验证材料？
 
-F1. One-question collapse test
-- 该证据无法回答“谁在何时就何种商品/服务以何种方式使用了该商标”的核心问题，抗反问能力不足，难以单独或作为主要证据采信。
+==================================================
+B. Relevance Defects
+关联性瑕疵
+==================================================
 
-Standard Closing (choose one)
-- 综上，该证据在真实性/关联性/时间效力/完整性方面存在明显缺陷，难以证明指定期间内对核定商品/服务的真实商标使用。
-- 综上，该组证据未能形成可核验的商业使用闭环，不能满足撤三案件对商标使用证据的证明要求。
-- 综上，相关材料不足以证明商标使用行为在指定期间内真实发生，依法不应予以采信。
+### B1. Goods / Services Unclear
 
-========================
-Exhibit-Level Output Template (copy/paste)
-========================
+Standard Clauses:
 
-[Exhibit ID：____ | Type：合同/发票/截图/物流/宣传 | Date：____]
+- 商品或服务描述不清，无法对应核定项目，关联性不足。
+- 仅能证明存在交易或宣传行为，不能证明针对核定商品/服务。
+
+Key Questions:
+
+- 是否存在型号、SKU、清单或服务明细？
+- 是否存在超范围或错位使用？
+
+---
+
+### B2. Mark Not Shown / Not Linked
+
+Standard Clauses:
+
+- 材料未体现争议商标，或缺乏与交易标的的绑定关系，不能构成使用证明。
+
+Key Questions:
+
+- 商标是否明确显示于包装、页面或凭证中？
+- 是否与具体交易对象一致？
+
+---
+
+### B3. Subject Mismatch
+
+Standard Clauses:
+
+- 使用主体与注册人不一致，且无有效授权证明。
+
+Key Questions:
+
+- 是否提交许可合同及有效期证明？
+- 实际控制关系是否成立？
+
+==================================================
+C. Temporal Defects
+时间效力瑕疵
+==================================================
+
+### C1. Outside Use Period
+
+Standard Clauses:
+
+- 形成时间不在指定期间内，不能替代期间内使用证明。
+
+Key Questions:
+
+- 日期是否可核验？
+- 是否存在时间断档？
+
+---
+
+### C2. Editable / Unverifiable Timestamp
+
+Standard Clauses:
+
+- 时间信息缺乏可核验性，存在编辑风险。
+
+Key Questions:
+
+- 是否有后台数据、存证或服务器日志支持？
+
+==================================================
+D. Completeness Defects
+完整性瑕疵
+==================================================
+
+### D1. Single-Link Evidence
+
+Standard Clauses:
+
+- 仅证明单一环节，未形成闭环，证明力不足。
+
+Key Questions:
+
+- 是否存在订单、付款、交付对应关系？
+
+---
+
+### D2. Missing Annexes
+
+Standard Clauses:
+
+- 缺少附件、清单或履行材料，无法确认交易实质内容。
+
+Key Questions:
+
+- 是否提供完整履约文件？
+
+==================================================
+E. Logical / Commercial Defects
+逻辑 / 合理性瑕疵
+==================================================
+
+### E1. Unreasonable Pattern
+
+Standard Clauses:
+
+- 交易模式与经营规模、渠道逻辑不匹配，合理性不足。
+
+Key Questions:
+
+- 是否存在持续往来记录？
+- 是否符合行业惯例？
+
+---
+
+### E2. Circular / Internal Transactions
+
+Standard Clauses:
+
+- 更接近内部流转，缺乏真实市场属性。
+
+Key Questions:
+
+- 是否存在独立第三方支付与物流？
+
+==================================================
+F. Resistance Defects
+抗反问能力瑕疵
+==================================================
+
+### F1. One-Question Collapse Test
+
+Standard Clauses:
+
+- 无法回答“谁、何时、就何商品/服务、如何使用”的核心问题，抗反问能力不足。
+
+==================================================
+4. Standard Closing Clauses
+==================================================
+
+Select one:
+
+- 综上，该证据在真实性、关联性、时间效力及完整性方面存在明显缺陷，难以证明指定期间内真实使用。
+- 综上，该组证据未形成可核验的商业使用闭环，不符合撤三案件证明标准。
+- 综上，相关材料不足以证明商标使用行为在指定期间内真实发生，依法不应采信。
+
+==================================================
+5. Exhibit-Level Output Template
+==================================================
+
+[Exhibit ID: ____ | Type: 合同/发票/截图/物流/宣传 | Date: ____]
+
 Defect Type: A / B / C / D / E / F
-1) Point:
+
+1) Defect Point:
 2) Key Question:
-3) Closing:
+3) Closing Clause:
+
+==================================================
+
+End of Cross-Examination Library
