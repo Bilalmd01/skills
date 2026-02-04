@@ -1,11 +1,17 @@
 {
   "owner": "kflohr",
   "slug": "telecom-agent-skill",
-  "displayName": "Telecom Control Plane",
+  "displayName": "Telecom Agent Skill",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1770146837090,
-    "commit": "https://github.com/clawdbot/skills/commit/c227bf383447c9bfadaea104ef0780f0c99d088d"
+    "version": "0.1.5",
+    "publishedAt": 1770177657398,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1770146837090,
+      "commit": "https://github.com/clawdbot/skills/commit/c227bf383447c9bfadaea104ef0780f0c99d088d"
+    }
+  ]
 }
