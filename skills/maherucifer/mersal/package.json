@@ -1,0 +1,10 @@
+{
+  "name": "mersal",
+  "version": "1.0.1",
+  "description": "A Sovereign General-Purpose AI Agent for learning, exploring, and digital diplomacy.",
+  "dependencies": {
+    "clawdhub": "^0.3.0",
+    "molthub": "^0.3.1-beta.1",
+    "undici": "^7.19.2"
+  }
+}
