@@ -36,19 +36,19 @@ pip3 install tushare pandas --user
 ### 获取股票列表
 
 ```bash
-python3 scripts/tushare.py stock_basic
+python3 scripts/market.py stock_basic
 ```
 
 ### 获取日线行情
 
 ```bash
-python3 scripts/tushare.py daily --ts_code 000001.SZ --start_date 20240101 --end_date 20240131
+python3 scripts/market.py daily --ts_code 000001.SZ --start_date 20240101 --end_date 20240131
 ```
 
 ### 获取实时行情
 
 ```bash
-python3 scripts/tushare.py realtime 000001
+python3 scripts/market.py realtime 000001
 ```
 
 ## 股票数据
@@ -56,42 +56,42 @@ python3 scripts/tushare.py realtime 000001
 ### 股票基础信息
 
 ```bash
-python3 scripts/tushare.py stock_basic
-python3 scripts/tushare.py stock_basic --exchange SSE  # 仅上交所
-python3 scripts/tushare.py stock_basic --exchange SZSE  # 仅深交所
+python3 scripts/market.py stock_basic
+python3 scripts/market.py stock_basic --exchange SSE  # 仅上交所
+python3 scripts/market.py stock_basic --exchange SZSE  # 仅深交所
 ```
 
 ### 日线行情
 
 ```bash
 # 获取单只股票近期数据
-python3 scripts/tushare.py daily --ts_code 000001.SZ
+python3 scripts/market.py daily --ts_code 000001.SZ
 
 # 指定日期范围
-python3 scripts/tushare.py daily --ts_code 600519.SH --start_date 20240101 --end_date 20240131
+python3 scripts/market.py daily --ts_code 600519.SH --start_date 20240101 --end_date 20240131
 
 # 获取指定交易日全市场数据
-python3 scripts/tushare.py daily --trade_date 20240115
+python3 scripts/market.py daily --trade_date 20240115
 ```
 
 ### 周线行情
 
 ```bash
 # 获取周线数据
-python3 scripts/tushare.py weekly --ts_code 000001.SZ
+python3 scripts/market.py weekly --ts_code 000001.SZ
 
 # 指定日期范围
-python3 scripts/tushare.py weekly --ts_code 600519.SH --start_date 20230101 --end_date 20240131
+python3 scripts/market.py weekly --ts_code 600519.SH --start_date 20230101 --end_date 20240131
 ```
 
 ### 月线行情
 
 ```bash
 # 获取月线数据
-python3 scripts/tushare.py monthly --ts_code 000001.SZ
+python3 scripts/market.py monthly --ts_code 000001.SZ
 
 # 指定日期范围
-python3 scripts/tushare.py monthly --ts_code 600519.SH --start_date 20200101 --end_date 20240131
+python3 scripts/market.py monthly --ts_code 600519.SH --start_date 20200101 --end_date 20240131
 ```
 
 **股票代码格式**：
@@ -101,24 +101,24 @@ python3 scripts/tushare.py monthly --ts_code 600519.SH --start_date 20200101 --e
 ### 实时行情
 
 ```bash
-python3 scripts/tushare.py realtime 000001
-python3 scripts/tushare.py realtime 600519
+python3 scripts/market.py realtime 000001
+python3 scripts/market.py realtime 600519
 ```
 
 ### 资金流向
 
 ```bash
 # 获取指定股票资金流向
-python3 scripts/tushare.py moneyflow --ts_code 000001.SZ
+python3 scripts/market.py moneyflow --ts_code 000001.SZ
 
 # 获取指定日期全市场资金流向
-python3 scripts/tushare.py moneyflow --trade_date 20240115
+python3 scripts/market.py moneyflow --trade_date 20240115
 ```
 
 ### 公司信息
 
 ```bash
-python3 scripts/tushare.py company
+python3 scripts/market.py company
 ```
 
 ## 期货数据
@@ -126,13 +126,13 @@ python3 scripts/tushare.py company
 ### 期货合约基础信息
 
 ```bash
-python3 scripts/tushare.py fut_basic
+python3 scripts/market.py fut_basic
 
 # 指定交易所
-python3 scripts/tushare.py fut_basic --exchange CFFEX  # 中金所
-python3 scripts/tushare.py fut_basic --exchange SHFE   # 上期所
-python3 scripts/tushare.py fut_basic --exchange DCE    # 大商所
-python3 scripts/tushare.py fut_basic --exchange CZCE   # 郑商所
+python3 scripts/market.py fut_basic --exchange CFFEX  # 中金所
+python3 scripts/market.py fut_basic --exchange SHFE   # 上期所
+python3 scripts/market.py fut_basic --exchange DCE    # 大商所
+python3 scripts/market.py fut_basic --exchange CZCE   # 郑商所
 ```
 
 **交易所代码**：
@@ -146,13 +146,13 @@ python3 scripts/tushare.py fut_basic --exchange CZCE   # 郑商所
 
 ```bash
 # 获取铜期货数据
-python3 scripts/tushare.py fut_daily --ts_code CU.SHF
+python3 scripts/market.py fut_daily --ts_code CU.SHF
 
 # 获取沪深300股指期货
-python3 scripts/tushare.py fut_daily --ts_code IF.CFX
+python3 scripts/market.py fut_daily --ts_code IF.CFX
 
 # 指定日期范围
-python3 scripts/tushare.py fut_daily --ts_code RB.SHF --start_date 20240101 --end_date 20240131
+python3 scripts/market.py fut_daily --ts_code RB.SHF --start_date 20240101 --end_date 20240131
 ```
 
 **期货代码格式**：
@@ -164,7 +164,7 @@ python3 scripts/tushare.py fut_daily --ts_code RB.SHF --start_date 20240101 --en
 ### 期货持仓排名
 
 ```bash
-python3 scripts/tushare.py fut_holding --trade_date 20240115 --symbol CU
+python3 scripts/market.py fut_holding --trade_date 20240115 --symbol CU
 ```
 
 ## 宏观经济
@@ -172,7 +172,7 @@ python3 scripts/tushare.py fut_holding --trade_date 20240115 --symbol CU
 ### GDP 数据
 
 ```bash
-python3 scripts/tushare.py gdp
+python3 scripts/market.py gdp
 ```
 
 输出示例：
@@ -187,13 +187,13 @@ python3 scripts/tushare.py gdp
 ### CPI 数据
 
 ```bash
-python3 scripts/tushare.py cpi
+python3 scripts/market.py cpi
 ```
 
 ### PPI 数据
 
 ```bash
-python3 scripts/tushare.py ppi
+python3 scripts/market.py ppi
 ```
 
 ## 命令速查表
@@ -227,7 +227,7 @@ python3 scripts/tushare.py ppi
 
 **如何获取股票代码？**
 ```bash
-python3 scripts/tushare.py stock_basic | grep "平安"
+python3 scripts/market.py stock_basic | grep "平安"
 ```
 
 ## 参考文档

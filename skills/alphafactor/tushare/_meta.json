@@ -3,9 +3,15 @@
   "slug": "tushare",
   "displayName": "Tushare Financial Data",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770096951838,
-    "commit": "https://github.com/clawdbot/skills/commit/61a7e059129cc88a0ebaf4c4ce0635141de0154e"
+    "version": "1.0.1",
+    "publishedAt": 1770184368556,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770096951838,
+      "commit": "https://github.com/clawdbot/skills/commit/61a7e059129cc88a0ebaf4c4ce0635141de0154e"
+    }
+  ]
 }
