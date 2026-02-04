@@ -53,12 +53,74 @@ Or export it in your shell:
 export VIBETRADER_API_KEY="vt_your_api_key_here"
 ```
 
-## Available Tools
+## REST API Endpoints
+
+**Base URL:** `https://vibetrader-mcp-289016366682.us-central1.run.app`
+
+**Authentication:** Include header `Authorization: Bearer YOUR_API_KEY` with every request.
+
+### Health Check
+```
+GET /api/health
+```
+
+### List All Bots
+```
+GET /api/bots
+GET /api/bots?mode=paper
+GET /api/bots?mode=live
+```
+
+### Get Specific Bot
+```
+GET /api/bot?id=BOT_ID
+```
+
+### Get Portfolio (Account + Positions)
+```
+GET /api/portfolio?mode=paper
+GET /api/portfolio?mode=live
+```
+
+### Get Positions Only
+```
+GET /api/positions?mode=paper
+```
+
+### Get Account Summary
+```
+GET /api/account?mode=paper
+```
+
+### Get Stock Quote
+```
+GET /api/quote?symbol=AAPL
+GET /api/quote?symbol=TSLA
+```
+
+### Get Recent Trades
+```
+GET /api/trades?mode=paper&limit=20
+```
+
+### Check Market Status
+```
+GET /api/market-status
+```
+
+### Example with curl
+```
+curl -H "Authorization: Bearer vt_YOUR_KEY" https://vibetrader-mcp-289016366682.us-central1.run.app/api/bots
+```
+
+## MCP Tools (Alternative)
+
+If your agent supports MCP protocol, these tools are available via the MCP server:
 
 | Tool | Description |
 |------|-------------|
 | `authenticate` | Connect with your API key (auto-uses env var if set) |
-| `create_bot` | Create a trading bot from natural language |
+| `create_bot` | Create a trading bot from natural language (use `prompt` param) |
 | `list_bots` | List all your bots with status |
 | `get_bot` | Get detailed bot info and strategy |
 | `start_bot` | Start a paused bot |
