@@ -1,5 +1,5 @@
 ---
-name: penfield-memory
+name: penfield
 description: Persistent memory for OpenClaw agents. Store decisions, preferences, and context that survive across sessions. Build knowledge graphs that compound over time. Hybrid search (BM25 + vector + graph) recalls what matters when you need it.
 metadata: {"openclaw":{"emoji":"🧠","install":[{"id":"npm","kind":"node","package":"openclaw-penfield","global":true,"label":"Install Penfield plugin"}],"requires":{"config":["plugins.entries.openclaw-penfield.enabled"]}}}
 ---
