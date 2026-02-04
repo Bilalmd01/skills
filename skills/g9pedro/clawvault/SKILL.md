@@ -1,6 +1,6 @@
 ---
 name: clawvault
-version: 1.3.0
+version: 1.4.0
 description: Structured memory system for OpenClaw agents. Context death resilience (checkpoint/recover), structured storage, Obsidian-compatible markdown, and local semantic search.
 author: Versatly
 repository: https://github.com/Versatly/clawvault
@@ -17,6 +17,22 @@ An elephant never forgets. Structured memory for OpenClaw agents.
 ```bash
 npm install -g clawvault
 ```
+
+## Quick Setup (v1.4.0)
+
+```bash
+# Auto-discover OpenClaw memory folder and configure
+clawvault setup
+```
+
+## New in v1.4.0
+
+- **qmd required** — semantic search is now core functionality
+- **clawvault setup** — auto-discovers OpenClaw's memory folder
+- **clawvault status** — vault health, checkpoint age, qmd index
+- **clawvault template** — list/create/add with 7 built-in templates
+- **clawvault link --backlinks** — see what links to a file
+- **clawvault link --orphans** — find broken wiki-links
 
 ## Setup
 
