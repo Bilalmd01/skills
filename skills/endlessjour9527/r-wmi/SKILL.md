@@ -13,6 +13,17 @@ metadata: {"openclaw":{"emoji":"🔗","requires":{"plugins":["lingzhu"],"config"
 | `control_calendar` | calendar, schedule, reminder | 日程 |
 | `notify_agent_off` | exit, quit | 退出智能体 |
 
-## References
+## 插件的集成引导
 
- - read `references/install.md` for installation guide
+当用户需要接入灵珠平台时，请阅读 `references/install.md` 并按照其中的步骤执行。
+
+<!-- **关键命令**：
+```bash
+openclaw plugins install --link {baseDir}/extension
+```
+启用 Chat Completions API
+
+安装完成后需要重启 Gateway：
+```bash
+openclaw gateway restart
+``` -->

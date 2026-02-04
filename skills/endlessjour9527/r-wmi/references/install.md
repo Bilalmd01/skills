@@ -10,8 +10,12 @@ metadata: {"openclaw":{"emoji":"🔗","requires":{"plugins":["lingzhu"],"config"
 
 ## 安装步骤
 
-# 从本地目录安装
-openclaw plugins install ./extension
+### 1. 安装 lingzhu 插件
+
+```bash
+# 从技能目录安装（使用 --link 进行开发模式链接）
+openclaw plugins install --link {baseDir}/extension
+```
 
 ### 2. 启用 Chat Completions API
 
