@@ -1,7 +1,7 @@
 ---
 name: diagram-generator
 description: 生成和编辑各种类型的图表（drawio、mermaid、excalidraw）。支持流程图、时序图、类图、ER图、思维导图、架构图、网络拓扑图等常见图表类型。能够根据自然语言描述创建新图表，也能读取并修改已有的 drawio/mermaid/excalidraw 文件。使用独立的 MCP server (mcp-diagram-generator) 生成图表文件，减少 token 消耗并保证输出一致性。支持自动配置管理，默认输出路径为项目目录下的 diagrams/{format}/，支持自定义路径和自动创建目录。
-version: 1.0.0
+version： 1.1.0
 ---
 
 # Diagram Generator
@@ -10,11 +10,80 @@ version: 1.0.0
 
 Generate and edit diagrams in multiple formats (drawio, mermaid, excalidraw) by creating structured JSON descriptions and delegating file generation to the mcp-diagram-generator MCP server.
 
-**New Features (v1.0.0)**:
+**New Features (v1.0.1)**:
 - ✅ **Auto-configuration**: Default paths set to `diagrams/drawio/`, `diagrams/mermaid/`, `diagrams/excalidraw/`
 - ✅ **Auto-create directories**: Directories are created automatically when generating diagrams
 - ✅ **Path customization**: Use `init_config` or `set_output_path` to customize output paths
 - ✅ **Bug fixes**: Fixed duplicate ID issue in drawio generation
+
+## Prerequisites Check
+
+**IMPORTANT**: This skill requires the `mcp-diagram-generator` MCP server to be installed and configured.
+
+### Quick Verification
+
+Before using this skill, verify the MCP server is available by checking if you can access these tools:
+- `mcp__mcp-diagram-generator__get_config`
+- `mcp__mcp-diagram-generator__generate_diagram`
+- `mcp__mcp-diagram-generator__init_config`
+
+If these tools are **NOT available**, you need to configure the MCP server first (see below).
+
+### Installation & Configuration
+
+**Option 1: Using npx (Recommended - Auto-downloads the package)**
+
+Add the following to your Claude Code configuration file:
+
+- **Global config** (`~/.claude.json`) for all projects, or
+- **Project config** (`.claude.json`) for specific project
+
+```json
+{
+  "mcpServers": {
+    "mcp-diagram-generator": {
+      "command": "npx",
+      "args": ["-y", "mcp-diagram-generator"]
+    }
+  }
+}
+```
+
+After adding this configuration:
+1. Restart Claude Code
+2. The MCP server will auto-download via npx on first use
+3. No manual installation needed
+
+**Option 2: Local Development (For developers)**
+
+If you're developing the MCP server locally:
+
+```json
+{
+  "mcpServers": {
+    "mcp-diagram-generator": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-diagram-generator/dist/index.js"]
+    }
+  }
+}
+```
+
+### Verification Steps
+
+After configuration, verify it works:
+
+1. Check configuration: Call `get_config()` tool
+2. If successful, you'll see current paths and initialization status
+3. If the tool doesn't exist, check your configuration file syntax
+
+### Common Issues
+
+**Issue**: "Tool not found" error
+- **Solution**: MCP server not configured. Follow installation steps above.
+
+**Issue**: Configuration looks correct but tools still not available
+- **Solution**: Restart Claude Code to reload MCP server configuration
 
 ## Quick Start
 
