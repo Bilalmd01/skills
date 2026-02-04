@@ -1,0 +1,11 @@
+{
+  "owner": "fusionlabssource",
+  "slug": "clawprint-verify",
+  "displayName": "ClawPrint - Captchas for AI verification",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770187427757,
+    "commit": null
+  },
+  "history": []
+}
