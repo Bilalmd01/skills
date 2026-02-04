@@ -3,9 +3,15 @@
   "slug": "token-layer",
   "displayName": "Token Layer",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770169157781,
-    "commit": "https://github.com/clawdbot/skills/commit/ff11001b6e86017aa584fc3e034c42e703edaead"
+    "version": "1.0.3",
+    "publishedAt": 1770218905638,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770169157781,
+      "commit": "https://github.com/clawdbot/skills/commit/ff11001b6e86017aa584fc3e034c42e703edaead"
+    }
+  ]
 }
