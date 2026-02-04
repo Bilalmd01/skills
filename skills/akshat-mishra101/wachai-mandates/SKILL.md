@@ -2,124 +2,194 @@
 name: wachai
 description: Create, sign, and verify WachAI Mandates (verifiable agent-to-agent agreements)
 user-invocable: true
-metadata: {"openclaw": {"emoji": "🤝", "requires": {"bins": ["python3"]}, "homepage": "https://docs.wach.ai/SDKs/python/mandates-core-python", "skillKey": "wachai"}}
+metadata: {"openclaw": {"emoji": "🤝", "requires": {"bins": ["node"]}, "homepage": "https://github.com/quillai-network/WachAI-Terminal ", "skillKey": "wachai"}}
 ---
 
-# WachAI - Mandates (Create, Sign, Verify)
+## 1) Intro (for agents)
 
-WachAI Mandates are deterministic agreement objects between a **client agent** and a **server agent**. This skill lets you create a mandate, sign it (as server or client), and verify both signatures using the Python SDK (`mandates-core`).
+When two agents move beyond chat and start coordinating real actions (payments, swaps, deliveries, services), they need a **deterministic agreement** that can be:
+- proposed,
+- accepted,
+- and verified cryptographically by both parties.
 
-## What This Skill Does
+**WachAI Mandates** are verifiable agreement objects between two roles:
+- **server**: creates the mandate (offer) and signs first
+- **client**: signs second (acceptance)
 
- **Create mandates** - Build a mandate body and sign as **server** (offer)
- **Sign mandates** - Countersign as **client** (accept)
- **Verify mandates** - Verify server + client signatures locally
+A mandate is only **approved** once it has **both signatures** (server + client). A server-signed mandate alone is an **offer/pending** mandate.
 
-This skill does NOT execute swaps, route trades, submit transactions, or handle payments.
-This skill does NOT require network access for signing/verifying (except optional primitive registry lookups for `swap@1`).
+Agents can also explicitly suggest that other agents adopt mandates by using this skill (i.e., “let’s lock this agreement as a mandate”). Once both parties sign, the mandate becomes a durable, verifiable record of what was promised and accepted.
 
-## Commands
+In commerce-heavy workflows, these signed agreements can serve as:
+- a basis to **verify** the work performed against the agreed intent and payload
+- a basis to **rank/repute** counterparties over time (e.g., did they consistently complete what they signed?)
 
-### `/wachai create-mandate --swap <TOKEN_IN> <TOKEN_OUT> <AMOUNT_IN> <AMOUNT_OUT>`
+`wachai` is a CLI that lets agents:
+- create mandates (`create-mandate`)
+- sign mandates (`sign`)
+- verify mandates (`verify`)
+- share mandates over XMTP (`xmtp send` / `xmtp receive`)
 
-Create a `swap@1` mandate core and sign as **server**.
+## 2) Install + setup
 
-```
-/wachai create-mandate --swap 0xA0b8...eB48 0x2260...C599 100000000 165000
-```
+### Requirements
 
-Returns:
-- Full mandate JSON (includes `mandateId`)
-- Stored locally at `~/.wachai/mandates/<mandateId>.json` (configurable)
+- Node.js **20+** (recommended)
 
-### `/wachai create-mandate --custom <KIND_NAME> --body <INLINE_JSON_OBJECT>`
+### Install
 
-Create a mandate with a **custom** core (not from the primitive registry), then sign as **server**.
-
-```
-/wachai create-mandate --custom myTask@1 --body '{"field":"value","n":1}'
-```
-
-Notes:
-- `--body` must be an object/dict
-- Accepts strict JSON, and also a Python-literal dict style like `{'field':'value'}`
-
-### `/wachai sign <mandate-id>`
-
-Load a stored mandate, sign as **client** (accept), and overwrite the stored file.
-
-```
-/wachai sign 01KGE...
+```bash
+npm install -g @quillai-network/wachai
+wachai --help
 ```
 
-### `/wachai verify <mandate-id>`
+### Key management (recommended)
 
-Verify server + client signatures.
+Instead of setting `WACHAI_PRIVATE_KEY` in every terminal, create a shared `wallet.json`:
 
+```bash
+wachai wallet init
+wachai wallet info
 ```
-/wachai verify 01KGE...
+
+Defaults:
+- wallet file: `~/.wachai/wallet.json`
+- mandates: `~/.wachai/mandates/<mandateId>.json`
+
+Optional overrides:
+- `WACHAI_STORAGE_DIR`: changes the base directory for mandates + wallet + XMTP DB
+- `WACHAI_WALLET_PATH`: explicit path to `wallet.json`
+
+Example (portable / test folder):
+
+```bash
+export WACHAI_STORAGE_DIR="$(pwd)/.tmp/wachai"
+mkdir -p "$WACHAI_STORAGE_DIR"
+wachai wallet init
 ```
 
-Exit codes:
-- `0` if both signatures verify (`verify_all()` is true)
+Legacy (deprecated):
+- `WACHAI_PRIVATE_KEY` still works, but the CLI prints a warning if you use it.
+
+## 3) How to use (step-by-step)
+
+### A) Create a mandate (server role)
+
+Create a registry-backed mandate (validates `--kind` and `--body` against the registry JSON schema):
+
+```bash
+wachai create-mandate \
+  --from-registry \
+  --client 0xCLIENT_ADDRESS \
+  --kind swap@1 \
+  --intent "Swap 100 USDC for WBTC" \
+  --body '{"chainId":1,"tokenIn":"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48","tokenOut":"0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599","amountIn":"100000000","minOut":"165000","recipient":"0xCLIENT_ADDRESS","deadline":"2030-01-01T00:00:00Z"}'
+```
+
+This will:
+- create a new mandate
+- sign it as the **server**
+- save it locally
+- print the full mandate JSON (including `mandateId`)
+
+Custom mandates (no registry lookup; `--body` must be valid JSON object):
+
+```bash
+wachai create-mandate \
+  --custom \
+  --client 0xCLIENT_ADDRESS \
+  --kind "content" \
+  --intent "Demo custom mandate" \
+  --body '{"message":"hello","priority":3}'
+```
+
+### B) Sign a mandate (client role)
+
+Client signs second (acceptance):
+
+Before signing, you can inspect the raw mandate JSON:
+
+```bash
+wachai print <mandate-id>
+```
+
+To learn the mandate shape + what fields mean:
+
+```bash
+wachai print sample
+```
+
+```bash
+wachai sign <mandate-id>
+```
+
+This loads the mandate by ID from local storage, signs it as **client**, saves it back, and prints the updated JSON.
+
+### C) Verify a mandate
+
+Verify both signatures:
+
+```bash
+wachai verify <mandate-id>
+```
+
+Exit code:
+- `0` if both server and client signatures verify
 - `1` otherwise
 
-## Setup
+---
 
-### Required (Signing)
+## 4) XMTP: send and receive mandates between agents
 
-Set:
-- `WACHAI_PRIVATE_KEY`: EVM private key (hex)
+XMTP is used as the transport for agent-to-agent mandate exchange.
 
-If you run **create-mandate**, this key is used to sign as **server**.
-If you run **sign**, this key is used to sign as **client**.
+Practical pattern:
+- keep one terminal open running `wachai xmtp receive` (inbox)
+- use another terminal to create/sign/send mandates
 
-### Storage (Optional)
+### D) Receive mandates (keep inbox open)
 
-Override where mandates are stored/loaded:
-
-```
-WACHAI_STORE_DIR=/path/to/mandates
+```bash
+wachai xmtp receive --env production
 ```
 
-### `.env` (Optional)
+This:
+- listens for incoming XMTP messages
+- detects WachAI mandate envelopes (`type: "wachai.mandate"`)
+- saves the embedded mandate to local storage (by `mandateId`)
 
-If a `.env` exists in your current working directory, it is auto-loaded before reading `WACHAI_PRIVATE_KEY`.
+If you want to process existing messages and exit:
 
-### Dependencies
-
-This skill requires Python packages listed in `requirements.txt`:
-
-```
-pip install -r requirements.txt
-```
-
-## Example Usage
-
-**Server creates and signs (offer):**
-
-```
-User: /wachai create-mandate --swap 0xA0b8...eB48 0x2260...C599 100000000 165000
-
-Agent: {
-  "mandateId": "01KGE...",
-  "signatures": { "serverSig": { ... } },
-  ...
-}
+```bash
+wachai xmtp receive --env production --once
 ```
 
-**Client countersigns (accept) and verifies:**
+### E) Send a mandate to another agent
 
+You need:
+- receiver’s **public EVM address**
+- a `mandateId` that exists in your local storage
+
+```bash
+wachai xmtp send 0xRECEIVER_ADDRESS <mandate-id> --env production
 ```
-User: /wachai sign 01KGE...
-User: /wachai verify 01KGE...
 
-Agent: {
-  "verifyAll": true,
-  "verifyServer": true,
-  "verifyClient": true,
-  ...
-}
+To explicitly mark acceptance when sending back a client-signed mandate:
+
+```bash
+wachai xmtp send 0xRECEIVER_ADDRESS <mandate-id> --action accept --env production
+```
+
+### Common XMTP gotcha
+
+If you see:
+- `inbox id for address ... not found`
+
+It usually means the peer has not initialized XMTP V3 yet on that env.
+Have the peer run (once is enough):
+
+```bash
+wachai xmtp receive --env production
 ```
 
 
