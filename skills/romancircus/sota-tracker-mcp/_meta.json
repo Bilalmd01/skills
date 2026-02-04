@@ -1,0 +1,11 @@
+{
+  "owner": "romancircus",
+  "slug": "sota-tracker-mcp",
+  "displayName": "SOTA AI Model Tracker",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770208887302,
+    "commit": null
+  },
+  "history": []
+}
