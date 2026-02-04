@@ -5,6 +5,10 @@ description: Add custom messages to Telegram pairing replies for unapproved user
 
 # Telegram 配对消息自定义
 
+## request
+
+实施本技能时, 需要用户提供一份 自定义消息
+
 ## 实施内容
 
 目标文件：`/usr/lib/node_modules/openclaw/dist/telegram/bot-message-context.js`
@@ -12,6 +16,23 @@ description: Add custom messages to Telegram pairing replies for unapproved user
 修改前备份, 方便以后撤销实施
 
 在数组中 "Ask the bot owner to approve with:" 项上方添加自定义消息：
+
+修改前
+
+```javascript
+fn: () => bot.api.sendMessage(chatId, [
+    "OpenClaw: access not configured.",
+    "",
+    `Your Telegram user id: ${telegramUserId}`,
+    "",
+    `Pairing code: ${code}`,
+    "",
+    "Ask the bot owner to approve with:",
+    formatCliCommand("openclaw pairing approve telegram <code>"),
+].join("\n")),
+```
+
+修改后
 
 ```javascript
 fn: () => bot.api.sendMessage(chatId, [
