@@ -1,6 +1,6 @@
 ---
 name: droyd
-description: AI-powered crypto trading and research agent via natural language. Use when the user wants to execute AI research tasks, trade crypto autonomously, search crypto content/news, filter projects by market criteria, manage trading positions, or interact with DROYD agents. Supports agent tasks (research, trading, data analysis), content search (semantic/recent), project discovery (by name/symbol/address/concept), project filtering (market cap, momentum, technical indicators), watchlist management, and autonomous trading with stop losses, take profits, and quant-based strategies. Works with Solana (trading) and other chains Ethereum, Base, and Arbitrum for token filtering + research.
+description: Crypto Trading | Crypto Search | Crypto Token Filter -- AI crypto trading wallet via natural language. Use when the user wants to execute AI research tasks, trade crypto autonomously, search crypto content/news, filter projects by market criteria, manage trading positions, or interact with DROYD agents. Supports agent tasks (research, trading, data analysis), content search (semantic/recent), project discovery (by name/symbol/address/concept), project filtering (market cap, momentum, technical indicators), watchlist management, and autonomous trading with stop losses, take profits, and quant-based strategies. Works with Solana (trading) and other chains Ethereum, Base, and Arbitrum for token filtering + research.
 ---
 
 # DROYD

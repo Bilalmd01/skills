@@ -3,11 +3,16 @@
   "slug": "droyd",
   "displayName": "Droyd",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770131442323,
-    "commit": "https://github.com/clawdbot/skills/commit/9f2b681aa9a2a8d33b4d1d04169a330628c23c2f"
+    "version": "1.0.3",
+    "publishedAt": 1770211431317,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770131442323,
+      "commit": "https://github.com/clawdbot/skills/commit/9f2b681aa9a2a8d33b4d1d04169a330628c23c2f"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770091608084,
