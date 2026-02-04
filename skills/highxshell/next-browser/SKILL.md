@@ -1,6 +1,6 @@
 ---
 name: next-browser
-description: Use Nextbrowser cloud API to spin up cloud browsers for Openclaw and run autonomous browser tasks. Primary use is creating browser sessions with profiles (persisted logins/cookies) that Openclaw can control. Secondary use is running task subagents for fast autonomous browser automation. Docs at docs.nextbrowser.com.
+description: Use Nextbrowser cloud API to spin up cloud browsers for Openclaw to run autonomous browser tasks. Primary use is creating browser sessions with profiles (persisted logins/cookies) that Openclaw can control to manage social media and other online accounts. Secondary use is running task subagents for fast autonomous browser automation under residential proxy, browser stealth, and CAPTCHA solving capability. Docs at docs.nextbrowser.com.
 ---
 
 # Nextbrowser
@@ -47,6 +47,16 @@ curl -X DELETE "https://app.nextbrowser.com/api/v1/browser/profiles/<profile-id>
 ```
 
 ---
+## 2. Credentials Manager
+
+The Credentials Manager securely stores and reuses authentication data across browser runs and autonomous tasks.
+
+```bash
+# List credentials
+curl "https://app.nextbrowser.com/api/v1/users/credentials" -H "Authorization: x-api-key $API_KEY"
+```
+
+---
 
 ## 3. Tasks (Subagent)
 
@@ -60,9 +70,16 @@ curl -X POST "https://app.nextbrowser.com/api/v1/chat/tasks" \
   -H "Authorization: x-api-key $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "task_description": "Go to amazon.com and find the price of the MacBook Air M3",
+    "task_description": "'"\
+Go to Reddit.com account, check if the account is logged in (if not, use credentials stored). \
+Find 10 relevant posts on the topic of AI Agents, upvote 8 of them and post 3 witty-sounding comments \
+that a cynical and funny Reddit user would post. Ensure that the comment is posted, ask for approval \
+if you are not sure whether such comment is okay. By the end, you should have at least 10 relevant posts \
+viewed, 8 upvotes, and 3 comments."\
+"'",
     "mode": "fast",
     "profile_id": "<profile-id>",
+    "credentials": ["<credential-id>"],
     "skip_plan_approval": true
   }'
 ```
@@ -79,7 +96,7 @@ curl "https://app.nextbrowser.com/api/v1/chat/tasks/<task-id>" -H "Authorization
     "success": true,
     "payload": {
         "status": "finished",
-        "output": "The current price for a new 2024 MacBook Air 13-inch with M3 chip on Amazon is CAD 2,046.01",
+        "output": "Task completed. 10 relevant posts are viewed, 8 upvotes are done and 3 comments posted.",
         "isSuccess": true
     },
     "errors": {},
@@ -87,7 +104,7 @@ curl "https://app.nextbrowser.com/api/v1/chat/tasks/<task-id>" -H "Authorization
 }
 ```
 
-Status values: `processing`, `completed`, `failed`, `stopped`
+Status values: `processing`, `finished`, `failed`
 
 ### Task options
 
@@ -96,6 +113,7 @@ Status values: `processing`, `completed`, `failed`, `stopped`
 | `task_description` | Your prompt (required) |
 | `mode` | Always use `fast` |
 | `profile_id` | Use a profile for auth |
+| `credentials` | List of credential IDs for login |
 | `skip_plan_approval` | Always use `true`|
 
 ---
