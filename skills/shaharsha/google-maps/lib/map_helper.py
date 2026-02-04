@@ -10,13 +10,13 @@ class GoogleMapsElite:
     Supports Places API (New), Details, and Distance Matrix.
     """
     def __init__(self):
-        # Use Environment Variable (OpenClaw Standard)
-        self.api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+        # Support multiple env var names for flexibility
+        self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE_MAPS_API_KEY")
         self.base_url = "https://maps.googleapis.com/maps/api"
 
     def _validate_key(self):
         if not self.api_key:
-            print(json.dumps({"error": "Missing GOOGLE_MAPS_API_KEY environment variable"}))
+            print(json.dumps({"error": "Missing API key. Set GOOGLE_API_KEY environment variable."}))
             sys.exit(1)
 
     def search(self, query, location="32.0684,34.7905", radius=2000, open_now=False, language="he"):
