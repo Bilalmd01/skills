@@ -26,8 +26,8 @@ python3 scripts/synth.py BTC ETH SOL --compare
 # All assets overview
 python3 scripts/synth.py --all
 
-# Monte Carlo simulation
-python3 scripts/synth.py BTC --simulate --days 7
+# Monte Carlo simulation (24h max)
+python3 scripts/synth.py BTC --simulate --hours 12
 
 # Generate chart
 python3 scripts/synth.py --all --chart
@@ -85,9 +85,9 @@ Get a ranked table of all assets by volatility.
 
 ### 3. Monte Carlo Projections
 ```bash
-python3 scripts/synth.py BTC --simulate --days 30 --paths 1000 --chart
+python3 scripts/synth.py BTC --simulate --hours 24 --paths 1000 --chart
 ```
-Generate probabilistic price ranges using forecast volatility.
+Generate probabilistic price ranges using forecast volatility (24h max - Synthdata forecast window).
 
 ### 4. Scheduled Reports
 Create a cron job for daily Slack/Telegram forecasts (see examples/use-cases.md).

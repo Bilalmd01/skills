@@ -35,7 +35,7 @@ python3 scripts/synth.py BTC ETH SOL --compare
 python3 scripts/synth.py --all
 
 # Monte Carlo simulation
-python3 scripts/synth.py BTC --simulate --days 7 --chart
+python3 scripts/synth.py BTC --simulate --hours 24 --chart
 
 # JSON output for integration
 python3 scripts/synth.py BTC --json
