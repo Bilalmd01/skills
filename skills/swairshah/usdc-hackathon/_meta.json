@@ -1,13 +1,18 @@
 {
   "owner": "swairshah",
   "slug": "usdc-hackathon",
-  "displayName": "USDC Hackathon",
+  "displayName": "Usdc Hackathon",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1770162183374,
-    "commit": "https://github.com/clawdbot/skills/commit/edbb109a78b4aa86b29a54df9b79ad836100047a"
+    "version": "1.0.8",
+    "publishedAt": 1770272141802,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1770162183374,
+      "commit": "https://github.com/clawdbot/skills/commit/edbb109a78b4aa86b29a54df9b79ad836100047a"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770102087553,
