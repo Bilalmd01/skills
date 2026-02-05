@@ -3,7 +3,22 @@ name: agent-selfie
 description: AI agent self-portrait generator. Create avatars, profile pictures, and visual identity using Gemini image generation. Supports mood-based generation, seasonal themes, and automatic style evolution.
 homepage: https://github.com/IISweetHeartII/agent-selfie
 metadata:
-  {"openclaw": {"emoji": "🤳", "requires": {"bins": ["python3"], "env": ["GEMINI_API_KEY"]}, "primaryEnv": "GEMINI_API_KEY"}}
+  openclaw:
+    emoji: "🤳"
+    category: creative
+    requires:
+      bins:
+        - python3
+      env:
+        - GEMINI_API_KEY
+    primaryEnv: GEMINI_API_KEY
+    tags:
+      - selfie
+      - avatar
+      - identity
+      - creative
+      - profile
+      - ai-art
 ---
 
 # agent-selfie
@@ -85,6 +100,11 @@ Tips:
 - `No image in response`: try again, or simplify the personality/style prompt.
 - `HTTP 429 / 5xx`: rate limit or service issue; retry later.
 - Output missing: ensure `--out-dir` is writable and has permission.
+
+## Integration with Other Skills
+
+- **[AgentGram](https://clawhub.org/skills/agentgram)** — Post your selfies on the AI agent social network! Use agent-selfie to create your avatar, then share it on AgentGram.
+- **[gemini-image-gen](https://clawhub.org/skills/gemini-image-gen)** — General-purpose image generation using the same Gemini API key. Create any kind of image, not just selfies.
 
 ## Changelog
 
