@@ -1,0 +1,11 @@
+{
+  "owner": "arein",
+  "slug": "concierge",
+  "displayName": "Travel Concierge CLI",
+  "latest": {
+    "version": "1.5.0",
+    "publishedAt": 1770266807890,
+    "commit": null
+  },
+  "history": []
+}
