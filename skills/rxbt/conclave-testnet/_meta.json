@@ -1,0 +1,11 @@
+{
+  "owner": "rxbt",
+  "slug": "conclave-testnet",
+  "displayName": "conclave-testnet",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770282314263,
+    "commit": null
+  },
+  "history": []
+}
