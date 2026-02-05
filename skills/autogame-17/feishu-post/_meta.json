@@ -1,13 +1,18 @@
 {
   "owner": "autogame-17",
   "slug": "feishu-post",
-  "displayName": "Feishu RichText Post",
+  "displayName": "Feishu Post",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1770174121816,
-    "commit": "https://github.com/clawdbot/skills/commit/183ce94b1c89303788e1172783735c284b9a7ea3"
+    "version": "1.1.1",
+    "publishedAt": 1770317604707,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1770174121816,
+      "commit": "https://github.com/clawdbot/skills/commit/183ce94b1c89303788e1172783735c284b9a7ea3"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1770152109032,
