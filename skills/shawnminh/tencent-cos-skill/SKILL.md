@@ -1,5 +1,5 @@
 ---
-name: tencent-cos
+name: tencentcloud-cos-skill
 description: 腾讯云对象存储(COS)和数据万象(CI)集成 - 基于官方MCP服务器的Clawdbot技能
 metadata:
  {
