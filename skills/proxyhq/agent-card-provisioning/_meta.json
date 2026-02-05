@@ -1,0 +1,11 @@
+{
+  "owner": "proxyhq",
+  "slug": "agent-card-provisioning",
+  "displayName": "Agent Card Provisioning",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770216982992,
+    "commit": null
+  },
+  "history": []
+}
