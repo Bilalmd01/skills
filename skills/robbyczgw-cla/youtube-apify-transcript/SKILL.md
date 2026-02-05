@@ -1,9 +1,8 @@
 ---
 name: youtube-apify-transcript
-version: 1.0.6
+version: 1.0.7
 description: Fetch YouTube transcripts via APIFY API. Works from cloud IPs (Hetzner, AWS, etc.) by bypassing YouTube's bot detection. Free tier includes $5/month credits (~714 videos). No credit card required.
 tags: [youtube, transcript, apify, video, subtitles, captions, cloud-ip, free-tier, web-scraping]
-metadata: {"clawdbot":{"requires":{"bins":["python3"],"env":["APIFY_API_TOKEN"]},"primaryEnv":"APIFY_API_TOKEN"}}
 ---
 
 # youtube-apify-transcript
@@ -101,3 +100,14 @@ The script handles common errors:
 - Video has no transcript
 - API quota exceeded
 - Network errors
+
+## Metadata
+
+```yaml
+metadata:
+  clawdbot:
+    emoji: "📹"
+    requires:
+      env: ["APIFY_API_TOKEN"]
+      bins: ["python3"]
+```
