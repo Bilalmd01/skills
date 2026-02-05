@@ -57,7 +57,8 @@ Each file has ONE job. Check for scope creep:
 
 ### 3. Memory Hygiene
 
-- [ ] Daily files use `YYYY-MM-DD.md` format
+- [ ] Daily files use `YYYY-MM-DD.md` or `YYYY-MM-DD-slug.md` format
+- [ ] Hook-generated session files (`session-memory` hook creates `YYYY-MM-DD-slug.md`) reviewed periodically
 - [ ] Reference docs use descriptive names (not dates): `project-notes.md`, `api-guide.md`
 - [ ] MEMORY.md contains curated insights, not raw logs
 - [ ] No duplicate information across MEMORY.md and daily files
