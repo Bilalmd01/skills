@@ -3,9 +3,15 @@
   "slug": "audio-cog",
   "displayName": "audio-cog",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770176344265,
-    "commit": "https://github.com/clawdbot/skills/commit/02262dc32437fe1e70e09c4893b1d6f40ca6b11a"
+    "version": "1.0.1",
+    "publishedAt": 1770270609732,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770176344265,
+      "commit": "https://github.com/clawdbot/skills/commit/02262dc32437fe1e70e09c4893b1d6f40ca6b11a"
+    }
+  ]
 }
