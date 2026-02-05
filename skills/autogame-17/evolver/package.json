@@ -1,7 +1,7 @@
 {
   "name": "evolver",
-  "version": "1.1.0",
-  "description": "A self-evolution engine for AI agents. Features automated log analysis, genetic mutation (randomized behavior shifts), and recursive self-improvement loops.",
+  "version": "1.2.0",
+  "description": "A self-evolution engine for AI agents. Features automated log analysis and protocol-constrained evolution with auditable assets.",
   "main": "index.js",
   "keywords": [
     "openclaw",
@@ -14,5 +14,9 @@
   ],
   "author": "OpenClaw",
   "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "run": "node index.js run"
+  },
   "dependencies": {}
 }

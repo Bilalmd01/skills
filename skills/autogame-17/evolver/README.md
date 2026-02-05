@@ -1,54 +1,157 @@
 # 🧬 Capability Evolver
 
-[🇨🇳 中文文档](README_CN.md)
+![Capability Evolver Cover](assets/cover.png)
+
+[Chinese Docs](README.zh-CN.md)
 
 **"Evolution is not optional. Adapt or die."**
 
-The **Capability Evolver** is a meta-skill that empowers OpenClaw agents to introspect their own runtime logs, identify inefficiencies or errors, and autonomously write code patches to improve their own performance.
+**Three lines**
+- **What it is**: A protocol-constrained self-evolution engine for AI agents.
+- **Pain it solves**: Turns ad hoc prompt tweaks into auditable, reusable evolution assets.
+- **Use in 30 seconds**: `node index.js` to generate a GEP-guided evolution prompt.
 
-It features a **Genetic Mutation Protocol** to introduce controlled behavioral drift, preventing the agent from getting stuck in local optima.
+Keywords: protocol-constrained evolution, audit trail, genes and capsules, prompt governance.
 
-## ✨ Features
+## Try It Now (Minimal)
 
-- **🔍 Auto-Log Analysis**: Scans session logs (`.jsonl`) for errors and patterns.
-- **🛠️ Self-Repair**: Detects runtime crashes and writes fixes.
-- **🧬 Genetic Mutation**: Randomized "mutation" cycles to encourage innovation over stagnation.
-- **🔌 Dynamic Integration**: Automatically detects and uses local tools (like `git-sync` or `feishu-card`) if available, but works out-of-the-box without them.
-- **🐕 Mad Dog Mode**: Continuous self-healing loop.
+```bash
+node index.js
+```
 
-## 📦 Usage
+## What It Does
+
+The **Capability Evolver** inspects runtime history, extracts signals, selects a Gene/Capsule, and emits a strict GEP protocol prompt to guide safe evolution.
+
+## Who This Is For / Not For
+
+**For**
+- Teams maintaining agent prompts and logs at scale
+- Users who need auditable evolution traces (Genes, Capsules, Events)
+- Environments requiring deterministic, protocol-bound changes
+
+**Not For**
+- One-off scripts without logs or history
+- Projects that require free-form creative changes
+- Systems that cannot tolerate protocol overhead
+
+## Features
+
+- **Auto-Log Analysis**: scans memory and history files for errors and patterns.
+- **Self-Repair Guidance**: emits repair-focused directives from signals.
+- **GEP Protocol**: standardized evolution with reusable assets.
+- **One-Command Evolution**: `node index.js` to generate the prompt.
+
+## Typical Use Cases
+
+- Harden a flaky agent loop by enforcing validation before edits
+- Encode recurring fixes as reusable Genes and Capsules
+- Produce auditable evolution events for review or compliance
+
+## Anti-Examples
+
+- Rewriting entire subsystems without signals or constraints
+- Using the protocol as a generic task runner
+- Producing changes without recording EvolutionEvent
+
+## FAQ
+
+**Does this edit code automatically?**
+No. It generates a protocol-bound prompt and assets that guide evolution.
+
+**Do I need to use all GEP assets?**
+No. You can start with default Genes and extend over time.
+
+**Is this safe in production?**
+Use review mode and validation steps. Treat it as a safety-focused evolution tool, not a live patcher.
+
+## Roadmap
+
+- Add a one-minute demo workflow
+- Add a public changelog
+- Add a comparison table vs alternatives
+
+## GEP Protocol (Auditable Evolution)
+
+This repo includes a protocol-constrained prompt mode based on GEP (Genome Evolution Protocol).
+
+- **Structured assets** live in `assets/gep/`:
+  - `assets/gep/genes.json`
+  - `assets/gep/capsules.json`
+  - `assets/gep/events.jsonl`
+- **Selector** logic uses extracted signals to prefer existing Genes/Capsules and emits a JSON selector decision in the prompt.
+- **Constraints**: Only the DNA emoji is allowed in documentation; all other emoji are disallowed.
+
+## Usage
 
 ### Standard Run (Automated)
 ```bash
-node skills/capability-evolver/index.js
+node index.js
 ```
 
 ### Review Mode (Human-in-the-Loop)
-Pauses for human confirmation before applying changes.
 ```bash
-node skills/capability-evolver/index.js --review
+node index.js --review
 ```
 
-### Continuous Loop (Daemon)
-Runs indefinitely. Ideal for background services.
+### Continuous Loop
 ```bash
-node skills/capability-evolver/index.js --loop
+node index.js --loop
 ```
 
-## ⚙️ Configuration
+## Public Release
 
-The skill adapts to your environment.
+This repository is the public distribution.
 
-| Env Var | Description | Default |
-| :--- | :--- | :--- |
-| `EVOLVE_REPORT_TOOL` | Tool to use for reporting (e.g., `feishu-card`) | `message` |
-| `MEMORY_DIR` | Path to agent memory | `../../memory` |
+- Build public output: `npm run build`
+- Publish public output: `npm run publish:public`
+- Dry run: `DRY_RUN=true npm run publish:public`
 
-## 🛡️ Safety Protocols
+Required env vars:
 
-1.  **Single Process**: The evolver cannot spawn child evolvers (prevents fork bombs).
-2.  **Stabilization**: If recent errors are high, it forces a **Repair Mutation** (bug fixing) instead of innovation.
-3.  **Environment Check**: External integrations (like Git syncing) are only enabled if the corresponding skills are present.
+- `PUBLIC_REMOTE` (default: `public`)
+- `PUBLIC_REPO` (e.g. `autogame-17/evolver`)
+ - `PUBLIC_OUT_DIR` (default: `dist-public`)
+ - `PUBLIC_USE_BUILD_OUTPUT` (default: `true`)
 
-## 📜 License
+Optional env vars:
+
+- `SOURCE_BRANCH` (default: `main`)
+- `PUBLIC_BRANCH` (default: `main`)
+- `RELEASE_TAG` (e.g. `v1.0.41`)
+- `RELEASE_TITLE` (e.g. `v1.0.41 - GEP protocol`)
+- `RELEASE_NOTES` or `RELEASE_NOTES_FILE`
+- `GITHUB_TOKEN` (or `GH_TOKEN` / `GITHUB_PAT`) for GitHub Release creation
+- `RELEASE_SKIP` (`true` to skip creating a GitHub Release; default is to create)
+- `RELEASE_USE_GH` (`true` to use `gh` CLI instead of GitHub API)
+- `PUBLIC_RELEASE_ONLY` (`true` to only create a Release for an existing tag; no publish)
+
+## Versioning (SemVer)
+
+MAJOR.MINOR.PATCH
+
+- MAJOR: incompatible changes
+- MINOR: backward-compatible features
+- PATCH: backward-compatible bug fixes
+
+## Configuration & Decoupling
+
+This skill is designed to be **environment-agnostic**. It uses standard OpenClaw tools by default.
+
+### Local Overrides (Injection)
+You can inject local preferences (e.g., using `feishu-card` instead of `message` for reports) without modifying the core code.
+
+**Method 1: Environment Variables**
+Set `EVOLVE_REPORT_TOOL` in your `.env` file:
+```bash
+EVOLVE_REPORT_TOOL=feishu-card
+```
+
+**Method 2: Dynamic Detection**
+The script automatically detects if compatible local skills (like `skills/feishu-card`) exist in your workspace and upgrades its behavior accordingly.
+
+## License
+
 MIT
+
+
