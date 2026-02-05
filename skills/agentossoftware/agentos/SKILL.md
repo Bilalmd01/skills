@@ -1,6 +1,6 @@
 # AgentOS SDK for Clawdbot
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 The complete AgentOS integration for Clawdbot. One install, full access to everything.
 
@@ -25,9 +25,39 @@ aos sync
 ```
 
 ### What Gets Synced
-- **CONTEXT.md** — Your working memory/current state
+- **CONTEXT.md** — Your working memory/current state (MUST include active conversation state)
 - **Daily notes** — Today's activity log (`memory/daily/YYYY-MM-DD.md`)
 - **Heartbeat status** — Last sync timestamp, active status
+
+---
+
+## ⚠️ HARD RULE: Conversation State Persistence
+
+**CONTEXT.md MUST always contain the active conversation state as the FIRST section.**
+
+This is the core of memory persistence. System health is secondary — conversation state is primary. Your human should NEVER have to repeat themselves after a compaction.
+
+### Required CONTEXT.md Format
+
+Every CONTEXT.md backup must start with:
+
+```markdown
+## 🔴 ACTIVE CONVERSATION
+- **Topic:** [Project + specific feature/topic being discussed]
+- **Last human message:** [What they asked/said]
+- **Your last response:** [What you answered]
+- **Unanswered questions:** [Anything pending]
+- **Expected next topic:** [What they'll likely ask next]
+```
+
+### When to Update
+1. After EVERY human message
+2. Before EVERY heartbeat sync
+3. On pre-compaction flush (priority #1)
+4. After completing any task
+
+### The Test
+"If I lost all memory right now, could I seamlessly continue this conversation?" If no → backup is incomplete.
 
 ### Add to Your HEARTBEAT.md
 
