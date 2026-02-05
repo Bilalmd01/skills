@@ -3,11 +3,16 @@
   "slug": "homeassistant-n8n-agent",
   "displayName": "Homeassistant N8n Agent",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770085295268,
-    "commit": "https://github.com/clawdbot/skills/commit/2feec17e5110afefe5d0594b9a337170726a1634"
+    "version": "1.0.3",
+    "publishedAt": 1770241478540,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770085295268,
+      "commit": "https://github.com/clawdbot/skills/commit/2feec17e5110afefe5d0594b9a337170726a1634"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770083865624,
