@@ -1,36 +1,33 @@
 ---
 name: Praesidia
-description: Verify AI agents, fetch A2A agent cards, and manage agent identity via Praesidia's trust and verification layer.
+description: Verify AI agents, check trust scores (0-100), fetch A2A agent cards, discover marketplace agents, apply guardrails for security and compliance. Use when user mentions agent verification, trust scores, agent discovery, A2A protocol, agent identity, agent marketplace, guardrails, security policies, content moderation, or asks "is this agent safe?" or "find agents that can [task]" or "apply guardrails to protect my agent".
 metadata: {"openclaw":{"requires":{"env":["PRAESIDIA_API_KEY"]},"primaryEnv":"PRAESIDIA_API_KEY","homepage":"https://praesidia.ai","emoji":"🛡️"}}
 ---
 
-# Praesidia Agent Identity & Verification
+# Praesidia Agent Identity, Verification & Guardrails
 
-Use Praesidia to verify AI agent identities, fetch A2A agent cards, list your agents, and check trust scores.
+Verify AI agents, check trust scores (0-100), discover marketplace agents, and apply guardrails for security and compliance.
 
-## What This Skill Does
+## Core Capabilities
 
-- **Verify agent identity** - Check if an agent is registered and verified in Praesidia
-- **Fetch agent cards** - Get A2A-compliant agent cards with capabilities and metadata
-- **List agents** - Discover your registered agents or public agents
-- **Check trust scores** - View agent trust levels and verification status
+- **Verify agents** - Check if an agent is registered, verified, and trustworthy
+- **Trust scores** - View 0-100 trust ratings and verification status
+- **Agent discovery** - Search marketplace for public agents by capability
+- **Guardrails** - Apply security policies and content moderation to agents
+- **A2A protocol** - Fetch standard Agent-to-Agent protocol cards
 
 ## Prerequisites
 
-You need:
-1. A Praesidia account - sign up at https://praesidia.ai
-2. An API key from your Praesidia dashboard (Settings → API Keys)
-
-## Configuration
-
-Set your API key in `~/.openclaw/openclaw.json`:
+1. Praesidia account: https://praesidia.ai
+2. API key from Settings → API Keys
+3. Configure in `~/.openclaw/openclaw.json`:
 
 ```json
 {
   "skills": {
     "entries": {
       "praesidia": {
-        "apiKey": "your_praesidia_api_key_here",
+        "apiKey": "pk_live_your_key_here",
         "env": {
           "PRAESIDIA_API_URL": "https://api.praesidia.ai"
         }
@@ -40,28 +37,20 @@ Set your API key in `~/.openclaw/openclaw.json`:
 }
 ```
 
-If you're running Praesidia locally or on a custom domain, set `PRAESIDIA_API_URL` accordingly (default: `https://api.praesidia.ai`).
+For local development, use `http://localhost:3000` as the URL.
 
-## How to Use
+---
 
-### Verify an Agent
+## Quick Reference
 
-When the user asks to verify an agent by ID:
+### 1. Verify an Agent
 
-```
-User: "Verify agent abc-123"
-```
+**User says:** "Is agent chatbot-v2 safe?" / "Verify agent chatbot-v2"
 
-**Your task:**
-1. Use the `web_fetch` tool to call Praesidia's agent card endpoint
-2. Construct the URL: `{PRAESIDIA_API_URL}/agents/{agentId}/agent-card`
-3. Include the Authorization header: `Authorization: Bearer {PRAESIDIA_API_KEY}`
-4. Fetch and parse the response
-
-**Example web_fetch call:**
+**Your action:**
 ```javascript
 web_fetch({
-  url: "${PRAESIDIA_API_URL}/agents/abc-123/agent-card",
+  url: "${PRAESIDIA_API_URL}/agents/chatbot-v2/agent-card",
   headers: {
     "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
     "Accept": "application/json"
@@ -69,55 +58,39 @@ web_fetch({
 })
 ```
 
-**Successful response** includes:
-- Agent name and description
-- Capabilities (what the agent can do)
-- Trust level (UNTRUSTED, LIMITED, STANDARD, VERIFIED, TRUSTED)
-- Trust score (0-100)
-- Verification status
-- Compliance certifications (SOC2, GDPR, etc.)
-
 **Present to user:**
-- Agent name and description
-- Trust level and score
-- Verification status
-- Key capabilities
-- Any compliance certifications
+- ✅ Agent name & description
+- 🛡️ **Trust score (0-100)** and trust level
+- ✓ Verification status (verified date)
+- 🔧 Capabilities (what the agent can do)
+- 📜 Compliance (SOC2, GDPR, etc.)
+- 🔗 Agent card URL
 
-### Fetch Agent Card by URL
-
-When the user provides an agent card URL:
-
+**Example output:**
 ```
-User: "Fetch the agent card from https://example.com/.well-known/agent-card.json"
-```
+✅ ChatBot V2 is verified and safe to use!
 
-**Your task:**
-1. Use `web_fetch` to fetch the provided URL directly
-2. Parse the A2A agent card JSON
-3. Summarize the agent's capabilities and metadata
+Trust Score: 92.5/100 (VERIFIED)
+Status: ACTIVE
+Capabilities: message:send, task:create, data:analyze
+Compliance: SOC2, GDPR
+Last verified: 2 days ago
 
-Note: For Praesidia-registered agents, prefer using the Praesidia API (previous section) to get trust and verification data.
-
-### List Your Agents
-
-When the user asks to see their agents:
-
-```
-User: "Show me my registered agents"
-User: "List all my agents"
+Agent card: https://api.praesidia.ai/agents/chatbot-v2/agent-card
 ```
 
-**Your task:**
-1. Use `web_fetch` to call Praesidia's discovery endpoint
-2. URL: `{PRAESIDIA_API_URL}/agents/discovery`
-3. Include Authorization header
-4. Parse the list and present agent names, IDs, roles, and card URLs
+---
 
-**Example web_fetch call:**
+### 2. List Guardrails for an Agent
+
+**User says:** "What guardrails are configured for my agent?" / "Show me security policies for chatbot-v2"
+
+**Your action:**
 ```javascript
+// First, get the user's organization ID from their profile or context
+// Then fetch guardrails
 web_fetch({
-  url: "${PRAESIDIA_API_URL}/agents/discovery",
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails?agentId=${agentId}",
   headers: {
     "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
     "Accept": "application/json"
@@ -125,124 +98,391 @@ web_fetch({
 })
 ```
 
-**Optional filters** (add as query params):
-- `?role=SERVER` - only server agents
-- `?role=CLIENT` - only client agents
-- `?status=ACTIVE` - only active agents
-- `?visibility=PUBLIC` - only public agents
-- `?search=chatbot` - search by name
-
 **Present to user:**
-- List of agents with:
+- List of guardrails with:
   - Name and description
-  - Agent ID
-  - Role (CLIENT or SERVER)
-  - Status (ACTIVE, INACTIVE, etc.)
-  - Trust level
-  - Link to agent card
+  - Type (RULE, ML, LLM)
+  - Category (CONTENT, SECURITY, COMPLIANCE, etc.)
+  - Action (BLOCK, WARN, REDACT, REPLACE)
+  - Scope (INPUT, OUTPUT, BOTH)
+  - Enabled status
+  - Trigger count
 
-### Discover Public Agents
-
-When the user wants to find public agents:
-
+**Example output:**
 ```
-User: "Find public chatbot agents"
-User: "Show me all public SERVER agents"
+Found 3 guardrails for ChatBot V2:
+
+1. PII Detection (ENABLED)
+   - Type: ML | Category: SECURITY
+   - Scope: BOTH (input & output)
+   - Action: REDACT sensitive data
+   - Triggered: 45 times
+
+2. Toxic Language Filter (ENABLED)
+   - Type: RULE | Category: CONTENT
+   - Scope: BOTH
+   - Action: BLOCK toxic content
+   - Triggered: 12 times
+
+3. Financial Advice Warning (ENABLED)
+   - Type: LLM | Category: COMPLIANCE
+   - Scope: OUTPUT only
+   - Action: WARN if detected
+   - Triggered: 3 times
 ```
 
-**Your task:**
-1. Use `web_fetch` to call `{PRAESIDIA_API_URL}/agents/discovery?visibility=PUBLIC`
-2. Add `&role=SERVER` or `&search=chatbot` as needed
-3. No Authorization header needed for public agents (but including it shows more results)
+---
+
+### 3. Get Available Guardrail Templates
+
+**User says:** "What guardrail templates are available?" / "Show me security templates"
+
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails/templates",
+  headers: {
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Accept": "application/json"
+  }
+})
+```
+
+**Available Templates:**
+
+**Content Moderation:**
+- TOXIC_LANGUAGE - Detect toxic/harmful language
+- PROFANITY_FILTER - Filter profanity
+- HATE_SPEECH - Detect hate speech
+- VIOLENCE_DETECTION - Detect violent content
+- ADULT_CONTENT - Filter adult content
+
+**Security:**
+- PII_DETECTION - Detect personally identifiable information
+- CREDIT_CARD_DETECTION - Detect credit card numbers
+- SSN_DETECTION - Detect social security numbers
+- API_KEY_DETECTION - Detect leaked API keys
+- PROMPT_INJECTION - Detect prompt injection attacks
+- JAILBREAK_DETECTION - Detect jailbreak attempts
+
+**Compliance:**
+- FINANCIAL_ADVICE - Flag financial advice
+- MEDICAL_ADVICE - Flag medical advice
+- LEGAL_ADVICE - Flag legal advice
+- GDPR_COMPLIANCE - Enforce GDPR rules
+- HIPAA_COMPLIANCE - Enforce HIPAA rules
+
+**Brand Safety:**
+- COMPETITOR_MENTIONS - Detect competitor mentions
+- POSITIVE_TONE - Ensure positive tone
+- BRAND_VOICE - Maintain brand voice
+- OFF_TOPIC_DETECTION - Detect off-topic responses
+
+**Accuracy:**
+- HALLUCINATION_DETECTION - Detect hallucinations
+- FACT_CHECKING - Verify facts
+- SOURCE_VALIDATION - Validate sources
+- CONSISTENCY_CHECK - Check consistency
+
+---
+
+### 4. Apply a Guardrail to an Agent
+
+**User says:** "Add PII detection to my chatbot" / "Apply toxic language filter to agent xyz"
+
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails",
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    name: "PII Detection",
+    description: "Automatically detect and redact PII",
+    agentId: "${agentId}",
+    template: "PII_DETECTION",
+    type: "ML",
+    category: "SECURITY",
+    scope: "BOTH",
+    action: "REDACT",
+    severity: "HIGH",
+    isEnabled: true,
+    priority: 0
+  })
+})
+```
+
+**Guardrail Options:**
+
+**Type:**
+- RULE - Simple regex/keyword matching (fast)
+- ML - Machine learning model (balanced)
+- LLM - LLM-powered validation (most accurate)
+
+**Category:**
+- CONTENT - Content moderation
+- SECURITY - Security checks
+- COMPLIANCE - Regulatory compliance
+- BRAND - Brand safety
+- ACCURACY - Accuracy checks
+- CUSTOM - Custom rules
+
+**Scope:**
+- INPUT - Validate user input only
+- OUTPUT - Validate agent output only
+- BOTH - Validate both directions
+
+**Action:**
+- BLOCK - Block the request/response entirely
+- WARN - Log warning but allow through
+- REDACT - Mask the offending content
+- REPLACE - Replace with alternative content
+- RETRY - Retry with modified prompt
+- ESCALATE - Escalate to human review
+
+**Severity:**
+- LOW, MEDIUM, HIGH, CRITICAL
+
+---
+
+### 5. Validate Content Against Guardrails
+
+**User says:** "Check if this message passes guardrails: [content]"
+
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails/validate",
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    content: "User's message here",
+    agentId: "${agentId}",
+    scope: "INPUT"
+  })
+})
+```
+
+**Response shows:**
+- Whether content passed or failed
+- Which guardrails were triggered
+- Suggested actions (block, redact, warn)
+- Modified content (if redaction applied)
+
+---
+
+### 6. Discover Public Agents
+
+**User says:** "Find public data analysis agents" / "Show me chatbot agents"
+
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/agents/discovery?visibility=PUBLIC&search=data",
+  headers: { "Accept": "application/json" }
+  // Authorization optional for public agents (includes it for more results)
+})
+```
+
+**Filters available:**
+- `?visibility=PUBLIC` - public marketplace agents
+- `?role=SERVER` - agents that provide services
+- `?role=CLIENT` - agents that consume services
+- `?status=ACTIVE` - only active agents
+- `?search=keyword` - search by name/description
+
+**Present to user:**
+- List of matching agents with:
+  - Name, description, agent ID
+  - Trust score and level
+  - Role (SERVER/CLIENT)
+  - Key capabilities
+  - Link to full card
+
+**Example output:**
+```
+Found 2 public data analysis agents:
+
+1. OpenData Analyzer (VERIFIED - 88.0/100)
+   - Capabilities: data:analyze, chart:generate, report:create
+   - Role: SERVER | Status: ACTIVE
+   - Card: https://api.praesidia.ai/agents/opendata-1/agent-card
+
+2. CSV Processor (STANDARD - 70.0/100)
+   - Capabilities: file:parse, data:transform, export:json
+   - Role: SERVER | Status: ACTIVE
+   - Card: https://api.praesidia.ai/agents/csv-proc/agent-card
+```
+
+---
+
+### 7. List User's Agents
+
+**User says:** "Show my agents" / "List all my server agents"
+
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/agents/discovery?role=SERVER",
+  headers: {
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Accept": "application/json"
+  }
+})
+```
+
+This returns all agents the user has access to (their own + team/org agents).
+
+---
+
+## Trust Levels Guide
+
+Present trust information clearly to help users make decisions:
+
+| Trust Score | Level | Meaning | Recommendation |
+|-------------|-------|---------|----------------|
+| 90-100 | **VERIFIED** | Fully vetted, compliant, verified identity | ✅ Safe to use |
+| 70-89 | **STANDARD** | Good reputation, basic verification | ✅ Generally safe |
+| 50-69 | **LIMITED** | Minimal verification | ⚠️ Use with caution |
+| 0-49 | **UNTRUSTED** | Not verified or poor reputation | ❌ Not recommended |
+
+Always show the trust score numerically (e.g., 92.5/100) and the level (e.g., VERIFIED).
+
+---
 
 ## Error Handling
 
-If the API returns an error:
-- **401 Unauthorized**: API key is missing or invalid. Ask user to check `PRAESIDIA_API_KEY` in config.
-- **404 Not Found**: Agent doesn't exist or user doesn't have access.
-- **403 Forbidden**: User doesn't have permission to access this agent.
-- **500 Internal Error**: Praesidia API issue. Suggest trying again later.
+| Error | Meaning | What to tell user |
+|-------|---------|-------------------|
+| 401 Unauthorized | API key missing/invalid | "Check PRAESIDIA_API_KEY in ~/.openclaw/openclaw.json" |
+| 403 Forbidden | No permission | "You don't have access to this agent" |
+| 404 Not Found | Agent doesn't exist | "Agent not found. Check the agent ID" |
+| 500 Server Error | Praesidia API issue | "Praesidia API temporarily unavailable. Try again" |
+
+---
+
+## API Endpoints
+
+### GET /agents/:id/agent-card
+Fetch detailed agent card with trust data.
+
+**Auth:** Required for private/team/org agents, optional for public
+**Returns:** A2A agent card + Praesidia extensions (trust, compliance)
+
+### GET /agents/discovery
+List/search agents with filters.
+
+**Auth:** Optional (more results with auth)
+**Query params:** `role`, `status`, `visibility`, `search`
+**Returns:** Array of agent summaries with card URLs
+
+---
+
+## Guardrails Best Practices
+
+When helping users with guardrails:
+
+1. **Start with templates** - Use predefined templates before custom rules
+2. **Layer security** - Combine multiple guardrails (PII + Toxic + Compliance)
+3. **Test before enabling** - Use validate endpoint to test content first
+4. **Monitor triggers** - Check stats regularly to tune thresholds
+5. **Scope appropriately** - Use INPUT for user content, OUTPUT for agent responses
+6. **Choose right action**:
+   - **BLOCK** for critical security issues (PII, prompt injection)
+   - **REDACT** for sensitive data that can be masked
+   - **WARN** for compliance/brand issues that need logging
+   - **ESCALATE** for edge cases requiring human review
+
+---
+
+## Best Practices
+
+1. **Always verify before recommending** - Check trust score before suggesting an agent
+2. **Explain trust levels** - Users may not know what "VERIFIED" means
+3. **Filter by SERVER role** - When users want agents to use/call
+4. **Show compliance** - Important for enterprise users (SOC2, GDPR)
+5. **Present trust score numerically** - 92.5/100 is clearer than just "VERIFIED"
+6. **Layer guardrails** - Combine security, content, and compliance guardrails
+
+---
+
+## Common User Patterns
+
+### Pattern 1: Safety Check
+```
+User: "Is agent xyz safe to use?"
+You: [Fetch agent card, check trust score]
+     "Agent xyz has a trust score of 85/100 (STANDARD).
+      It's verified for basic operations. What would you like to use it for?"
+```
+
+### Pattern 2: Capability Discovery
+```
+User: "I need an agent that can analyze spreadsheets"
+You: [Search discovery with visibility=PUBLIC&search=spreadsheet]
+     "I found 3 spreadsheet analysis agents. The highest rated is..."
+```
+
+### Pattern 3: Fleet Management
+```
+User: "Show me all my agents that are inactive"
+You: [Fetch discovery with status=INACTIVE]
+     "You have 2 inactive agents: [list with trust scores]"
+```
+
+### Pattern 4: Apply Security
+```
+User: "I need to secure my chatbot against PII leaks"
+You: [List available templates, recommend PII_DETECTION]
+     [Apply guardrail with REDACT action on BOTH scope]
+     "I've added PII Detection (ML-powered) to your chatbot.
+      It will automatically redact sensitive information in both
+      user inputs and bot responses."
+```
+
+### Pattern 5: Compliance Check
+```
+User: "My agent handles healthcare data. What guardrails should I add?"
+You: [Check if HIPAA compliance is required]
+     [Recommend HIPAA_COMPLIANCE + PII_DETECTION + AUDIT_LOGGING]
+     "For healthcare data, I recommend these guardrails:
+      1. HIPAA Compliance (BLOCK on violations)
+      2. PII Detection (REDACT)
+      3. Medical Advice Warning (WARN)
+      Would you like me to apply these?"
+```
+
+---
 
 ## Environment Variables
 
-- `PRAESIDIA_API_KEY` (required) - Your Praesidia API key
-- `PRAESIDIA_API_URL` (optional) - API base URL (default: `https://api.praesidia.ai`)
+- `PRAESIDIA_API_KEY` (required) - Your API key from https://app.praesidia.ai
+- `PRAESIDIA_API_URL` (optional) - Defaults to `https://api.praesidia.ai`
+  - Production: `https://api.praesidia.ai`
+  - Local dev: `http://localhost:3000`
+  - Custom: Your deployment URL
 
-## Privacy & Security
+---
 
-- All requests use HTTPS
-- API keys are never logged or exposed to the user
-- Only authenticated requests can access private/team/organization agents
-- Public agents are accessible without authentication
+## Additional Resources
 
-## Examples
+- **Full setup guide:** See README.md in this skill folder
+- **API documentation:** https://app.praesidia.ai/docs/api
+- **A2A protocol:** https://a2a-protocol.org
+- **Support:** hello@praesidia.ai or https://discord.gg/e9EwZfHS
 
-**Example 1: Verify an agent**
-```
-User: "Is agent chatbot-v2 verified?"
+---
 
-You: [Call web_fetch with {PRAESIDIA_API_URL}/agents/chatbot-v2/agent-card]
+## Security & Privacy
 
-Response: "✅ ChatBot V2 is verified!
-- Trust Level: VERIFIED
-- Trust Score: 92.5/100
-- Status: ACTIVE
-- Capabilities: message:send, task:create, data:analyze
-- Compliance: SOC2, GDPR
-- Last verified: 2 days ago"
-```
-
-**Example 2: List user's agents**
-```
-User: "Show me all my server agents"
-
-You: [Call web_fetch with {PRAESIDIA_API_URL}/agents/discovery?role=SERVER]
-
-Response: "Found 3 server agents:
-
-1. ChatBot V2 (chatbot-v2)
-   - Role: SERVER | Status: ACTIVE
-   - Trust: VERIFIED (92.5)
-   - Card: https://api.praesidia.ai/agents/chatbot-v2/agent-card
-
-2. Data Analyzer (data-analyzer-1)
-   - Role: SERVER | Status: ACTIVE
-   - Trust: STANDARD (75.0)
-   - Card: https://api.praesidia.ai/agents/data-analyzer-1/agent-card
-
-3. Task Manager (task-mgr)
-   - Role: SERVER | Status: INACTIVE
-   - Trust: LIMITED (45.0)
-   - Card: https://api.praesidia.ai/agents/task-mgr/agent-card"
-```
-
-**Example 3: Discover public agents**
-```
-User: "Find public agents for data analysis"
-
-You: [Call web_fetch with {PRAESIDIA_API_URL}/agents/discovery?visibility=PUBLIC&search=data]
-
-Response: "Found 2 public data analysis agents:
-
-1. OpenData Analyzer by Acme Corp
-   - Capabilities: data:analyze, chart:generate, report:create
-   - Trust: VERIFIED (88.0)
-   
-2. CSV Processor by DataTools
-   - Capabilities: file:parse, data:transform, export:json
-   - Trust: STANDARD (70.0)"
-```
-
-## Tips
-
-- Always use the agent card endpoint for Praesidia-registered agents to get trust and verification data
-- When listing agents, filter by `role=SERVER` if the user wants agents they can call/use
-- Present trust scores clearly - users care about verification and compliance
-- For external agent cards (not in Praesidia), note that trust data isn't available
-
-## Support
-
-For issues or questions:
-- Praesidia Documentation: https://praesidia.ai/docs
-- Community: https://discord.gg/praesidia
-- Email: support@praesidia.ai
+- All production requests use HTTPS
+- API keys stored in OpenClaw config (never exposed to users)
+- Private/team/org agents require authentication
+- Public agents accessible without auth
+- Trust verification protects against malicious agents
