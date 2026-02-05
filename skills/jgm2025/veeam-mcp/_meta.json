@@ -1,0 +1,11 @@
+{
+  "owner": "jgm2025",
+  "slug": "veeam-mcp",
+  "displayName": "Veeam MCP",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770305822161,
+    "commit": null
+  },
+  "history": []
+}
