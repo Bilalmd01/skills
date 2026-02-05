@@ -1,144 +1,110 @@
 ---
-name: mtg-deck-builder
-description: |
-  Builds Magic: The Gathering Commander/EDH and Duel Commander decks from scratch. Use when the user asks to create or build a deck, suggest cards for a commander or strategy, work with budget (LigaMagic), analyze mana curve or card types, or check card legality. Keywords: MTG, Magic, Commander, EDH, Duel Commander, deck building, Scryfall, LigaMagic.
+name: scryfall-mtg
+description: "Search and retrieve Magic: The Gathering card data using the Scryfall API. Use this skill when the user asks about MTG cards, wants to search for cards by name, type, color, mana cost, oracle text, set, or any other card attribute. Also use for getting card images, prices, rulings, legality information, or random cards. Triggers include mentions of MTG, Magic, Magic: The Gathering, card names, deck building questions, or requests for card information."
 ---
 
-# MTG Deck Builder
+# Scryfall MTG Card Search
 
-Build Commander/EDH and Duel Commander decks using Scryfall API for card data and LigaMagic for Brazilian market prices.
+Search for Magic: The Gathering cards using the Scryfall API.
 
-## Quick Start
+## API Overview
 
-1. Identify format: Commander (multiplayer) or Duel Commander (1v1)
-2. Get commander from user or help them choose one
-3. Use `scryfall_search.py` to find cards
-4. Check banlist using `banlists.md`
-5. Build deck respecting color identity and deck rules
-6. Generate report with `deck_report.py`
+Base URL: `https://api.scryfall.com`
 
-## Supported Formats
+**Required Headers:**
+```python
+headers = {
+    "User-Agent": "OpenClawMTGSkill/1.0",
+    "Accept": "application/json"
+}
+```
 
-| Format | Life | Deck Size | Commander | Banlist |
-|--------|------|-----------|-----------|---------|
-| Commander/EDH | 40 | 100 (including commander) | 1 or 2 (partner); Companion only if legal | See `banlists.md` |
-| Duel Commander | 20 | 100 (including commander) | Exactly 1 legendary creature | See `banlists.md`; check "banned as commander" |
+**Rate Limiting:** Insert 50-100ms delay between requests (max 10 req/sec).
 
-**Duel Commander:** As of March 2026 the format transitions to a new system; check `banlists.md` and mtgdc.info for current rules.
+## Core Endpoints
 
-## Regra Singleton (IMPORTANTE!)
+### Search Cards
+```
+GET /cards/search?q={query}
+```
 
-Decks de Commander são singleton: cada carta pode aparecer apenas UMA vez 
-no deck, com exceção de terrenos básicos (Plains, Island, Swamp, Mountain, 
-Forest, Wastes).
+Parameters:
+- `q` (required): Fulltext search query
+- `unique`: cards|art|prints (default: cards)
+- `order`: name|set|released|rarity|color|usd|tix|eur|cmc|power|toughness|edhrec|penny|artist|review
+- `dir`: auto|asc|desc
+- `page`: Page number for pagination
 
-Regra:
-NENHUMA CARTA A NÃO SER Plains, Island, Swamp, Mountain, 
-Forest, Wastes PODEM APARECER MAIS DE UMA VEZ
+### Named Card Lookup
+```
+GET /cards/named?exact={name}
+GET /cards/named?fuzzy={name}
+```
 
-- ✅ 1x Sol Ring
-- ✅ 1x Counterspell  
-- ✅ 15x Island (terreno básico - pode repetir)
-- ❌ 2x Lightning Bolt (não permitido)
-- ❌ 4x Reliquary Tower (não permitido)
-- ❌ 2x Counterspell 
+Use `fuzzy` for partial matches (e.g., "jac bele" → "Jace Beleren").
+Add `&set={code}` to limit to specific set.
 
-## Workflow
+### Random Card
+```
+GET /cards/random
+GET /cards/random?q={query}
+```
 
-### 1. Understand Request
-Extract from user message:
-- Format (Commander or Duel Commander)
-- Commander choice or strategy theme
-- Budget constraint (if any, in BRL using LigaMagic)
-- Power level preference (casual/competitive)
+### Card by ID
+```
+GET /cards/{id}
+GET /cards/{set_code}/{collector_number}
+```
 
-### 2. Validate Commander
-- **Commander/EDH:** 1 commander, or 2 with partner; Companion only if allowed by banlist.
-- **Duel Commander:** Exactly 1 legendary creature; confirm not in "banned as commander" in `banlists.md`.
+### Autocomplete
+```
+GET /cards/autocomplete?q={partial_name}
+```
+
+Returns up to 20 card name suggestions.
+
+## Search Syntax Reference
+
+See `references/search_syntax.md` for the complete search syntax guide.
+
+**Quick examples:**
+- `c:red pow=3` - Red cards with power 3
+- `t:merfolk t:legend` - Legendary merfolk
+- `o:"draw a card"` - Cards with "draw a card" in text
+- `cmc=3 r:rare` - 3-mana rares
+- `e:dom` - Cards from Dominaria
+- `f:standard` - Standard legal cards
+- `usd<1` - Cards under $1
+
+## Implementation
+
+Use the provided script for common operations:
+
 ```bash
-python scryfall_search.py --name "Commander Name" --check-commander --format commander
+python3 scripts/scryfall_search.py search "lightning bolt"
+python3 scripts/scryfall_search.py named --exact "Black Lotus"
+python3 scripts/scryfall_search.py random
+python3 scripts/scryfall_search.py random --query "t:dragon"
 ```
 
-### 3. Search Cards
-Use Scryfall syntax for powerful searches:
-```bash
-python scryfall_search.py --query "ci:wubrg t:creature" --limit 50
-python scryfall_search.py --query "o:counter ci:ug t:creature"
-```
+Or make direct API calls with proper headers and rate limiting.
 
-### 4. Check Prices (Optional)
-```bash
-python ligamagic_price.py --card "Sol Ring"
-```
+## Card Object Key Fields
 
-### 5. Build Deck Structure
-Standard Commander deck template:
-- 1 Commander
-- 35-38 Lands
-- 10-12 Ramp/Mana acceleration
-- 10 Card draw
-- 8-10 Removal (single target + board wipes)
-- 30-35 Cards supporting strategy
+When displaying card info, prioritize these fields:
+- `name`, `mana_cost`, `type_line`
+- `oracle_text`, `power`, `toughness`
+- `image_uris.normal` (for card image)
+- `prices.usd`, `prices.usd_foil`
+- `legalities` (format legality)
+- `set_name`, `rarity`
 
-### 6. Generate Report
-```bash
-python deck_report.py --deck deck.txt --format commander
-```
+For double-faced cards, check `card_faces` array.
 
-## Key References
+## Error Handling
 
-- **Scryfall API**: See `scryfall_api.md` for search syntax
-- **Banlists**: See `banlists.md` for Commander and Duel Commander
-- **Deck Templates**: See `deck_templates.md` for archetypes
-- **Metagame Sources**: See `metagame_sources.md` for live data URLs
-- **Color Identity**: A card's color identity includes mana symbols in cost and rules text
+- 404: Card not found
+- 422: Invalid search query
+- 429: Rate limited (wait and retry)
 
-## Fetching Live Metagame Data
-
-**IMPORTANT:** Always fetch current metagame data before building competitive decks!
-
-### For Duel Commander:
-1. Search: `mtggoldfish duel commander metagame`
-2. Fetch: `https://www.mtggoldfish.com/metagame/duel_commander`
-3. Extract top commanders, meta %, prices
-
-### For Commander/EDH:
-1. Search: `site:edhrec.com [commander name]`
-2. Get recommended cards with synergy scores
-3. Check `https://edhrec.com/commanders` for popular choices
-
-### For cEDH:
-1. Check: `https://cedh-decklist-database.com/`
-2. Find optimized lists by tier
-
-## Budget Building with LigaMagic
-
-When user specifies budget:
-1. Search cards normally via Scryfall
-2. Get prices via `ligamagic_price.py`
-3. Optimize deck to fit budget
-4. Report total cost and suggest upgrades
-
-## Output Format
-
-Always provide:
-1. Decklist in standard format (quantity + card name)
-2. Mana curve visualization
-3. Card type distribution
-4. Total price (if budget was considered)
-5. Key synergies explanation
-
-**Example decklist section:**
-```text
-COMMANDER
-1 Atraxa, Praetors' Voice
-
-MAINDECK
-1 Sol Ring
-1 Command Tower
-1 Arcane Signet
-...
-38 Forest
-```
-
-**Example report summary:** Mana curve (e.g. 0: 5, 1: 8, 2: 12, …), card types (Creatures: 35, Instants: 12, …), total LigaMagic (BRL) if applicable, and 2–3 key synergies with the commander.
+Always validate responses have `object` field; if `object: "error"`, check `details` for message.

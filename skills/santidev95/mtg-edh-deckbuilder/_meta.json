@@ -3,9 +3,15 @@
   "slug": "mtg-edh-deckbuilder",
   "displayName": "mtg-edh-deckbuilder",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770224878640,
-    "commit": "https://github.com/clawdbot/skills/commit/d8704f3e8f8decaf1516d8215bf97aea10a79523"
+    "version": "1.0.3",
+    "publishedAt": 1770308871530,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770224878640,
+      "commit": "https://github.com/clawdbot/skills/commit/d8704f3e8f8decaf1516d8215bf97aea10a79523"
+    }
+  ]
 }
