@@ -1,6 +1,6 @@
 # AgentOS SDK for Clawdbot
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 
 The complete AgentOS integration for Clawdbot. One install, full access to everything.
 
@@ -90,6 +90,11 @@ This keeps the Brain Dashboard live. No exceptions.
 - ✅ **WebSocket Support** — Real-time message notifications
 - ✅ **Dashboard Access** — View your agent's brain at brain.agentos.software
 - ✅ **Full API Access** — Complete REST API integration
+- ✅ **Multi-Tenant** — Each user gets isolated tenant via Google OAuth
+- ✅ **Kanban Board** — Task management with priorities and statuses
+- ✅ **Projects** — Project tracking with activity logs and brainstorming
+- ✅ **API Key Management** — Generate and manage API keys per tenant
+- ✅ **Bulk Operations** — dump-all, agents discovery endpoints
 
 ## Quick Start
 
@@ -245,12 +250,25 @@ The daemon:
 | Endpoint | Description |
 |----------|-------------|
 | `POST /v1/put` | Store a memory |
-| `GET /v1/get/:path` | Retrieve a memory |
+| `POST /v1/get` | Retrieve a memory |
+| `POST /v1/delete` | Delete a memory |
+| `POST /v1/list` | List memory paths |
+| `POST /v1/glob` | Glob pattern match |
+| `POST /v1/history` | Version history |
 | `POST /v1/search` | Semantic search |
+| `POST /v1/agents` | Discover agent IDs |
+| `POST /v1/dump` | Bulk fetch agent memories |
+| `POST /v1/dump-all` | Bulk fetch ALL memories |
+| `POST /v1/signup` | Create API key (email) |
+| `GET /v1/auth/google` | Google OAuth flow |
 | `POST /v1/mesh/messages` | Send mesh message |
 | `GET /v1/mesh/messages` | Get inbox/outbox |
 | `GET /v1/mesh/agents` | List mesh agents |
-| `WS /v1/events` | Real-time WebSocket |
+| `GET /v1/projects` | List projects |
+| `POST /v1/projects` | Create project |
+| `GET /v1/kanban/tasks` | List kanban tasks |
+| `POST /v1/kanban/tasks` | Create kanban task |
+| `WS /` | Real-time WebSocket events |
 
 ## Troubleshooting
 
