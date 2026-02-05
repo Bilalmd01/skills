@@ -3,11 +3,16 @@
   "slug": "hn-extract",
   "displayName": "HackerNews Extract",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1770205736515,
-    "commit": "https://github.com/clawdbot/skills/commit/6c7054cae94592f7d449e99649b4ae7f499b363d"
+    "version": "0.1.3",
+    "publishedAt": 1770254047535,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1770205736515,
+      "commit": "https://github.com/clawdbot/skills/commit/6c7054cae94592f7d449e99649b4ae7f499b363d"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1770078245825,
