@@ -1,10 +1,6 @@
 ---
 name: tubescribe
-description: |
-  YouTube video summarizer with speaker detection, formatted documents, and audio output.
-  Use when user sends a YouTube URL or asks to summarize/transcribe a YouTube video.
-  Creates: transcript with speaker labels, summary, key quotes, and optional audio narration.
-  Triggers: YouTube URLs (youtube.com, youtu.be), "summarize this video", "transcribe YouTube"
+description: "YouTube video summarizer with speaker detection, formatted documents, and audio output. Use when user sends a YouTube URL or asks to summarize/transcribe a YouTube video."
 ---
 
 # TubeScribe 🎬
