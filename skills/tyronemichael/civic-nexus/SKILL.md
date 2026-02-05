@@ -1,12 +1,12 @@
 ---
-name: civic-nexus-community
-description: "[UNOFFICIAL/COMMUNITY] Connect to Civic Nexus MCP for 100+ integrations. Not an official Civic release."
+name: civic-nexus
+description: "Connect to Civic Nexus MCP for 100+ integrations."
 metadata: {"openclaw":{"requires":{"env":["NEXUS_URL","NEXUS_TOKEN"],"anyBins":["mcporter","npx"]},"primaryEnv":"NEXUS_TOKEN"}}
 ---
 
-# Civic Nexus MCP Bridge (Community)
+# Civic Nexus MCP Bridge
 
-> **⚠️ DISCLAIMER: This is an unofficial community skill and is not endorsed, supported, or maintained by Civic Technologies. Use at your own risk. For official documentation, visit [docs.civic.com](https://docs.civic.com).**
+> **⚠️ DISCLAIMER: Use at your own risk. For official documentation, visit [docs.civic.com](https://docs.civic.com).**
 
 Connect to [Civic Nexus](https://nexus.civic.com) for 100+ integrations including Gmail, PostgreSQL, MongoDB, Box, and more.
 
@@ -25,10 +25,10 @@ Add to `~/.openclaw/openclaw.json`:
 {
   "skills": {
     "entries": {
-      "civic-nexus-community": {
+      "civic-nexus": {
         "enabled": true,
         "env": {
-          "NEXUS_URL": "https://nexus.civic.com/hub/mcp?accountId=YOUR_ACCOUNT_ID&profile=default",
+          "NEXUS_URL": "https://nexus.civic.com/hub/mcp?accountId=YOUR_ACCOUNT_ID&profile=YOUR_PROFILE",
           "NEXUS_TOKEN": "your-access-token"
         }
       }
@@ -45,7 +45,7 @@ If you have mcporter installed (`npm install -g mcporter`), add to `~/.openclaw/
 {
   "mcpServers": {
     "nexus": {
-      "baseUrl": "https://nexus.civic.com/hub/mcp?accountId=YOUR_ACCOUNT_ID&profile=default",
+      "baseUrl": "https://nexus.civic.com/hub/mcp?accountId=YOUR_ACCOUNT_ID&profile=YOUR_PROFILE",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN"
       }
@@ -108,5 +108,3 @@ Some tools require OAuth on first use. When you see an authorization URL:
 - Gmail batch requests limited to 5-25 messages per call
 
 ---
-
-*This is a community-contributed skill and is not affiliated with or endorsed by Civic Technologies, Inc.*

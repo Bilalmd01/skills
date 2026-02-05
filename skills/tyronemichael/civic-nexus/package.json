@@ -1,5 +1,5 @@
 {
-  "name": "nexus-mcp-bridge",
+  "name": "civic-nexus",
   "version": "1.0.0",
   "description": "Connect any LLM to Civic Nexus MCP tools",
   "type": "module",
