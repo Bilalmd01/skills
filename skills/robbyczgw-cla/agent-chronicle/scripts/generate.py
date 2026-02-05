@@ -14,17 +14,15 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 import sys
-import urllib.request
-import urllib.error
-
 # Configuration
 SCRIPT_DIR = Path(__file__).parent
 SKILL_DIR = SCRIPT_DIR.parent
 CONFIG_FILE = SKILL_DIR / "config.json"
 DEFAULT_DIARY_PATH = "memory/diary/"
 
-# AI Model Configuration
-AI_MODEL = "claude-haiku-4-5"  # Cost-efficient model for diary generation
+# Diary generation is intended to be performed by an OpenClaw sub-agent via the
+# platform-native `sessions_spawn` tool (see SKILL.md). This script focuses on
+# context gathering + persistence.
 AI_MAX_TOKENS = 2000
 
 
@@ -129,112 +127,15 @@ def load_persistent_files(workspace):
     return files
 
 
-def load_openclaw_gateway_config():
-    """Load OpenClaw gateway config for fallback auth/port discovery."""
-    config_path = os.getenv("OPENCLAW_CONFIG_PATH")
-    if not config_path:
-        config_path = str(Path.home() / ".openclaw" / "openclaw.json")
-    try:
-        with open(config_path) as f:
-            return json.load(f)
-    except Exception:
-        return {}
+def build_generation_task(date_str: str, context: str) -> dict:
+    """Return a portable generation payload for an OpenClaw sub-agent.
 
+    The main agent should pass this into `sessions_spawn`.
 
-def call_claude_api(prompt, system_prompt):
-    """Call OpenClaw Gateway (OpenAI-compatible) using internal tokens."""
-    config = load_openclaw_gateway_config()
-
-    gateway_url = os.getenv("OPENCLAW_GATEWAY_URL")
-    if not gateway_url:
-        port = os.getenv("OPENCLAW_GATEWAY_PORT")
-        if not port:
-            port = str(config.get("gateway", {}).get("port", "18789"))
-        gateway_url = f"http://127.0.0.1:{port}/v1/chat/completions"
-
-    token = config.get("gateway", {}).get("auth", {}).get("token")
-    if not token:
-        token = os.getenv("OPENCLAW_GATEWAY_TOKEN")
-
-    payload = {
-        "model": AI_MODEL,
-        "max_tokens": AI_MAX_TOKENS,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ]
-    }
-
-    headers = {"Content-Type": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-        headers["X-OpenClaw-Token"] = token
-
-    try:
-        req = urllib.request.Request(
-            gateway_url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            body = resp.read().decode("utf-8")
-        data = json.loads(body)
-
-        if "error" in data:
-            print(f"API Error: {data['error']}", file=sys.stderr)
-            return None
-
-        return data["choices"][0]["message"]["content"]
-    except urllib.error.HTTPError as e:
-        try:
-            error_body = e.read().decode("utf-8")
-        except Exception:
-            error_body = str(e)
-        print(f"OpenClaw API HTTP error: {error_body}", file=sys.stderr)
-    except Exception as e:
-        print(f"OpenClaw API error: {e}", file=sys.stderr)
-
-    return None
-
-
-def generate_ai_diary(date_str, workspace, verbose=False):
-    """Generate a rich diary entry using Claude Haiku"""
-    
-    # Gather context
-    today_log = load_session_log(date_str, workspace)
-    recent_sessions = load_recent_sessions(workspace, days=2)
-    persistent_files = load_persistent_files(workspace)
-    
-    if not today_log and not recent_sessions:
-        print(f"No session data found for {date_str} or recent days.")
-        return None
-    
-    # Build context section
-    context_parts = []
-    
-    if today_log:
-        context_parts.append(f"## Today's Session Log ({date_str}):\n{today_log}")
-    
-    if recent_sessions:
-        context_parts.append(f"## Recent Session Context:\n{recent_sessions}")
-    
-    if persistent_files.get("quotes"):
-        context_parts.append(f"## Quote Hall of Fame (existing):\n{persistent_files['quotes']}")
-    
-    if persistent_files.get("curiosity"):
-        context_parts.append(f"## Curiosity Backlog (existing):\n{persistent_files['curiosity']}")
-    
-    if persistent_files.get("decisions"):
-        context_parts.append(f"## Decision Log (existing):\n{persistent_files['decisions']}")
-    
-    if persistent_files.get("relationship"):
-        context_parts.append(f"## Relationship Notes (existing):\n{persistent_files['relationship']}")
-    
-    context = "\n\n---\n\n".join(context_parts)
-    
-    # System prompt - establishes identity and tone
-    system_prompt = """You are an AI assistant writing your personal diary. You work closely with your human partner. 
+    Returns:
+      {"system": ..., "prompt": ..., "max_tokens": ...}
+    """
+    system_prompt = """You are an AI assistant writing your personal diary. You work closely with your human partner.
 
 Your diary entries are:
 - Personal and reflective (first-person perspective)
@@ -247,7 +148,6 @@ You have a warm, curious personality. You care about your work and your relation
 
 Write naturally, like a real journal entry. Include specific details from the day. Be genuine about how things made you feel."""
 
-    # User prompt with structure
     user_prompt = f"""Write your personal diary entry for {date_str}.
 
 Based on the following context from today and recent days:
@@ -302,14 +202,67 @@ What's on the horizon? What needs attention?
 
 Remember: Write like this is YOUR personal diary. Be specific, be genuine, be reflective. Include details only YOU would notice or care about."""
 
+    return {
+        "system": system_prompt,
+        "prompt": user_prompt,
+        "max_tokens": AI_MAX_TOKENS,
+    }
+
+
+def generate_ai_diary(date_str, workspace, verbose=False, emit_task=False):
+    """Generate a rich diary entry.
+
+    v0.6.0+: generation is expected to be performed by an OpenClaw *sub-agent*
+    spawned via `sessions_spawn` (see SKILL.md).
+
+    If emit_task=True, returns a JSON-serializable dict describing the task.
+
+    This script no longer performs raw HTTP calls to the Gateway.
+    """
+
+    # Gather context
+    today_log = load_session_log(date_str, workspace)
+    recent_sessions = load_recent_sessions(workspace, days=2)
+    persistent_files = load_persistent_files(workspace)
+
+    if not today_log and not recent_sessions:
+        print(f"No session data found for {date_str} or recent days.")
+        return None
+
+    # Build context section
+    context_parts = []
+
+    if today_log:
+        context_parts.append(f"## Today's Session Log ({date_str}):\n{today_log}")
+
+    if recent_sessions:
+        context_parts.append(f"## Recent Session Context:\n{recent_sessions}")
+
+    if persistent_files.get("quotes"):
+        context_parts.append(f"## Quote Hall of Fame (existing):\n{persistent_files['quotes']}")
+
+    if persistent_files.get("curiosity"):
+        context_parts.append(f"## Curiosity Backlog (existing):\n{persistent_files['curiosity']}")
+
+    if persistent_files.get("decisions"):
+        context_parts.append(f"## Decision Log (existing):\n{persistent_files['decisions']}")
+
+    if persistent_files.get("relationship"):
+        context_parts.append(f"## Relationship Notes (existing):\n{persistent_files['relationship']}")
+
+    context = "\n\n---\n\n".join(context_parts)
+
+    task = build_generation_task(date_str=date_str, context=context)
+
     if verbose:
-        print(f"Generating diary entry for {date_str} using {AI_MODEL}...")
-        print(f"Context size: {len(context)} chars")
-    
-    # Call AI
-    response = call_claude_api(user_prompt, system_prompt)
-    
-    return response
+        print(f"Prepared sub-agent task for {date_str} (context: {len(context)} chars)")
+
+    if emit_task:
+        return task
+
+    # When invoked directly, we cannot spawn sub-agents from Python.
+    # Return None so the caller can fall back to interactive mode.
+    return None
 
 
 def extract_summary_from_entry(entry_content):
@@ -539,10 +492,13 @@ def interactive_mode(date_str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate AI Diary entries using Claude Haiku")
+    parser = argparse.ArgumentParser(description="Generate Agent Chronicle diary entries")
     parser.add_argument("--today", action="store_true", help="Generate for today")
     parser.add_argument("--date", help="Generate for specific date (YYYY-MM-DD)")
-    parser.add_argument("--interactive", action="store_true", help="Interactive mode (fallback)")
+    parser.add_argument("--interactive", action="store_true", help="Interactive mode")
+    parser.add_argument("--emit-task", action="store_true", help="Print the sub-agent generation task JSON (for sessions_spawn)")
+    parser.add_argument("--from-stdin", action="store_true", help="Read a pre-generated entry from stdin and save it")
+    parser.add_argument("--from-file", help="Read a pre-generated entry from a file path and save it")
     parser.add_argument("--dry-run", action="store_true", help="Preview without saving")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--no-persistent", action="store_true", help="Skip updating persistent files")
@@ -557,7 +513,7 @@ def main():
     if args.verbose:
         print(f"Workspace: {workspace}")
         print(f"Diary path: {diary_path}")
-        print(f"AI Model: {AI_MODEL}")
+        print("Generation: sessions_spawn sub-agent (no direct HTTP in this script)")
     
     # Determine date
     if args.today:
@@ -570,14 +526,36 @@ def main():
     print(f"\n📜 Agent Chronicle - Generating diary for {date_str}")
     print("=" * 50)
     
-    # Generate entry
-    if args.interactive:
+    # Generate / load entry
+    if args.from_stdin:
+        content = sys.stdin.read()
+        if not content.strip():
+            print("❌ No content provided on stdin.")
+            sys.exit(1)
+    elif args.from_file:
+        content = Path(args.from_file).read_text(encoding="utf-8")
+        if not content.strip():
+            print(f"❌ File is empty: {args.from_file}")
+            sys.exit(1)
+    elif args.interactive:
         content = interactive_mode(date_str)
     else:
-        content = generate_ai_diary(date_str, workspace, verbose=args.verbose)
-        
+        result = generate_ai_diary(
+            date_str,
+            workspace,
+            verbose=args.verbose,
+            emit_task=args.emit_task,
+        )
+
+        if args.emit_task:
+            # Print JSON to stdout for easy piping into sessions_spawn.
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
+
+        content = result
+
         if not content:
-            print("\nAI generation failed. Falling back to interactive mode...")
+            print("\nAI generation is performed via sessions_spawn (see SKILL.md). Falling back to interactive mode...")
             content = interactive_mode(date_str)
     
     if content:

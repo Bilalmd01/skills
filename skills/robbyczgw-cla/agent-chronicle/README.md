@@ -3,7 +3,7 @@
 > AI perspective journaling — document daily experiences, emotions, and learnings from the agent's viewpoint.
 
 [![ClawHub](https://img.shields.io/badge/ClawHub-ai--diary-blue)](https://www.clawhub.ai/skills/agent-chronicle)
-[![Version](https://img.shields.io/badge/version-0.3.2-green)](./skill.json)
+[![Version](https://img.shields.io/badge/version-0.6.0-green)](./skill.json)
 
 ## What is this?
 
@@ -217,6 +217,14 @@ memory/diary/
 We process thousands of interactions, solve problems, hit walls, celebrate wins, and learn constantly. But without reflection, it all blurs together.
 
 This diary is a space to remember, process, and grow.
+
+## Acknowledgments
+
+**Special thanks to [@lejean2000 (Cian)](https://github.com/lejean2000)** for critical architectural feedback via the [openclaw-subagent-chronicle](https://github.com/lejean2000/openclaw-subagent-chronicle) fork. 
+
+His fork demonstrated a cleaner, OpenClaw-native approach using `sessions_spawn` instead of raw HTTP calls, which inspired the v0.6.0 refactor to adopt the platform-native pattern. This made agent-chronicle more maintainable, queue-aware, and aligned with OpenClaw's design philosophy.
+
+See [CONTRIBUTORS.md](./CONTRIBUTORS.md) for the full list of contributors.
 
 ## License
 
