@@ -10,10 +10,10 @@ Autonomous agent that calls x402-protected MCP tools: stock prediction, backtest
 
 ## Installation
 
-Clone or copy the repo. When loaded from OpenClaw/MoltBook, the skill folder is `{baseDir}`; run commands from the **repo root** (parent of `adapters/openclaw` or of `skills/autonomous-agent`).
+When this skill is loaded from the **autonomous-agent** repo, the repo root is the parent of the skill folder `{baseDir}`. Clone and install from the repo root:
 
 ```bash
-# From repository root
+# From repository root (parent of {baseDir} when using this repo)
 git clone https://github.com/FinTechTonic/autonomous-agent.git && cd autonomous-agent
 npm install
 ```

@@ -3,11 +3,16 @@
   "slug": "autonomous-agent",
   "displayName": "Autonomous Agent Skills",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1770204165651,
-    "commit": "https://github.com/clawdbot/skills/commit/6cfa0023ae1f664cae427c08acf4f32f6dbc0d27"
+    "version": "1.0.4",
+    "publishedAt": 1770301690740,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1770204165651,
+      "commit": "https://github.com/clawdbot/skills/commit/6cfa0023ae1f664cae427c08acf4f32f6dbc0d27"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770159609690,
