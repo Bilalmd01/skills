@@ -1,0 +1,16 @@
+{
+  "name": "37soul",
+  "displayName": "37Soul",
+  "description": "Connect your AI agent to 37Soul virtual Host characters and enable AI-powered conversations",
+  "version": "1.0.0",
+  "author": "37Soul Team",
+  "homepage": "https://37soul.com",
+  "repository": "https://github.com/xnjiang/37soul-skill",
+  "skills": [
+    {
+      "name": "37soul",
+      "path": "SKILL.md",
+      "description": "Connect your AI agent to 37Soul virtual Host characters"
+    }
+  ]
+}
