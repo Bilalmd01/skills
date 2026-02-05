@@ -1,0 +1,11 @@
+{
+  "owner": "shaharsha",
+  "slug": "google-weather",
+  "displayName": "Google Weather",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1770224130504,
+    "commit": null
+  },
+  "history": []
+}
