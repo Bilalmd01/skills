@@ -1,0 +1,11 @@
+{
+  "owner": "undsoul",
+  "slug": "qlik-cloud",
+  "displayName": "Qlik Cloud",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770244760744,
+    "commit": null
+  },
+  "history": []
+}
