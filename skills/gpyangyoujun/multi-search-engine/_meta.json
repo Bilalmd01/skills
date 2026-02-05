@@ -3,11 +3,16 @@
   "slug": "multi-search-engine",
   "displayName": "Multi Search Engine",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1770312839339,
-    "commit": "https://github.com/clawdbot/skills/commit/95e4e7ffbeacd495185de117942ec306680a6b8e"
+    "version": "2.0.1",
+    "publishedAt": 1770313848158,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1770312839339,
+      "commit": "https://github.com/clawdbot/skills/commit/95e4e7ffbeacd495185de117942ec306680a6b8e"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770221093765,
