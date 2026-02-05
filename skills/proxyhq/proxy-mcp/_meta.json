@@ -1,0 +1,11 @@
+{
+  "owner": "proxyhq",
+  "slug": "proxy-mcp",
+  "displayName": "Proxy MCP",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770216977357,
+    "commit": null
+  },
+  "history": []
+}
