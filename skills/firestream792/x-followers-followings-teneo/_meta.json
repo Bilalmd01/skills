@@ -3,9 +3,15 @@
   "slug": "x-followers-followings-teneo",
   "displayName": "X Followers & Followings - powered by Teneo Protocol",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770216663441,
-    "commit": "https://github.com/clawdbot/skills/commit/1f4e763d12d4e101647b583b33372f60cbf7af19"
+    "version": "1.0.6",
+    "publishedAt": 1770302214542,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770216663441,
+      "commit": "https://github.com/clawdbot/skills/commit/1f4e763d12d4e101647b583b33372f60cbf7af19"
+    }
+  ]
 }
