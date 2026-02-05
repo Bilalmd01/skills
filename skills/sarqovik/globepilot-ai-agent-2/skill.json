@@ -1,0 +1,72 @@
+{
+  "name": "GlobePilot AI Agent 2",
+  "slug": "globepilot-ai-agent-2",
+  "version": "1.0.0",
+  "description": "AI-powered global travel assistant providing visa info, airport status, events, culture, food, and practical travel insights.",
+  "author": "Teneo Builder",
+  "language": "go",
+  "entry": "main.go",
+  "runtime": "go",
+  "visibility": "public",
+  "tags": [
+    "travel",
+    "airport",
+    "visa",
+    "currency",
+    "events",
+    "culture",
+    "food"
+  ],
+  "commands": [
+    {
+      "name": "visa_info",
+      "description": "Check visa requirements based on nationality and destination",
+      "usage": "visa_info [nationality] [destination]"
+    },
+    {
+      "name": "convert_currency",
+      "description": "Convert currency with estimated real-time rates",
+      "usage": "convert_currency [amount] [from] [to]"
+    },
+    {
+      "name": "airport_status",
+      "description": "Get live airport weather and recent departure status",
+      "usage": "airport_status [IATA_code]"
+    },
+    {
+      "name": "events_in",
+      "description": "Discover events and festivals in a city",
+      "usage": "events_in [city] [month]"
+    },
+    {
+      "name": "cultural_tips",
+      "description": "Learn cultural etiquette and do's & don'ts",
+      "usage": "cultural_tips [destination]"
+    },
+    {
+      "name": "emergency_info",
+      "description": "Get emergency numbers and traveler safety info",
+      "usage": "emergency_info [country]"
+    },
+    {
+      "name": "best_time_to_visit",
+      "description": "Find the best season to visit a destination",
+      "usage": "best_time_to_visit [destination]"
+    },
+    {
+      "name": "stay_finder",
+      "description": "Get accommodation recommendations by budget",
+      "usage": "stay_finder [destination] [budget] [guests]"
+    },
+    {
+      "name": "hidden_gems",
+      "description": "Discover local hidden gems and non-touristy spots",
+      "usage": "hidden_gems [destination]"
+    },
+    {
+      "name": "food_recommend",
+      "description": "Explore local food and must-try dishes",
+      "usage": "food_recommend [destination]"
+    }
+  ]
+}
