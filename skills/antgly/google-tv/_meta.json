@@ -1,0 +1,11 @@
+{
+  "owner": "antgly",
+  "slug": "google-tv",
+  "displayName": "Google Tv",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770227721811,
+    "commit": null
+  },
+  "history": []
+}
