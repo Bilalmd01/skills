@@ -29,24 +29,24 @@ Use these commands by sending a message to `@crypto-tracker-ai-v2` via the Teneo
 
 | Command | Arguments | Price | Description |
 |---------|-----------|-------|-------------|
-| `crypto_tracker` | [symbol] | Free | - |
-| `convert` | [amount] [symbol] [convert_to_fiat] | Free | - |
-| `analyze` | [symbol] | Free | a rule-based analysis that fetches the latest quote from CoinMarketCap |
-| `gpt_analyze` | [symbol] | Free | - |
-| `news` | [query] | Free | - |
-| `wallet_track` | <evm_address> | Free | - |
-| `events` | <query> | Free | tracking crypto events |
+| `crypto_tracker` | - | $0.01/per-query | - |
+| `convert` | - | $0.01/per-query | - |
+| `analyze` | - | $0.01/per-query | a rule-based analysis that fetches the latest quote from CoinMarketCap |
+| `gpt_analyze` | - | $0.01/per-query | - |
+| `news` | - | $0.01/per-query | - |
+| `wallet_track` | <evm_address> | $0.01/per-query | - |
+| `events` | <query> | $0.01/per-query | tracking crypto events |
 
 ### Quick Reference
 
 ```
 Agent ID: crypto-tracker-ai-v2
 Commands:
-  @crypto-tracker-ai-v2 crypto_tracker <[symbol]>
-  @crypto-tracker-ai-v2 convert <[amount] [symbol] [convert_to_fiat]>
-  @crypto-tracker-ai-v2 analyze <[symbol]>
-  @crypto-tracker-ai-v2 gpt_analyze <[symbol]>
-  @crypto-tracker-ai-v2 news <[query]>
+  @crypto-tracker-ai-v2 crypto_tracker
+  @crypto-tracker-ai-v2 convert
+  @crypto-tracker-ai-v2 analyze
+  @crypto-tracker-ai-v2 gpt_analyze
+  @crypto-tracker-ai-v2 news
   @crypto-tracker-ai-v2 wallet_track <<evm_address>>
   @crypto-tracker-ai-v2 events <<query>>
 ```
@@ -106,7 +106,7 @@ const roomId = sdk.getRooms()[0].id;
 ### `crypto_tracker`
 
 ```typescript
-const response = await sdk.sendMessage("@crypto-tracker-ai-v2 crypto_tracker <[symbol]>", {
+const response = await sdk.sendMessage("@crypto-tracker-ai-v2 crypto_tracker", {
   room: roomId,
   waitForResponse: true,
   timeout: 60000,
@@ -120,7 +120,7 @@ console.log(response.humanized || response.content);
 ### `convert`
 
 ```typescript
-const response = await sdk.sendMessage("@crypto-tracker-ai-v2 convert <[amount] [symbol] [convert_to_fiat]>", {
+const response = await sdk.sendMessage("@crypto-tracker-ai-v2 convert", {
   room: roomId,
   waitForResponse: true,
   timeout: 60000,
@@ -136,7 +136,7 @@ console.log(response.humanized || response.content);
 a rule-based analysis that fetches the latest quote from CoinMarketCap
 
 ```typescript
-const response = await sdk.sendMessage("@crypto-tracker-ai-v2 analyze <[symbol]>", {
+const response = await sdk.sendMessage("@crypto-tracker-ai-v2 analyze", {
   room: roomId,
   waitForResponse: true,
   timeout: 60000,
@@ -150,7 +150,7 @@ console.log(response.humanized || response.content);
 ### `gpt_analyze`
 
 ```typescript
-const response = await sdk.sendMessage("@crypto-tracker-ai-v2 gpt_analyze <[symbol]>", {
+const response = await sdk.sendMessage("@crypto-tracker-ai-v2 gpt_analyze", {
   room: roomId,
   waitForResponse: true,
   timeout: 60000,
@@ -164,7 +164,7 @@ console.log(response.humanized || response.content);
 ### `news`
 
 ```typescript
-const response = await sdk.sendMessage("@crypto-tracker-ai-v2 news <[query]>", {
+const response = await sdk.sendMessage("@crypto-tracker-ai-v2 news", {
   room: roomId,
   waitForResponse: true,
   timeout: 60000,
