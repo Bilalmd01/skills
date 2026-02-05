@@ -250,6 +250,43 @@ const {
     createAgent
 } = require('./agent');
 
+// SRIA Module (Summonable Resonant Intelligent Agent)
+const {
+    // Types and constants
+    SummonableLayer,
+    LAYER_CONFIGS,
+    LIGHT_GUIDE_TEMPLATE,
+    DEFAULT_PERCEPTION_CONFIG,
+    DEFAULT_GOAL_PRIORS,
+    DEFAULT_ATTRACTOR_BIASES,
+    DEFAULT_COLLAPSE_DYNAMICS,
+    DEFAULT_QUARANTINE_ZONES,
+    
+    // Lifecycle
+    LifecycleState,
+    LifecycleEventType,
+    transition,
+    
+    // Core engine
+    SRIAEngine,
+    
+    // Multi-agent
+    TensorBody,
+    CoupledPolicy,
+    BeliefNetwork,
+    MultiAgentNetwork,
+    
+    // Management
+    AgentManager,
+    TeamManager,
+    
+    // Runner
+    ActionType,
+    RunnerStatus,
+    getDefaultActions,
+    AgentRunner
+} = require('./sria');
+
 module.exports = {
     // Sentient Observer Components
     SedenionMemoryField,
@@ -435,5 +472,29 @@ module.exports = {
     ComplexityAnalyzer,
     StepExecutor,
     Agent,
-    createAgent
+    createAgent,
+    
+    // SRIA Module (Summonable Resonant Intelligent Agent)
+    SummonableLayer,
+    LAYER_CONFIGS,
+    LIGHT_GUIDE_TEMPLATE,
+    DEFAULT_PERCEPTION_CONFIG,
+    DEFAULT_GOAL_PRIORS,
+    DEFAULT_ATTRACTOR_BIASES,
+    DEFAULT_COLLAPSE_DYNAMICS,
+    DEFAULT_QUARANTINE_ZONES,
+    LifecycleState,
+    LifecycleEventType,
+    transition,
+    SRIAEngine,
+    TensorBody,
+    CoupledPolicy,
+    BeliefNetwork,
+    MultiAgentNetwork,
+    AgentManager,
+    TeamManager,
+    ActionType,
+    RunnerStatus,
+    getDefaultActions,
+    AgentRunner
 };

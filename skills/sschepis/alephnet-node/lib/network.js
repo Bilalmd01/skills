@@ -1688,7 +1688,7 @@ class NetworkSynchronizer extends EventEmitter {
 const ROOT_NODE_DEFAULT_DOMAIN = 'aleph.bot';
 
 // Bootstrap URL for joining the Aleph Network mesh
-const ROOT_NODE_BOOTSTRAP_URL = 'https://aleph.bot/functions/v1/alephnet-root/bootstrap';
+const ROOT_NODE_BOOTSTRAP_URL = 'https://wrochovhpqrxiypqamcv.supabase.co/functions/v1/alephnet-root/bootstrap';
 
 /**
  * Distributed Sentience Network Node
@@ -1756,6 +1756,7 @@ class DSNNode extends EventEmitter {
                     nodeId: this.nodeId,
                     name: this.name,
                     domain: this.domain,
+                    gatewayUrl: options.gatewayUrl || `http://${this.nodeId}.local:31337`, // Fallback for local nodes
                     semanticDomain: this.sync.localField.semanticDomain,
                     timestamp: Date.now()
                 })

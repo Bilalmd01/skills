@@ -13,6 +13,9 @@ const { createWebRTCRoutes } = require('./webrtc-routes');
 const { createProviderRoutes } = require('./provider-routes');
 const { createNetworkSync } = require('./network-sync');
 const { createStaticServer, MIME_TYPES } = require('./static-server');
+const { createAgentRoutes } = require('./agent-routes');
+const { createTeamRoutes } = require('./team-routes');
+const { createSRIARoutes } = require('./sria-routes');
 
 module.exports = {
     // Utilities
@@ -35,5 +38,10 @@ module.exports = {
     createWebRTCRoutes,
     createProviderRoutes,
     createNetworkSync,
-    createStaticServer
+    createStaticServer,
+    
+    // Agent routes
+    createAgentRoutes,
+    createTeamRoutes,
+    createSRIARoutes
 };

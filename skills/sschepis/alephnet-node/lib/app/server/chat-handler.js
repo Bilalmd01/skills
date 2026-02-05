@@ -119,17 +119,36 @@ function createChatHandlers(server) {
                     return;
                 }
                 
-                // Set up SSE response
-                res.writeHead(200, {
-                    'Content-Type': 'text/event-stream',
-                    'Cache-Control': 'no-cache',
-                    'Connection': 'keep-alive',
-                    'Access-Control-Allow-Origin': '*'
-                });
-                
-                const timestamp = Date.now();
-                server.observer.processText(message);
-                server.addToHistory('user', message, { timestamp });
+            // Set up SSE response
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*'
+            });
+
+            // Status tracking
+            let toolIteration = 0;
+            let pendingToolCalls = null;
+            let chunkCount = 0;
+            let currentStatusMessage = 'Initializing...';
+            
+            const updateStatus = (msg) => {
+                currentStatusMessage = msg;
+                try {
+                    res.write(`event: status\ndata: ${JSON.stringify({
+                        status: pendingToolCalls ? 'executing_tools' : 'generating',
+                        iteration: toolIteration,
+                        message: currentStatusMessage
+                    })}\n\n`);
+                } catch (e) {}
+            };
+            
+            updateStatus('Processing input...');
+            
+            const timestamp = Date.now();
+            server.observer.processText(message);
+            server.addToHistory('user', message, { timestamp });
                 
                 // Record to senses
                 if (server.senses) {
@@ -149,6 +168,7 @@ function createChatHandlers(server) {
                 // Get sense readings for injection
                 let enhancedMessage = message;
                 if (server.senses) {
+                    updateStatus('Gathering sensory data...');
                     const senseBlock = await server.senses.formatForPrompt();
                     enhancedMessage = `${message}\n\n---\n${senseBlock}`;
                 }
@@ -157,8 +177,8 @@ function createChatHandlers(server) {
                 res.write(`event: thinking\ndata: ${JSON.stringify({ status: 'starting' })}\n\n`);
                 
                 let fullResponse = '';
-                let chunkCount = 0;
-                let pendingToolCalls = null;
+                // chunkCount initialized above
+                // pendingToolCalls initialized above
                 const llmStart = Date.now();
                 const MAX_TOOL_ITERATIONS = 5;
                 
@@ -167,7 +187,9 @@ function createChatHandlers(server) {
                 // Build conversation messages for multi-turn tool use
                 let conversationMessages = [...historyMessages];
                 let currentUserMessage = enhancedMessage;
-                let toolIteration = 0;
+                // toolIteration initialized above
+                
+                updateStatus('Connecting to neural network...');
                 
                 // Heartbeat to keep connection alive
                 const heartbeatInterval = setInterval(() => {
@@ -177,6 +199,7 @@ function createChatHandlers(server) {
                             elapsed,
                             iteration: toolIteration,
                             status: pendingToolCalls ? 'executing_tools' : 'generating',
+                            message: currentStatusMessage,
                             chunks: chunkCount
                         })}\n\n`);
                     } catch (e) {
@@ -190,11 +213,7 @@ function createChatHandlers(server) {
                         toolIteration++;
                         
                         // Send iteration status
-                        res.write(`event: status\ndata: ${JSON.stringify({
-                            status: 'iteration_start',
-                            iteration: toolIteration,
-                            message: toolIteration === 1 ? 'Generating response...' : `Processing step ${toolIteration}...`
-                        })}\n\n`);
+                        updateStatus(toolIteration === 1 ? 'Generating response...' : `Processing step ${toolIteration}...`);
                         
                         let streamGenerator;
                         try {
@@ -260,6 +279,7 @@ function createChatHandlers(server) {
                                 }
                                 
                                 logTool(`Executing: ${toolName}`, JSON.stringify(toolArgs).substring(0, 100));
+                                updateStatus(`Executing tool: ${toolName}...`);
                                 
                                 // Send tool execution event
                                 res.write(`event: tool_exec\ndata: ${JSON.stringify({
@@ -324,6 +344,7 @@ function createChatHandlers(server) {
                 }
                 
                 // Process any remaining tool calls in the text response (XML-based)
+                updateStatus('Processing response...');
                 const { hasTools, results, cleanedResponse } = await processToolCalls(fullResponse, server.toolExecutor);
                 
                 // Store the clean response in history
@@ -336,6 +357,7 @@ function createChatHandlers(server) {
                 
                 // Record the complete exchange for learning topic extraction
                 if (server.learner) {
+                    updateStatus('Learning from conversation...');
                     server.learner.recordConversation({
                         user: message,
                         assistant: cleanedResponse || fullResponse
@@ -376,6 +398,7 @@ function createChatHandlers(server) {
                 // Generate next-step suggestions
                 let nextSteps = [];
                 if (server.nextStepGenerator) {
+                    updateStatus('Generating next steps...');
                     const topics = server.learner?.curiosityEngine?.getConversationTopics() || [];
                     nextSteps = server.nextStepGenerator.generateSuggestions({
                         userMessage: message,
@@ -394,6 +417,8 @@ function createChatHandlers(server) {
                         count: nextSteps.length
                     })}\n\n`);
                 }
+                
+                updateStatus('Complete');
                 
                 // Send complete event with final data
                 res.write(`event: complete\ndata: ${JSON.stringify({
