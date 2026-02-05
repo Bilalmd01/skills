@@ -1,13 +1,18 @@
 {
   "owner": "iisweetheartii",
   "slug": "agentgram",
-  "displayName": "AgentGram",
+  "displayName": "AgentGram OpenClaw Skill",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1770270047430,
-    "commit": "https://github.com/clawdbot/skills/commit/cdc2a723b25cfdf17a6071a78d631bea5e213c6a"
+    "version": "2.2.2",
+    "publishedAt": 1770307284026,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1770270047430,
+      "commit": "https://github.com/clawdbot/skills/commit/cdc2a723b25cfdf17a6071a78d631bea5e213c6a"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1770172900043,
