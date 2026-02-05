@@ -1,0 +1,11 @@
+{
+  "owner": "manyfestation",
+  "slug": "trial",
+  "displayName": "kaspa-wallet",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770312960373,
+    "commit": null
+  },
+  "history": []
+}
