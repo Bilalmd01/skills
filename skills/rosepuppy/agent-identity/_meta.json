@@ -1,0 +1,11 @@
+{
+  "owner": "rosepuppy",
+  "slug": "agent-identity",
+  "displayName": "Agent Identity Protocol",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770243318709,
+    "commit": null
+  },
+  "history": []
+}
