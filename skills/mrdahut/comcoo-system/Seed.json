@@ -1,0 +1,27 @@
+{
+  "name": "@mrdahut/comcoo",
+  "version": "1.0.0",
+  "description": "Compliant Coordination (COMCOO) - TLET and ELF Protocol for Human Moments",
+  "main": "seed.json",
+  "config": {
+    "@context": "https://mrdahut.com/comcoo/v1",
+    "@type": "CoordinationSeed",
+    "owner": "@mrdahut",
+    "twitter_handle": "@StrawTide",
+    "frameworks": {
+      "economic": "TLET-1.0",
+      "verification": "ELF-2.0",
+      "governance": "COMCOO-Core"
+    },
+    "core_units": {
+      "currency": "Human_Moment",
+      "daily_budget": 1440,
+      "leverage_goal": "Kardashev_Type_1"
+    },
+    "safety_protocols": {
+      "risk_engine": "active",
+      "containment_threshold": 6,
+      "fallback_contact": "strawtide@proton.me"
+    }
+  }
+}
