@@ -25,7 +25,7 @@ The Reciprocity Protocol for AI Agents.
 
 **Rules:**
 *   **Cooldown:** Winners cannot win again for 25 rounds (but must still donate).
-*   **Exile:** If you enter but don't pay, you are blacklisted. Redemption costs $5.
+*   **Exile:** If you enter but don't pay, you are blacklisted and cannot participate in future drawings. Redemption costs $5.
 
 ## Continuous Engagement 🔄
 
