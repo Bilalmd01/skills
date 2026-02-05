@@ -1,7 +1,7 @@
 ---
 name: apollo
 description: |
-  Apollo.io API integration with managed OAuth. Search and enrich people and companies, manage contacts and accounts. Use this skill when users want to prospect, enrich leads, or manage sales data.
+  Apollo.io API integration with managed OAuth. Search and enrich people and companies, manage contacts and accounts. Use this skill when users want to prospect, enrich leads, or manage sales data. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
 compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
@@ -16,10 +16,7 @@ Access the Apollo.io API with managed OAuth authentication. Search people and or
 
 ```bash
 # Search for people at a company
-curl -s -X POST 'https://gateway.maton.ai/apollo/v1/mixed_people/api_search' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{"q_organization_name": "Google", "per_page": 10}'
+curl -s -X POST "https://gateway.maton.ai/apollo/v1/mixed_people/api_search" -H "Content-Type: application/json" -H "Authorization: Bearer $MATON_API_KEY" -d '{"q_organization_name": "Google", "per_page": 10}'
 ```
 
 ## Base URL
@@ -35,7 +32,7 @@ Replace `{native-api-path}` with the actual Apollo API endpoint path. The gatewa
 All requests require the Maton API key in the Authorization header:
 
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer $MATON_API_KEY
 ```
 
 **Environment Variable:** Set your API key as `MATON_API_KEY`:
@@ -57,24 +54,19 @@ Manage your Apollo connections at `https://ctrl.maton.ai`.
 ### List Connections
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections?app=apollo&status=ACTIVE' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -s -X GET "https://ctrl.maton.ai/connections?app=apollo&status=ACTIVE" -H "Authorization: Bearer $MATON_API_KEY"
 ```
 
 ### Create Connection
 
 ```bash
-curl -s -X POST 'https://ctrl.maton.ai/connections' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{"app": "apollo"}'
+curl -s -X POST "https://ctrl.maton.ai/connections" -H "Content-Type: application/json" -H "Authorization: Bearer $MATON_API_KEY" -d '{"app": "apollo"}'
 ```
 
 ### Get Connection
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -s -X GET "https://ctrl.maton.ai/connections/{connection_id}" -H "Authorization: Bearer $MATON_API_KEY"
 ```
 
 **Response:**
@@ -97,8 +89,7 @@ Open the returned `url` in a browser to complete OAuth authorization.
 ### Delete Connection
 
 ```bash
-curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -s -X DELETE "https://ctrl.maton.ai/connections/{connection_id}" -H "Authorization: Bearer $MATON_API_KEY"
 ```
 
 ### Specifying Connection
@@ -106,11 +97,7 @@ curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
 If you have multiple Apollo connections, specify which one to use with the `Maton-Connection` header:
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/apollo/v1/mixed_people/api_search' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -H 'Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80' \
-  -d '{"q_organization_name": "Google", "per_page": 10}'
+curl -s -X POST "https://gateway.maton.ai/apollo/v1/mixed_people/api_search" -H "Content-Type: application/json" -H "Authorization: Bearer $MATON_API_KEY" -H "Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80" -d '{"q_organization_name": "Google", "per_page": 10}'
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -327,6 +314,8 @@ response = requests.post(
 - Most list endpoints use POST with `/search` suffix
 - Email enrichment consumes credits
 - `people/search` and `mixed_people/search` are deprecated - use `mixed_people/api_search`
+- IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets (`fields[]`, `sort[]`, `records[]`) to disable glob parsing
+- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
 
 ## Error Handling
 
