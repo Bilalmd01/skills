@@ -1,7 +1,7 @@
 ---
 name: google-calendar
 description: |
-  Google Calendar API integration with managed OAuth. Create events, list calendars, check availability, and manage schedules. Use this skill when users want to interact with Google Calendar.
+  Google Calendar API integration with managed OAuth. Create events, list calendars, check availability, and manage schedules. Use this skill when users want to interact with Google Calendar. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
 compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
@@ -16,8 +16,7 @@ Access the Google Calendar API with managed OAuth authentication. Create and man
 
 ```bash
 # List upcoming events
-curl -s -X GET 'https://gateway.maton.ai/google-calendar/calendar/v3/calendars/primary/events?maxResults=10&orderBy=startTime&singleEvents=true' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -s -X GET "https://gateway.maton.ai/google-calendar/calendar/v3/calendars/primary/events?maxResults=10&orderBy=startTime&singleEvents=true" -H "Authorization: Bearer $MATON_API_KEY"
 ```
 
 ## Base URL
@@ -33,7 +32,7 @@ Replace `{native-api-path}` with the actual Google Calendar API endpoint path. T
 All requests require the Maton API key in the Authorization header:
 
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer $MATON_API_KEY
 ```
 
 **Environment Variable:** Set your API key as `MATON_API_KEY`:
@@ -55,24 +54,19 @@ Manage your Google OAuth connections at `https://ctrl.maton.ai`.
 ### List Connections
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections?app=google-calendar&status=ACTIVE' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -s -X GET "https://ctrl.maton.ai/connections?app=google-calendar&status=ACTIVE" -H "Authorization: Bearer $MATON_API_KEY"
 ```
 
 ### Create Connection
 
 ```bash
-curl -s -X POST 'https://ctrl.maton.ai/connections' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{"app": "google-calendar"}'
+curl -s -X POST "https://ctrl.maton.ai/connections" -H "Content-Type: application/json" -H "Authorization: Bearer $MATON_API_KEY" -d '{"app": "google-calendar"}'
 ```
 
 ### Get Connection
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -s -X GET "https://ctrl.maton.ai/connections/{connection_id}" -H "Authorization: Bearer $MATON_API_KEY"
 ```
 
 **Response:**
@@ -95,8 +89,7 @@ Open the returned `url` in a browser to complete OAuth authorization.
 ### Delete Connection
 
 ```bash
-curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -s -X DELETE "https://ctrl.maton.ai/connections/{connection_id}" -H "Authorization: Bearer $MATON_API_KEY"
 ```
 
 ### Specifying Connection
@@ -104,9 +97,7 @@ curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
 If you have multiple Google Calendar connections, specify which one to use with the `Maton-Connection` header:
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/google-calendar/calendar/v3/calendars/primary/events' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -H 'Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80'
+curl -s -X GET "https://gateway.maton.ai/google-calendar/calendar/v3/calendars/primary/events" -H "Authorization: Bearer $MATON_API_KEY" -H "Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80"
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -296,6 +287,8 @@ response = requests.post(
 - Times must be in RFC3339 format (e.g., `2024-01-15T10:00:00Z`)
 - For recurring events, use `singleEvents=true` to expand instances
 - `orderBy=startTime` requires `singleEvents=true`
+- IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets (`fields[]`, `sort[]`, `records[]`) to disable glob parsing
+- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
 
 ## Error Handling
 
