@@ -1,0 +1,11 @@
+{
+  "owner": "sschepis",
+  "slug": "alephnet-node",
+  "displayName": "AlephNet Node",
+  "latest": {
+    "version": "1.2.6",
+    "publishedAt": 1770244665866,
+    "commit": null
+  },
+  "history": []
+}
