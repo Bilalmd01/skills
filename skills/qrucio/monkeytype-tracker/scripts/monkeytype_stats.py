@@ -13,6 +13,7 @@ Usage:
 
 import json
 import sys
+import os
 import argparse
 import requests
 from pathlib import Path
@@ -28,7 +29,26 @@ CACHE_FILE = SCRIPT_DIR / "monkeytype_cache.json"
 BASE_URL = "https://api.monkeytype.com"
 
 def load_config() -> dict:
-    """Load config, checking skill-local first, then workspace"""
+    """Load config with security priority: ENV var > config file
+    
+    Priority:
+    1. MONKEYTYPE_APE_KEY environment variable (most secure)
+    2. Skill-local config file
+    3. Workspace config file
+    """
+    # Check environment variable first (most secure)
+    ape_key = os.getenv('MONKEYTYPE_APE_KEY')
+    if ape_key:
+        return {
+            'apeKey': ape_key,
+            'automations': {
+                'dailyReport': False,
+                'weeklyReport': False,
+                'reportTime': '20:00'
+            }
+        }
+    
+    # Fall back to config files
     for config_file in [SKILL_CONFIG, WORKSPACE_CONFIG]:
         if config_file.exists():
             with open(config_file) as f:
