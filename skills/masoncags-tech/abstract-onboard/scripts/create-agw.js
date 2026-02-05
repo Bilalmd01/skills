@@ -59,8 +59,18 @@ async function main() {
       console.log("Signer EOA:", account.address);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log("\nExplorer: https://abscan.org/address/" + agwAddress);
-      console.log("\n📝 Note: The AGW smart contract deploys on first transaction.");
-      console.log("   Fund it with ETH and make a transaction to activate.");
+      
+      console.log("\n⚠️  IMPORTANT: Funding Flow");
+      console.log("   1. Fund your EOA first (small amount for gas)");
+      console.log("   2. AGW deploys on first transaction (EOA pays gas)");
+      console.log("   3. Then fund AGW with your main balance");
+      console.log("   4. All future transactions run through AGW");
+      
+      console.log("\n⚠️  VERSION WARNING");
+      console.log("   Different agw-client versions compute different AGW addresses!");
+      console.log("   If you change library versions, re-run this script to verify");
+      console.log("   your AGW address hasn't changed before sending funds.");
+      
       console.log("\n🎮 XP: Once active, your transactions earn Abstract XP!");
       
       return agwAddress;

@@ -1,79 +1,124 @@
-# Abstract Troubleshooting Guide
+# Abstract/zkSync Troubleshooting Guide
 
-## Common Issues
+## ⚠️ Contract Deployment Issues
 
-### 1. "Gas estimation failed" with foundry-zksync
+### Problem: Deploy transaction succeeds but no bytecode at address
 
-**Problem:** foundry-zksync hangs or fails on gas estimation.
+**Symptoms:**
+- Transaction returns success
+- Contract address is returned
+- But `eth_getCode(address)` returns `0x`
+- Tokens sent to the address are LOST
 
-**Solution:** Use Hardhat instead. The `@matterlabs/hardhat-zksync` plugin is more stable.
+**Cause:**
+Abstract uses zkSync's ZK Stack. Standard EVM deployment doesn't work because:
+- zkSync requires EIP-712 transactions with `factory_deps`
+- The `ContractDeployer` system contract handles deploys
+- Standard tools (viem, ethers.js) don't include required fields
 
-```bash
-# Don't use forge for Abstract deployment
-# Use the hardhat config in references/hardhat.config.js
-npm install --save-dev @matterlabs/hardhat-zksync
+**Solution:**
+```javascript
+// ✅ CORRECT: Use zksync-ethers
+const { Wallet, Provider, ContractFactory } = require("zksync-ethers");
+
+const provider = new Provider("https://api.mainnet.abs.xyz");
+const wallet = new Wallet(privateKey, provider);
+
+// Load zksolc-compiled artifact
+const artifact = require("./zkout/MyContract.json");
+
+const factory = new ContractFactory(artifact.abi, artifact.bytecode.object, wallet);
+const contract = await factory.deploy(constructorArgs);
+await contract.waitForDeployment();
+
+// ALWAYS VERIFY
+const address = await contract.getAddress();
+const code = await provider.getCode(address);
+if (code === '0x' || code.length <= 2) {
+  throw new Error("Deployment failed - no bytecode!");
+}
 ```
 
-### 2. "zksolc: command not found"
-
-**Problem:** ZK compiler not installed.
-
-**Solution:** Hardhat plugin handles this automatically. If using manually:
-
-```bash
-# Install zksolc
-npm install -g @matterlabs/zksolc
-
-# Or download binary from:
-# https://github.com/matter-labs/zksolc-bin/releases
+**What NOT to do:**
+```javascript
+// ❌ WRONG: viem's deployContract doesn't work on zkSync
+const hash = await walletClient.deployContract({
+  abi,
+  bytecode,
+  args,
+});
+// Returns success but stores no bytecode!
 ```
 
-### 3. "Bytecode length: 0" in deployment
+### Problem: Gas estimation fails
 
-**Problem:** Contract compiled but bytecode is empty.
+**Symptoms:**
+- Error during deploy or transaction
+- "gas estimation failed" or similar
 
-**Solution:** This can happen with ZK-specific compilation. Check:
-- Solidity version matches zksolc compatibility (0.8.x recommended)
-- Contract has constructor and functions
-- Re-compile with `npx hardhat compile --force`
+**Solutions:**
+1. Use Hardhat with `@matterlabs/hardhat-zksync` plugin
+2. Manually set gas limit higher
+3. Check contract for infinite loops or high complexity
 
-### 4. Transaction stuck pending
+### Problem: Compiler errors with zksolc
 
-**Problem:** TX submitted but never confirms.
+**Solutions:**
+1. Use Solidity 0.8.x (0.8.20 or 0.8.24 recommended)
+2. Install zksolc: `npm install @matterlabs/hardhat-zksync-solc`
+3. Or compile with foundry: `forge build --zksync`
 
-**Solution:** 
-- Check gas price isn't too low
-- Abstract has fast blocks (~1s), so should confirm quickly
-- Verify on https://abscan.org using TX hash
+### Problem: Transaction stuck/pending
 
-### 5. "Invalid chain ID"
+**Solutions:**
+1. Check gas price on abscan.org
+2. Use higher gas price
+3. Wait for network congestion to clear
+4. Cancel with same nonce + higher gas
 
-**Problem:** Wrong network configuration.
+---
 
-**Solution:** Ensure:
-- Mainnet chain ID: `2741`
-- Testnet chain ID: `11124`
-- RPC URL is correct (see addresses.md)
+## Balance & Transfer Issues
 
-### 6. Contract verification failed
+### Problem: Token balance shows 0 but tokens were sent
 
-**Problem:** Can't verify contract on Abscan.
+**Check:**
+1. Correct token contract address?
+2. Correct wallet address?
+3. Transaction actually confirmed?
+4. Token uses different decimals?
 
-**Solution:** 
-- Use standard Solidity (no custom imports)
-- Flatten contract if using multiple files
-- Match compiler version exactly
+### Problem: Transfer fails
 
-## Best Practices
+**Check:**
+1. Sufficient balance (including gas)?
+2. Token approval if using transferFrom?
+3. Contract not paused?
 
-1. **Always test on testnet first** (chain ID 11124)
-2. **Keep private keys in env vars**, never in code
-3. **Use Hardhat over Foundry** for Abstract deployments
-4. **Bridge a small amount first** to test the flow
-5. **Check gas balance** before deployment (~0.01 ETH minimum recommended)
+---
 
-## Getting Help
+## Bridge Issues
 
-- **Abstract Discord:** https://discord.gg/abstract
-- **Abstract Docs:** https://docs.abs.xyz
-- **ZK Stack Docs:** https://docs.zksync.io
+### Problem: Bridge transaction stuck
+
+**Solutions:**
+1. Check source chain transaction confirmed
+2. Wait 10-30 minutes for relay
+3. Check relay.link for status
+4. Contact Relay support if >1 hour
+
+---
+
+## Verification Checklist
+
+Before ANY operation involving value:
+
+- [ ] Contract bytecode exists (`eth_getCode`)
+- [ ] Test with small amount first
+- [ ] Verify addresses are correct
+- [ ] Check on explorer before proceeding
+
+---
+
+*Last updated: 2026-02-05*
+*Lesson learned: Lost 200M tokens to empty address. Always verify.*

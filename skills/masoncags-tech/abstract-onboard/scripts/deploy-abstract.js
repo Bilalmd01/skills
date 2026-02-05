@@ -70,7 +70,21 @@ async function main() {
   await contract.waitForDeployment();
   
   const address = await contract.getAddress();
-  console.log(`\n✅ Contract deployed!`);
+  
+  // CRITICAL: Verify bytecode was actually deployed
+  console.log("\nVerifying deployment...");
+  const code = await provider.getCode(address);
+  
+  if (!code || code === '0x' || code.length <= 2) {
+    console.error("\n❌ DEPLOYMENT FAILED!");
+    console.error("Transaction succeeded but no bytecode at address.");
+    console.error("This can happen if using wrong deployment method for zkSync.");
+    console.error("Make sure you're using zksync-ethers and zksolc-compiled artifacts.");
+    process.exit(1);
+  }
+  
+  console.log(`Bytecode verified: ${code.length} chars ✅`);
+  console.log(`\n✅ Contract deployed and verified!`);
   console.log(`Address: ${address}`);
   console.log(`Explorer: https://abscan.org/address/${address}`);
   
