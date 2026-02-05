@@ -259,6 +259,11 @@ For each email in `emails.data`, use the agent's own semantic analysis to determ
 **Exclusions:** The following are **never** important, even if matching other criteria:
 - Promotional/marketing emails
 - LinkedIn Job Alert emails (LinkedIn message notifications are fine)
+- Unsolicited recruiter/job-posting emails and mass hiring notices (e.g., subjects or bodies containing keywords like "hire", "hiring", "job", "position", "onsite", "fulltime", "recruiter", "application", or obvious bulk outreach), unless the sender is in the user's contacts or the message is starred/readily identified as personally relevant.
+- Product announcement / product update emails and vendor/platform notifications (e.g., "[Product Update]", release announcements, automatic enablement notices), unless the sender is in the user's contacts or the message is explicitly starred.
+- Vendor newsletters, community announcements, and general technical mailing-list posts (e.g., blog posts, release notes, product previews, digests), unless clearly personal or from a contact.
+
+*Implementation note for maintainers:* When classifying emails, treat product-update/newsletter/recruiter/job-posting patterns as negative signals unless corroborated by contact membership or explicit user signals (starred/flagged). This reduces noisy vendor, product, and hiring outreach from appearing in the important-email section.
 
 **Failure behavior:** If semantic analysis fails, silently **omit the entire email section**.
 
