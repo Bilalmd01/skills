@@ -8,6 +8,4 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #536 | 3:19 PM | ✅ | All Skill Files Synchronized Across Distribution Points | ~247 |
-| #534 | " | ✅ | Distributed Updated Skill Documentation | ~181 |
-| #474 | 7:37 AM | ✅ | Synchronized skill documentation across multiple locations | ~285 |
 </claude-mem-context>
