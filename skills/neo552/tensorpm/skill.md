@@ -1,8 +1,10 @@
 ---
-name: TensorPM
-description: "AI-powered project management - a Notion and Jira alternative with local-first architecture. Manage projects, track action items, and coordinate teams via MCP tools or A2A agent communication. Signed & notarized."
-homepage: https://tensorpm.com
-user-invocable: true
+name: tensorpm
+description: "AI-powered project management - a Notion and Jira alternative with local-first architecture. Manage projects, track action items, and coordinate teams via MCP tools or A2A agent communication. Signed & notarized. https://tensorpm.com"
+compatibility: Requires TensorPM desktop app to be running for MCP tools and A2A communication. Available on macOS, Windows, and Linux.
+metadata:
+  homepage: https://tensorpm.com
+  author: tensorpm team
 ---
 
 # TensorPM Skill
@@ -241,6 +243,65 @@ Tasks track the lifecycle of message requests. States: `submitted`, `working`, `
 | `manualEffort` | object | Actual effort: `{value: number, unit: "hours" \| "days"}`, or `null` to clear |
 | `isBudget` | object | Actual budget spent: `{amount: number, currency?: string}`, or `null` to clear |
 | `blockReason` | string | Reason when status is `blocked` |
+| `dependencies` | array | Task dependencies (sourceId + type) |
+
+## Dependencies
+
+Action items support dependencies for sequential task execution. Dependencies define which tasks must complete (or start) before others can begin.
+
+### Dependency Types
+
+| Type | Name | Meaning |
+|------|------|---------|
+| `FS` | Finish-to-Start | Task B cannot start until Task A finishes (most common) |
+| `SS` | Start-to-Start | Task B cannot start until Task A starts |
+| `FF` | Finish-to-Finish | Task B cannot finish until Task A finishes |
+| `SF` | Start-to-Finish | Task B cannot finish until Task A starts (rare) |
+
+### Creating Dependencies
+
+When creating action items via `submit_action_items`, specify dependencies as:
+
+```json
+{
+  "actionItems": [
+    {
+      "text": "Task A - Research",
+      "complexity": "simple"
+    },
+    {
+      "text": "Task B - Implementation",
+      "complexity": "moderate",
+      "dependencies": [
+        {"sourceId": "<id-of-task-A>", "type": "FS"}
+      ]
+    }
+  ]
+}
+```
+
+**Note:** `sourceId` must reference an existing action item already in the project. In MCP tools, `targetId` is set automatically to the current item, so you only provide `sourceId` and `type`.
+
+### Updating Dependencies
+
+Use `update_action_items` to modify dependencies. Setting `dependencies` replaces all existing dependencies:
+
+```json
+{
+  "updates": [
+    {
+      "id": "<action-item-id>",
+      "dependencies": [
+        {"sourceId": "<other-item-id>", "type": "FS"},
+        {"sourceId": "<another-item-id>", "type": "SS"}
+      ]
+    }
+  ]
+}
+```
+
+Set to empty array `[]` to clear all dependencies.
+
 
 ## A2A REST API Examples
 
