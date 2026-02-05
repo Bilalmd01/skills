@@ -1,0 +1,11 @@
+{
+  "owner": "chaunceyliu",
+  "slug": "test1",
+  "displayName": "test1",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770301053119,
+    "commit": null
+  },
+  "history": []
+}
