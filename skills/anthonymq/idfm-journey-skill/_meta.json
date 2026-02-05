@@ -1,0 +1,11 @@
+{
+  "owner": "anthonymq",
+  "slug": "idfm-journey-skill",
+  "displayName": "IDFM Journey (PRIM/Navitia)",
+  "latest": {
+    "version": "0.1.2",
+    "publishedAt": 1770284678316,
+    "commit": null
+  },
+  "history": []
+}
