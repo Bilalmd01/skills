@@ -3,9 +3,15 @@
   "slug": "claw-skill-public-dot-com",
   "displayName": "public-dot-com",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770160150757,
-    "commit": "https://github.com/clawdbot/skills/commit/70938fb0878e53dc885d9f337955b77f628b283c"
+    "version": "1.0.2",
+    "publishedAt": 1770239296020,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770160150757,
+      "commit": "https://github.com/clawdbot/skills/commit/70938fb0878e53dc885d9f337955b77f628b283c"
+    }
+  ]
 }
