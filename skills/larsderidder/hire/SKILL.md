@@ -46,6 +46,7 @@ After the interview, present a summary:
 ```
 🎯 Role: [one-line description]
 🧠 Name: [suggested name from naming taxonomy]
+🤖 Model: [selected model] ([tier])
 ⚡ Personality: [2-3 word vibe]
 🔧 Tools: [inferred from conversation]
 🚫 Boundaries: [key red lines]
@@ -53,6 +54,47 @@ After the interview, present a summary:
 ```
 
 Then ask: **"Want to tweak anything, or are we good?"**
+
+## Model Selection
+
+Before finalizing, select an appropriate model for the agent.
+
+### Step 1: Discover available models
+Run `openclaw models list` or check the gateway config to see what's configured.
+
+### Step 2: Categorize by tier
+Map discovered models to capability tiers:
+
+| Tier | Models (examples) | Best for |
+|------|-------------------|----------|
+| **reasoning** | claude-opus-*, gpt-5*, gpt-4o, deepseek-r1 | Strategy, advisory, complex analysis, architecture |
+| **balanced** | claude-sonnet-*, gpt-4-turbo, gpt-4o-mini | Research, writing, general tasks |
+| **fast** | claude-haiku-*, gpt-3.5*, local/ollama | High volume, simple tasks, drafts |
+| **code** | codex-*, claude-sonnet-*, deepseek-coder | Coding, refactoring, tests |
+
+Use pattern matching on model names - don't hardcode specific versions.
+
+### Step 3: Match role to tier
+Based on the interview:
+- Heavy reasoning/advisory/strategy → reasoning tier
+- Research/writing/creative → balanced tier
+- Code-focused → code tier (or balanced if not available)
+- High-volume/monitoring → fast tier
+
+### Step 4: Select and confirm
+Pick the best available model for the role. In the summary card, add:
+```
+🤖 Model: [selected model] ([tier] - [brief reason])
+```
+
+If multiple good options exist or you're unsure, ask:
+"For a [role type] role, I'd suggest [model] (good balance of capability and cost). Or [alternative] if you want [deeper reasoning / faster responses / lower cost]. Preference?"
+
+### Notes
+- Don't assume any specific provider - work with what's available
+- Cheaper is better when capability is sufficient
+- The user's default model isn't always right for every agent
+- If only one model is available, use it and note it in the summary
 
 ## Optional Extras
 
@@ -111,7 +153,32 @@ Mention any relevant observations: "You already have Scout for research - this n
 ## After Setup
 
 1. Tell the user what was created and where
-2. Explain how to activate the agent in OpenClaw (`openclaw agents add` or config update)
+2. **Automatically update the OpenClaw config via gateway `config.patch`** (do not ask the user to run a manual command). You must:
+   - Add the new agent entry to `agents.list` using this format:
+     ```json
+     {
+       "id": "<name>",
+       "workspace": "/home/lars/clawd/agents/<name>",
+       "model": "<selected-model>"
+     }
+     ```
+   - Add the new agent ID to the **main agent's** `subagents.allowAgents` array
+   - Preserve all existing agents and fields (arrays replace on patch)
+
+   **Required flow:**
+   1) Fetch config + hash
+      ```bash
+      openclaw gateway call config.get --params '{}'
+      ```
+   2) Build the updated `agents.list` array (existing entries + new agent) and update the `main` agent's `subagents.allowAgents` (existing list + new id).
+   3) Apply with `config.patch`:
+      ```bash
+      openclaw gateway call config.patch --params '{
+        "raw": "{\n agents: {\n  list: [ /* full list with new agent + updated main allowAgents */ ]\n }\n}\n",
+        "baseHash": "<hash-from-config.get>",
+        "restartDelayMs": 1000
+      }'
+      ```
 3. If monthly reviews were requested, confirm the cron schedule
 4. Update any team roster if one exists
 
