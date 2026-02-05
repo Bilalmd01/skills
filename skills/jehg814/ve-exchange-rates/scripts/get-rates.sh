@@ -6,22 +6,24 @@ echo "🇻🇪 TASAS DE CAMBIO VENEZUELA"
 echo "=============================="
 echo ""
 
-# Get BCV rate from dolarapi.com (most reliable)
+# Get BCV rate from bcv-api-production (most reliable, direct from BCV)
 echo "📊 Consultando tasa BCV..."
-BCV_RATE=$(curl -s "https://ve.dolarapi.com/v1/dolares/oficial" 2>/dev/null | jq -r '.promedio // empty')
+BCV_RESPONSE=$(curl -s "https://bcv-api-production.up.railway.app/api/bcv" 2>/dev/null)
+BCV_RATE=$(echo "$BCV_RESPONSE" | jq -r '.usd // empty')
 
-# Fallback to other sources if API fails
+# Fallback to dolarapi.com if primary API fails
+if [ -z "$BCV_RATE" ] || [ "$BCV_RATE" = "null" ]; then
+    BCV_RATE=$(curl -s "https://ve.dolarapi.com/v1/dolares/oficial" 2>/dev/null | jq -r '.promedio // empty')
+fi
+
+# Fallback to tcambio.app
 if [ -z "$BCV_RATE" ] || [ "$BCV_RATE" = "null" ]; then
     BCV_RATE=$(curl -s "https://tcambio.app" 2>/dev/null | grep -oP 'Bs\.S\s+\K[0-9]+\.[0-9]+' | head -1)
 fi
 
-if [ -z "$BCV_RATE" ] || [ "$BCV_RATE" = "null" ]; then
-    BCV_RATE=$(curl -s "https://finanzasdigital.com" 2>/dev/null | grep -oP '[0-9]+\.[0-9]+(?=\s*Bs/USD)' | head -1)
-fi
-
 # Last resort fallback
 if [ -z "$BCV_RATE" ] || [ "$BCV_RATE" = "null" ]; then
-    BCV_RATE="370.25"
+    BCV_RATE="375.08"
 fi
 
 echo "✅ Tasa BCV: $BCV_RATE Bs/USD"
@@ -139,11 +141,11 @@ echo ""
 echo "📈 BRECHA CAMBIARIA:"
 echo "===================="
 DIFF=$(echo "scale=2; $P2P_AVG - $BCV_RATE" | bc)
-# Brecha: cuánto % le falta al BCV para alcanzar al P2P (referencia 100% = P2P)
-GAP=$(echo "scale=2; ($P2P_AVG - $BCV_RATE) / $P2P_AVG * 100" | bc)
+# Brecha: cuánto % está el paralelo por encima del oficial (referencia 100% = BCV)
+GAP=$(echo "scale=2; ($P2P_AVG - $BCV_RATE) / $BCV_RATE * 100" | bc)
 
 echo "Diferencia: $DIFF Bs"
-echo "Brecha: $GAP% (BCV está $GAP% debajo del paralelo)"
+echo "Brecha: $GAP% (el paralelo está $GAP% encima del oficial)"
 echo ""
 echo "=============================="
 echo "Actualizado: $(date '+%Y-%m-%d %H:%M')"
