@@ -3,9 +3,15 @@
   "slug": "chat-conversation-summary",
   "displayName": "Conversation Summary",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770282011662,
-    "commit": "https://github.com/clawdbot/skills/commit/d4a53ba62762f8d7c062b4ac6053238539dc3dce"
+    "version": "1.0.1",
+    "publishedAt": 1770282130235,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770282011662,
+      "commit": "https://github.com/clawdbot/skills/commit/d4a53ba62762f8d7c062b4ac6053238539dc3dce"
+    }
+  ]
 }
