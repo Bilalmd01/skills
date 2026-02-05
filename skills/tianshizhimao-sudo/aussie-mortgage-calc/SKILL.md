@@ -2,7 +2,6 @@
 name: aussie-mortgage-calc
 description: Australian mortgage calculator — LVR, stamp duty, LMI, repayments, and First Home Buyer concessions by state.
 homepage: https://oneyco.com.au
-metadata: {"clawdbot":{"emoji":"🏠","category":"Finance"}}
 ---
 
 # Australian Mortgage Calculator

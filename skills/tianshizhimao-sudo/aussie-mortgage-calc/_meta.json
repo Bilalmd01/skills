@@ -3,9 +3,15 @@
   "slug": "aussie-mortgage-calc",
   "displayName": "Aussie Mortgage Calc",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770261588400,
-    "commit": "https://github.com/clawdbot/skills/commit/d4bf05b78eccfcea1cfb64b4f9ba1fceea016c82"
+    "version": "1.1.0",
+    "publishedAt": 1770261956275,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770261588400,
+      "commit": "https://github.com/clawdbot/skills/commit/d4bf05b78eccfcea1cfb64b4f9ba1fceea016c82"
+    }
+  ]
 }
