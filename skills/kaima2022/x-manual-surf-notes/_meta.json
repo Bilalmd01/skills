@@ -3,9 +3,15 @@
   "slug": "x-manual-surf-notes",
   "displayName": "X Manual Surf Notes (手动刷帖笔记)",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1770300184110,
-    "commit": "https://github.com/clawdbot/skills/commit/7aaa0d6fef8964cdc36cdf613096b2e2014c9b46"
+    "version": "1.0.0",
+    "publishedAt": 1770301575380,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1770300184110,
+      "commit": "https://github.com/clawdbot/skills/commit/7aaa0d6fef8964cdc36cdf613096b2e2014c9b46"
+    }
+  ]
 }
