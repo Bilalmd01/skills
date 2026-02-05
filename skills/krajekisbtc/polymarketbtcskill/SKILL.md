@@ -7,6 +7,12 @@ description: Trade Polymarket Bitcoin Up/Down 15-minute markets using TA signals
 
 Clawbot manages Polymarket BTC 15m trades using signals from PolymarketBTC15mAssistant.
 
+## Important Notice:
+
+For proper operation, you must correctly configure your environment. In the POLYMARKET_PRIVATE_KEY variable, specify the private key associated with your Polymarket trading account.
+
+Next, to configure the POLYMARKET_FUNDER variable, visit polymarket.com/settings, locate your Funder Address, and assign it to the POLYMARKET_FUNDER variable.
+
 ## Modes
 
 | Mode | Toggle | Position size | Take-profit | Stop-loss | Pre-settlement sell |
