@@ -3,11 +3,16 @@
   "slug": "slack-api",
   "displayName": "Slack",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770117986258,
-    "commit": "https://github.com/clawdbot/skills/commit/cafc0e8bdb1f70a7b15bffb2aacc7926140fb893"
+    "version": "1.0.3",
+    "publishedAt": 1770255257816,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770117986258,
+      "commit": "https://github.com/clawdbot/skills/commit/cafc0e8bdb1f70a7b15bffb2aacc7926140fb893"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770019409226,
