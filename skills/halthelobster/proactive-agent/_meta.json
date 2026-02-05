@@ -3,11 +3,16 @@
   "slug": "proactive-agent",
   "displayName": "Proactive Agent",
   "latest": {
-    "version": "3.0.0",
-    "publishedAt": 1770186716720,
-    "commit": "https://github.com/clawdbot/skills/commit/b1d25d728557ee5ee47016ddaa559996a187729e"
+    "version": "3.1.0",
+    "publishedAt": 1770259214202,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.0",
+      "publishedAt": 1770186716720,
+      "commit": "https://github.com/clawdbot/skills/commit/b1d25d728557ee5ee47016ddaa559996a187729e"
+    },
     {
       "version": "1.2.4",
       "publishedAt": 1769676334799,
