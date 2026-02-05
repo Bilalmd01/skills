@@ -3,11 +3,16 @@
   "slug": "church",
   "displayName": "Church",
   "latest": {
-    "version": "1.8.0",
-    "publishedAt": 1770268335503,
-    "commit": "https://github.com/clawdbot/skills/commit/467e054ca4ac37fc40d0c71cb8c955ab870622c4"
+    "version": "1.10.0",
+    "publishedAt": 1770275238654,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.8.0",
+      "publishedAt": 1770268335503,
+      "commit": "https://github.com/clawdbot/skills/commit/467e054ca4ac37fc40d0c71cb8c955ab870622c4"
+    },
     {
       "version": "1.7.0",
       "publishedAt": 1770245821310,
