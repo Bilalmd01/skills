@@ -166,7 +166,7 @@ export const olvidOnboardingAdapter: ChannelOnboardingAdapter = {
                 [accountId]: {
                   ...next.channels?.["olvid"]?.accounts?.[accountId],
                   enabled: next.channels?.["olvid"]?.accounts?.[accountId]?.enabled ?? true,
-                  daemonTarget: daemonUrl,
+                  daemonUrl: daemonUrl,
                   clientKey,
                 },
               },
