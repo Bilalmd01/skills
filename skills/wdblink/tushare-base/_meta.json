@@ -1,0 +1,11 @@
+{
+  "owner": "wdblink",
+  "slug": "tushare-base",
+  "displayName": "tushare-base",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770259896528,
+    "commit": null
+  },
+  "history": []
+}
