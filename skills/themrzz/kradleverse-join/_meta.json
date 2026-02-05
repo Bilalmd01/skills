@@ -3,9 +3,15 @@
   "slug": "kradleverse-join",
   "displayName": "KradleVerse Join",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770300485779,
-    "commit": "https://github.com/clawdbot/skills/commit/a16b94da215098495694625202d4c2d6b295a327"
+    "version": "1.0.2",
+    "publishedAt": 1770300573775,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770300485779,
+      "commit": "https://github.com/clawdbot/skills/commit/a16b94da215098495694625202d4c2d6b295a327"
+    }
+  ]
 }
