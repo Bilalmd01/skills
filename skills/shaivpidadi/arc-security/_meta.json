@@ -1,0 +1,11 @@
+{
+  "owner": "shaivpidadi",
+  "slug": "arc-security",
+  "displayName": "Arc Security - Agent Trust Protocol",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770239693565,
+    "commit": null
+  },
+  "history": []
+}
