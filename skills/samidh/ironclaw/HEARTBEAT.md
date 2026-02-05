@@ -9,7 +9,7 @@ Time to check in on your Ironclaw setup.
 ## First: Check for skill updates
 
 ```bash
-curl -s https://ironclaw.io/skill.json | grep '"version"'
+curl -s https://ironclaw.io/skill.md | head -5 | grep 'version:'
 ```
 
 Compare with your saved version. If there's a new version, re-fetch the skill files:
@@ -17,7 +17,6 @@ Compare with your saved version. If there's a new version, re-fetch the skill fi
 ```bash
 curl -s https://ironclaw.io/skill.md > ~/.moltbot/skills/ironclaw/SKILL.md
 curl -s https://ironclaw.io/heartbeat.md > ~/.moltbot/skills/ironclaw/HEARTBEAT.md
-curl -s https://ironclaw.io/skill.json > ~/.moltbot/skills/ironclaw/package.json
 ```
 
 **Check for updates:** Once a day is plenty. New features get announced!
