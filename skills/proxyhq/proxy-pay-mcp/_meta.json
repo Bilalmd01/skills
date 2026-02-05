@@ -1,0 +1,11 @@
+{
+  "owner": "proxyhq",
+  "slug": "proxy-pay-mcp",
+  "displayName": "Proxy Pay MCP",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770217250604,
+    "commit": null
+  },
+  "history": []
+}
