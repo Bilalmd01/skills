@@ -3,9 +3,15 @@
   "slug": "claw-control",
   "displayName": "Claw Control",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770242695104,
-    "commit": "https://github.com/clawdbot/skills/commit/e74eafa3fd4129d6135ba2d48514ec114ec8a894"
+    "version": "1.1.0",
+    "publishedAt": 1770284927281,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770242695104,
+      "commit": "https://github.com/clawdbot/skills/commit/e74eafa3fd4129d6135ba2d48514ec114ec8a894"
+    }
+  ]
 }

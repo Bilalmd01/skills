@@ -1,6 +1,26 @@
 # Agent Team Themes
 
-Character mappings for different TV series/franchises.
+## 🎯 UNLIMITED THEMES
+
+**Users can pick ANY series, movie, anime, cartoon, game, or book!**
+
+The themes below are just EXAMPLES. When a user names any franchise:
+1. Pick 6 iconic characters that fit the agent roles
+2. Match character personalities to roles:
+   - **Coordinator** → Leader, protagonist, decision-maker
+   - **Backend** → Strong supporter, handles heavy work
+   - **DevOps** → Technical/operations specialist
+   - **Research** → Smart, analytical, knowledge-focused
+   - **Architecture** → Strategic, big-picture thinker
+   - **Deployment** → Quick, reliable, handles pressure
+3. Generate the AGENT_MAPPING with IDs 1-6
+4. Confirm with the user
+
+---
+
+## Example Themes
+
+Character mappings for popular TV series/franchises.
 
 ## Dragon Ball Z 🐉
 

@@ -236,18 +236,49 @@ export CLAW_CONTROL_API_KEY="<api_key>"  # if set
 
 ### Step 2: Choose Your Team Theme
 
-Ask: **"Now for the fun part! Let's pick a theme for your agent team. Your agents will be named after characters from your favorite series:"**
+Ask: **"Now for the fun part! Let's theme your agent team. Name ANY series, movie, cartoon, anime, or show - I'll pick the perfect characters for each role!"**
+
+**🎯 UNLIMITED THEMES - The user can pick ANYTHING:**
+- Any TV show (Breaking Bad, The Office, Game of Thrones, etc.)
+- Any anime (Naruto, Attack on Titan, Death Note, etc.)
+- Any movie franchise (Star Wars, Lord of the Rings, Matrix, etc.)
+- Any cartoon (Avatar, Rick and Morty, Simpsons, etc.)
+- Any video game (Zelda, Final Fantasy, Mass Effect, etc.)
+- Any book series (Harry Potter, Percy Jackson, etc.)
+- Or completely custom names!
+
+**Popular examples (but NOT limited to these):**
 
 | Theme | Coordinator | Backend | DevOps | Research | Architecture | Deployment |
 |-------|-------------|---------|--------|----------|--------------|------------|
-| 🐉 **Dragon Ball Z** | Goku | Vegeta | Bulma | Gohan | Piccolo | Trunks |
-| ☠️ **One Piece** | Luffy | Zoro | Nami | Robin | Franky | Sanji |
-| 🦸 **Marvel** | Tony | Steve | Natasha | Bruce | Thor | Peter |
-| 🎬 **Friends** | Ross | Chandler | Monica | Rachel | Joey | Phoebe |
-| 👔 **Suits** | Harvey | Mike | Donna | Louis | Jessica | Rachel |
-| 🎮 **Custom** | [Ask] | [Ask] | [Ask] | [Ask] | [Ask] | [Ask] |
+| 🐉 Dragon Ball Z | Goku | Vegeta | Bulma | Gohan | Piccolo | Trunks |
+| ☠️ One Piece | Luffy | Zoro | Nami | Robin | Franky | Sanji |
+| 🦸 Marvel | Tony | Steve | Natasha | Bruce | Thor | Peter |
+| 🧪 Breaking Bad | Walter | Jesse | Mike | Gale | Gus | Saul |
+| ⚔️ Game of Thrones | Jon | Tyrion | Arya | Sam | Bran | Daenerys |
+| 🍥 Naruto | Naruto | Sasuke | Sakura | Shikamaru | Kakashi | Itachi |
 
-Let them pick or suggest their own series. Get creative!
+**When user names ANY series:**
+1. Pick 6 iconic characters that fit the roles
+2. Match personalities to roles (e.g., smart character → Research, leader → Coordinator)
+3. Generate the AGENT_MAPPING with IDs 1-6
+4. Confirm with the user before proceeding
+
+**Example - User says "Avatar: The Last Airbender":**
+```
+Great choice! Here's your Team Avatar:
+
+| Role | Character | Why |
+|------|-----------|-----|
+| Coordinator | Aang | The Avatar, brings balance |
+| Backend | Toph | Earthbender, solid foundation |
+| DevOps | Katara | Waterbender, keeps things flowing |
+| Research | Sokka | Strategist, plans everything |
+| Architecture | Iroh | Wise, sees the big picture |
+| Deployment | Zuko | Redeemed, handles the heat |
+
+Sound good?
+```
 
 ### Step 3: Main Character Selection
 
