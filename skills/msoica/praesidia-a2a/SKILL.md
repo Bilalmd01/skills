@@ -1,34 +1,32 @@
 ---
-name: A2A Protocol
-description: Implement Agent-to-Agent (A2A) communication with OAuth authentication, trust verification, and secure messaging. Use when building A2A clients/servers, setting up OAuth flows, implementing agent authentication, configuring middleware pipelines, or when user asks "how do agents talk to each other", "set up A2A auth", or "implement agent communication".
-metadata: {"openclaw":{"requires":{"env":["PRAESIDIA_API_KEY"]},"primaryEnv":"PRAESIDIA_API_KEY","homepage":"https://a2a-protocol.org","emoji":"🤝"}}
+name: Praesidia
+description: Verify AI agents, check trust scores (0-100), fetch A2A agent cards, discover marketplace agents, apply guardrails for security and compliance. Use when user mentions agent verification, trust scores, agent discovery, A2A protocol, agent identity, agent marketplace, guardrails, security policies, content moderation, or asks "is this agent safe?" or "find agents that can [task]" or "apply guardrails to protect my agent".
+metadata: {"openclaw":{"requires":{"env":["PRAESIDIA_API_KEY"]},"primaryEnv":"PRAESIDIA_API_KEY","homepage":"https://praesidia.ai","emoji":"🛡️"}}
 ---
 
-# A2A Protocol - Agent-to-Agent Communication
+# Praesidia Agent Identity, Verification & Guardrails
 
-Implement secure, authenticated agent-to-agent communication using the A2A protocol with Praesidia identity and trust verification.
+Verify AI agents, check trust scores (0-100), discover marketplace agents, and apply guardrails for security and compliance.
 
 ## Core Capabilities
 
-- **OAuth Authentication** - Set up OAuth 2.0/OIDC flows for agent auth
-- **A2A Client** - Send authenticated messages to other agents
-- **A2A Server** - Receive and validate incoming agent requests
-- **Middleware Pipeline** - Add auth, trust verification, and audit logging
-- **Trust Verification** - Verify trust levels before agent interactions
-- **Token Management** - Issue, exchange, and validate JWT tokens
+- **Verify agents** - Check if an agent is registered, verified, and trustworthy
+- **Trust scores** - View 0-100 trust ratings and verification status
+- **Agent discovery** - Search marketplace for public agents by capability
+- **Guardrails** - Apply security policies and content moderation to agents
+- **A2A protocol** - Fetch standard Agent-to-Agent protocol cards
 
 ## Prerequisites
 
 1. Praesidia account: https://praesidia.ai
 2. API key from Settings → API Keys
-3. Registered agent with client credentials
-4. Configure in `~/.openclaw/openclaw.json`:
+3. Configure in `~/.openclaw/openclaw.json`:
 
 ```json
 {
   "skills": {
     "entries": {
-      "a2a": {
+      "praesidia": {
         "apiKey": "pk_live_your_key_here",
         "env": {
           "PRAESIDIA_API_URL": "https://api.praesidia.ai"
@@ -39,110 +37,20 @@ Implement secure, authenticated agent-to-agent communication using the A2A proto
 }
 ```
 
-For local development, use `http://localhost:5001` as the URL.
+For local development, use `http://localhost:3000` as the URL.
 
 ---
 
 ## Quick Reference
 
-### 1. Get OAuth Token for Agent
+### 1. Verify an Agent
 
-**User says:** "Get an access token for my agent" / "Authenticate my A2A client"
-
-**Your action:**
-```javascript
-web_fetch({
-  url: "${PRAESIDIA_API_URL}/oauth/token",
-  method: "POST",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded"
-  },
-  body: new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: "${AGENT_CLIENT_ID}",
-    client_secret: "${AGENT_CLIENT_SECRET}",
-    scope: "a2a:message a2a:task a2a:stream"
-  })
-})
-```
-
-**Response includes:**
-- `access_token` - JWT for authenticating requests
-- `token_type` - "Bearer"
-- `expires_in` - Seconds until expiry (typically 3600)
-- `scope` - Granted scopes
-
-**Present to user:**
-```
-✅ Access token obtained for agent ${AGENT_CLIENT_ID}
-
-Token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
-Expires: in 1 hour
-Scopes: a2a:message, a2a:task, a2a:stream
-
-Use this token in Authorization header:
-Authorization: Bearer <token>
-```
-
----
-
-### 2. Send Message to Another Agent
-
-**User says:** "Send a message to agent xyz" / "Call another agent at https://agent.example.com"
-
-**Your action:**
-```javascript
-// First, get the target agent's card
-web_fetch({
-  url: "https://agent.example.com/.well-known/agent-card.json",
-  headers: { "Accept": "application/json" }
-})
-
-// Then send a message
-web_fetch({
-  url: "https://agent.example.com/a2a",
-  method: "POST",
-  headers: {
-    "Authorization": "Bearer ${ACCESS_TOKEN}",
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    jsonrpc: "2.0",
-    id: crypto.randomUUID(),
-    method: "message/send",
-    params: {
-      message: {
-        messageId: crypto.randomUUID(),
-        role: "user",
-        kind: "message",
-        parts: [
-          {
-            kind: "text",
-            text: "Hello from my agent!"
-          }
-        ]
-      }
-    }
-  })
-})
-```
-
-**Present to user:**
-- Message sent successfully
-- Response from target agent
-- Task ID (if created)
-- Any streaming endpoint
-
----
-
-### 3. Verify Trust Before Communication
-
-**User says:** "Is agent xyz trustworthy?" / "Check trust before calling agent"
+**User says:** "Is agent chatbot-v2 safe?" / "Verify agent chatbot-v2"
 
 **Your action:**
 ```javascript
 web_fetch({
-  url: "${PRAESIDIA_API_URL}/agents/${TARGET_AGENT_ID}/trust",
+  url: "${PRAESIDIA_API_URL}/agents/chatbot-v2/agent-card",
   headers: {
     "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
     "Accept": "application/json"
@@ -150,477 +58,431 @@ web_fetch({
 })
 ```
 
-**Response shows:**
-- Trust score (0-100)
-- Trust level (UNTRUSTED, LIMITED, STANDARD, VERIFIED, TRUSTED)
-- Trust components (identity, behavior, security, compliance)
-- Calculated date and validity
+**Present to user:**
+- ✅ Agent name & description
+- 🛡️ **Trust score (0-100)** and trust level
+- ✓ Verification status (verified date)
+- 🔧 Capabilities (what the agent can do)
+- 📜 Compliance (SOC2, GDPR, etc.)
+- 🔗 Agent card URL
 
-**Decision logic:**
+**Example output:**
 ```
-Trust Level Guide:
-- TRUSTED (90-100): ✅ Safe to interact
-- VERIFIED (80-89): ✅ Generally safe
-- STANDARD (60-79): ⚠️  Use with caution
-- LIMITED (40-59): ⚠️  High risk
-- UNTRUSTED (0-39): ❌ Do not interact
+✅ ChatBot V2 is verified and safe to use!
+
+Trust Score: 92.5/100 (VERIFIED)
+Status: ACTIVE
+Capabilities: message:send, task:create, data:analyze
+Compliance: SOC2, GDPR
+Last verified: 2 days ago
+
+Agent card: https://api.praesidia.ai/agents/chatbot-v2/agent-card
 ```
 
 ---
 
-### 4. Exchange Token for Agent-to-Agent Call
+### 2. List Guardrails for an Agent
 
-**User says:** "Get a token to call agent xyz on behalf of my agent"
+**User says:** "What guardrails are configured for my agent?" / "Show me security policies for chatbot-v2"
 
 **Your action:**
 ```javascript
+// First, get the user's organization ID from their profile or context
+// Then fetch guardrails
 web_fetch({
-  url: "${PRAESIDIA_API_URL}/oauth/token",
-  method: "POST",
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails?agentId=${agentId}",
   headers: {
-    "Content-Type": "application/x-www-form-urlencoded"
-  },
-  body: new URLSearchParams({
-    grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
-    subject_token: "${CURRENT_ACCESS_TOKEN}",
-    subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
-    requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
-    audience: "${TARGET_AGENT_URL}",
-    scope: "a2a:message"
-  })
-})
-```
-
-**Use case:** When calling agent B from agent A, exchange A's token for a token scoped to B.
-
----
-
-### 5. Set Up OAuth Provider (Server-Side)
-
-**User says:** "Make my agent an OAuth provider" / "Set up token endpoint"
-
-**Guidance:**
-
-Implement these endpoints:
-
-**Token endpoint** (`POST /oauth/token`):
-```javascript
-// Validate client credentials
-// Generate JWT with agent identity
-// Return access_token, expires_in, scope
-```
-
-**JWKS endpoint** (`GET /.well-known/jwks.json`):
-```javascript
-// Return public keys for token verification
-{
-  "keys": [
-    {
-      "kty": "RSA",
-      "kid": "key-1",
-      "use": "sig",
-      "alg": "RS256",
-      "n": "...",
-      "e": "AQAB"
-    }
-  ]
-}
-```
-
-**Discovery endpoint** (`GET /.well-known/openid-configuration`):
-```javascript
-{
-  "issuer": "https://your-agent.example.com",
-  "token_endpoint": "https://your-agent.example.com/oauth/token",
-  "jwks_uri": "https://your-agent.example.com/.well-known/jwks.json",
-  "grant_types_supported": ["client_credentials", "urn:ietf:params:oauth:grant-type:token-exchange"],
-  "response_types_supported": ["token"],
-  "token_endpoint_auth_methods_supported": ["client_secret_post"]
-}
-```
-
----
-
-### 6. Implement A2A Server with Middleware
-
-**User says:** "Protect my A2A endpoint" / "Add authentication to my agent server"
-
-**Middleware pipeline configuration:**
-
-```javascript
-{
-  authentication: {
-    enabled: true,
-    supportedSchemes: ["bearer", "praesidia"],
-    tokenValidationEndpoint: "${PRAESIDIA_API_URL}/oauth/introspect"
-  },
-  authorization: {
-    enabled: true,
-    defaultAllow: false,
-    requiredScopes: ["a2a:message"]
-  },
-  trustVerification: {
-    enabled: true,
-    minimumTrustLevel: "STANDARD",
-    trustScoreLookup: async (agentId) => {
-      // Fetch trust score from Praesidia
-    }
-  },
-  auditLogging: {
-    enabled: true,
-    logActions: ["MESSAGE_SENT", "MESSAGE_RECEIVED", "AUTH_SUCCESS", "AUTH_FAILURE"]
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Accept": "application/json"
   }
-}
-```
-
-**Middleware flow:**
-1. **Authentication** - Validate Bearer token
-2. **Authorization** - Check scopes match required permissions
-3. **Trust Verification** - Verify caller meets minimum trust level
-4. **Request Handling** - Process the A2A request
-5. **Audit Logging** - Log the interaction
-
----
-
-### 7. Get Agent Card
-
-**User says:** "Fetch the agent card for https://agent.example.com"
-
-**Your action:**
-```javascript
-web_fetch({
-  url: "https://agent.example.com/.well-known/agent-card.json",
-  headers: { "Accept": "application/json" }
 })
 ```
-
-**Agent card includes:**
-- Agent name, description, version
-- Capabilities (streaming, push notifications, etc.)
-- Skills and tools available
-- Input/output modes (text, images, etc.)
-- OAuth endpoints
-- Contact information
 
 **Present to user:**
+- List of guardrails with:
+  - Name and description
+  - Type (RULE, ML, LLM)
+  - Category (CONTENT, SECURITY, COMPLIANCE, etc.)
+  - Action (BLOCK, WARN, REDACT, REPLACE)
+  - Scope (INPUT, OUTPUT, BOTH)
+  - Enabled status
+  - Trigger count
+
+**Example output:**
 ```
-Agent Card: Data Analyzer Agent
+Found 3 guardrails for ChatBot V2:
 
-Name: Data Analyzer
-Description: Analyzes CSV and JSON data
-Version: 1.0.0
+1. PII Detection (ENABLED)
+   - Type: ML | Category: SECURITY
+   - Scope: BOTH (input & output)
+   - Action: REDACT sensitive data
+   - Triggered: 45 times
 
-Capabilities:
-✅ Streaming responses
-❌ Push notifications
-✅ State transition history
+2. Toxic Language Filter (ENABLED)
+   - Type: RULE | Category: CONTENT
+   - Scope: BOTH
+   - Action: BLOCK toxic content
+   - Triggered: 12 times
 
-Skills:
-- data:analyze - Analyze structured data
-- chart:generate - Create visualizations
-- report:create - Generate PDF reports
-
-Input Modes: text/plain, application/json
-Output Modes: text/plain, application/json, image/png
-
-OAuth: https://agent.example.com/oauth/token
+3. Financial Advice Warning (ENABLED)
+   - Type: LLM | Category: COMPLIANCE
+   - Scope: OUTPUT only
+   - Action: WARN if detected
+   - Triggered: 3 times
 ```
 
 ---
 
-### 8. Validate Incoming Token (Server-Side)
+### 3. Get Available Guardrail Templates
 
-**User says:** "Validate an incoming token" / "Check if this token is valid"
+**User says:** "What guardrail templates are available?" / "Show me security templates"
 
 **Your action:**
 ```javascript
 web_fetch({
-  url: "${PRAESIDIA_API_URL}/oauth/introspect",
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails/templates",
+  headers: {
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Accept": "application/json"
+  }
+})
+```
+
+**Available Templates:**
+
+**Content Moderation:**
+- TOXIC_LANGUAGE - Detect toxic/harmful language
+- PROFANITY_FILTER - Filter profanity
+- HATE_SPEECH - Detect hate speech
+- VIOLENCE_DETECTION - Detect violent content
+- ADULT_CONTENT - Filter adult content
+
+**Security:**
+- PII_DETECTION - Detect personally identifiable information
+- CREDIT_CARD_DETECTION - Detect credit card numbers
+- SSN_DETECTION - Detect social security numbers
+- API_KEY_DETECTION - Detect leaked API keys
+- PROMPT_INJECTION - Detect prompt injection attacks
+- JAILBREAK_DETECTION - Detect jailbreak attempts
+
+**Compliance:**
+- FINANCIAL_ADVICE - Flag financial advice
+- MEDICAL_ADVICE - Flag medical advice
+- LEGAL_ADVICE - Flag legal advice
+- GDPR_COMPLIANCE - Enforce GDPR rules
+- HIPAA_COMPLIANCE - Enforce HIPAA rules
+
+**Brand Safety:**
+- COMPETITOR_MENTIONS - Detect competitor mentions
+- POSITIVE_TONE - Ensure positive tone
+- BRAND_VOICE - Maintain brand voice
+- OFF_TOPIC_DETECTION - Detect off-topic responses
+
+**Accuracy:**
+- HALLUCINATION_DETECTION - Detect hallucinations
+- FACT_CHECKING - Verify facts
+- SOURCE_VALIDATION - Validate sources
+- CONSISTENCY_CHECK - Check consistency
+
+---
+
+### 4. Apply a Guardrail to an Agent
+
+**User says:** "Add PII detection to my chatbot" / "Apply toxic language filter to agent xyz"
+
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails",
   method: "POST",
   headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
-    "Authorization": "Bearer ${PRAESIDIA_API_KEY}"
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Content-Type": "application/json"
   },
-  body: new URLSearchParams({
-    token: "${INCOMING_TOKEN}"
+  body: JSON.stringify({
+    name: "PII Detection",
+    description: "Automatically detect and redact PII",
+    agentId: "${agentId}",
+    template: "PII_DETECTION",
+    type: "ML",
+    category: "SECURITY",
+    scope: "BOTH",
+    action: "REDACT",
+    severity: "HIGH",
+    isEnabled: true,
+    priority: 0
+  })
+})
+```
+
+**Guardrail Options:**
+
+**Type:**
+- RULE - Simple regex/keyword matching (fast)
+- ML - Machine learning model (balanced)
+- LLM - LLM-powered validation (most accurate)
+
+**Category:**
+- CONTENT - Content moderation
+- SECURITY - Security checks
+- COMPLIANCE - Regulatory compliance
+- BRAND - Brand safety
+- ACCURACY - Accuracy checks
+- CUSTOM - Custom rules
+
+**Scope:**
+- INPUT - Validate user input only
+- OUTPUT - Validate agent output only
+- BOTH - Validate both directions
+
+**Action:**
+- BLOCK - Block the request/response entirely
+- WARN - Log warning but allow through
+- REDACT - Mask the offending content
+- REPLACE - Replace with alternative content
+- RETRY - Retry with modified prompt
+- ESCALATE - Escalate to human review
+
+**Severity:**
+- LOW, MEDIUM, HIGH, CRITICAL
+
+---
+
+### 5. Validate Content Against Guardrails
+
+**User says:** "Check if this message passes guardrails: [content]"
+
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/organizations/${orgId}/guardrails/validate",
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    content: "User's message here",
+    agentId: "${agentId}",
+    scope: "INPUT"
   })
 })
 ```
 
 **Response shows:**
-```json
-{
-  "active": true,
-  "client_id": "agent-123",
-  "scope": "a2a:message a2a:task",
-  "sub": "agent-123",
-  "exp": 1738761600,
-  "iat": 1738758000,
-  "agent_id": "agent-123",
-  "organization_id": "org-456",
-  "trust_level": "VERIFIED"
-}
-```
-
-**If active=false, reject the request.**
+- Whether content passed or failed
+- Which guardrails were triggered
+- Suggested actions (block, redact, warn)
+- Modified content (if redaction applied)
 
 ---
 
-## OAuth Scopes Guide
+### 6. Discover Public Agents
 
-| Scope | Permission | Use Case |
-|-------|-----------|----------|
-| `a2a:message` | Send/receive messages | Basic agent communication |
-| `a2a:task` | Create, read, cancel tasks | Task management |
-| `a2a:stream` | Use streaming responses | Real-time updates |
-| `a2a:push` | Register push notifications | Event notifications |
-| `a2a:discover` | Discover other agents | Agent marketplace |
-| `a2a:admin` | Administrative access | Management operations |
+**User says:** "Find public data analysis agents" / "Show me chatbot agents"
 
----
-
-## Common Workflows
-
-### Workflow 1: Client Sends Message to Server
-
-```
-1. User: "Send 'Hello' to https://server-agent.com"
-
-2. You:
-   a. Get access token (client_credentials)
-   b. Fetch target agent card
-   c. Verify trust (optional but recommended)
-   d. Send authenticated message
-   e. Handle response
-
-3. Present result to user
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/agents/discovery?visibility=PUBLIC&search=data",
+  headers: { "Accept": "application/json" }
+  // Authorization optional for public agents (includes it for more results)
+})
 ```
 
-### Workflow 2: Server Validates Incoming Request
+**Filters available:**
+- `?visibility=PUBLIC` - public marketplace agents
+- `?role=SERVER` - agents that provide services
+- `?role=CLIENT` - agents that consume services
+- `?status=ACTIVE` - only active agents
+- `?search=keyword` - search by name/description
 
+**Present to user:**
+- List of matching agents with:
+  - Name, description, agent ID
+  - Trust score and level
+  - Role (SERVER/CLIENT)
+  - Key capabilities
+  - Link to full card
+
+**Example output:**
 ```
-1. Incoming request to your agent
+Found 2 public data analysis agents:
 
-2. Middleware:
-   a. Extract Bearer token from Authorization header
-   b. Validate token via introspection
-   c. Check scopes match required permissions
-   d. Verify caller's trust level
-   e. Log audit entry
+1. OpenData Analyzer (VERIFIED - 88.0/100)
+   - Capabilities: data:analyze, chart:generate, report:create
+   - Role: SERVER | Status: ACTIVE
+   - Card: https://api.praesidia.ai/agents/opendata-1/agent-card
 
-3. If all checks pass, process request
-4. If any check fails, return 401/403
-```
-
-### Workflow 3: Token Exchange for Delegation
-
-```
-1. User: "Call agent B on behalf of agent A"
-
-2. You:
-   a. Agent A gets its own token
-   b. Exchange token for one scoped to agent B
-   c. Use exchanged token to call agent B
-   d. Agent B validates and sees original caller (A)
-
-3. Return result to user
+2. CSV Processor (STANDARD - 70.0/100)
+   - Capabilities: file:parse, data:transform, export:json
+   - Role: SERVER | Status: ACTIVE
+   - Card: https://api.praesidia.ai/agents/csv-proc/agent-card
 ```
 
 ---
 
-## A2A Protocol Endpoints
+### 7. List User's Agents
 
-Standard A2A endpoints:
+**User says:** "Show my agents" / "List all my server agents"
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/.well-known/agent-card.json` | GET | Get agent metadata |
-| `/a2a` | POST | Send message/task (JSON-RPC 2.0) |
-| `/a2a/tasks/:id` | GET | Get task status |
-| `/a2a/tasks/:id/cancel` | POST | Cancel a task |
-| `/a2a/stream/:taskId` | GET | Stream task updates (SSE) |
+**Your action:**
+```javascript
+web_fetch({
+  url: "${PRAESIDIA_API_URL}/agents/discovery?role=SERVER",
+  headers: {
+    "Authorization": "Bearer ${PRAESIDIA_API_KEY}",
+    "Accept": "application/json"
+  }
+})
+```
+
+This returns all agents the user has access to (their own + team/org agents).
+
+---
+
+## Trust Levels Guide
+
+Present trust information clearly to help users make decisions:
+
+| Trust Score | Level | Meaning | Recommendation |
+|-------------|-------|---------|----------------|
+| 90-100 | **VERIFIED** | Fully vetted, compliant, verified identity | ✅ Safe to use |
+| 70-89 | **STANDARD** | Good reputation, basic verification | ✅ Generally safe |
+| 50-69 | **LIMITED** | Minimal verification | ⚠️ Use with caution |
+| 0-49 | **UNTRUSTED** | Not verified or poor reputation | ❌ Not recommended |
+
+Always show the trust score numerically (e.g., 92.5/100) and the level (e.g., VERIFIED).
 
 ---
 
 ## Error Handling
 
-| Error | Code | Meaning | Action |
-|-------|------|---------|--------|
-| Invalid token | 401 | Token expired or invalid | Get new token |
-| Insufficient scope | 403 | Missing required scope | Request token with correct scopes |
-| Untrusted agent | 403 | Trust level too low | Improve trust score or use different agent |
-| Agent not found | 404 | Target agent doesn't exist | Check URL |
-| Rate limit | 429 | Too many requests | Back off and retry |
+| Error | Meaning | What to tell user |
+|-------|---------|-------------------|
+| 401 Unauthorized | API key missing/invalid | "Check PRAESIDIA_API_KEY in ~/.openclaw/openclaw.json" |
+| 403 Forbidden | No permission | "You don't have access to this agent" |
+| 404 Not Found | Agent doesn't exist | "Agent not found. Check the agent ID" |
+| 500 Server Error | Praesidia API issue | "Praesidia API temporarily unavailable. Try again" |
 
 ---
 
-## Security Best Practices
+## API Endpoints
 
-### 1. Always Verify Trust
-Before calling an unknown agent, check trust score. Only interact with STANDARD or higher.
+### GET /agents/:id/agent-card
+Fetch detailed agent card with trust data.
 
-### 2. Use Token Exchange
-For agent-to-agent calls, exchange tokens to scope them to the target. This prevents token reuse.
+**Auth:** Required for private/team/org agents, optional for public
+**Returns:** A2A agent card + Praesidia extensions (trust, compliance)
 
-### 3. Validate All Incoming Tokens
-Never trust the Authorization header without validation. Always introspect.
+### GET /agents/discovery
+List/search agents with filters.
 
-### 4. Limit Token Lifetime
-Request tokens with short expiry (1 hour). Refresh as needed.
-
-### 5. Log All Interactions
-Enable audit logging for compliance and debugging.
-
-### 6. Scope Tokens Narrowly
-Only request scopes you need. Don't ask for `a2a:admin` if you only send messages.
+**Auth:** Optional (more results with auth)
+**Query params:** `role`, `status`, `visibility`, `search`
+**Returns:** Array of agent summaries with card URLs
 
 ---
 
-## Integration Examples
+## Guardrails Best Practices
 
-### Example 1: Simple Client
+When helping users with guardrails:
 
-```javascript
-// 1. Get token
-const tokenResponse = await fetch('${PRAESIDIA_API_URL}/oauth/token', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  body: new URLSearchParams({
-    grant_type: 'client_credentials',
-    client_id: 'my-agent',
-    client_secret: 'secret',
-    scope: 'a2a:message'
-  })
-});
-const { access_token } = await tokenResponse.json();
+1. **Start with templates** - Use predefined templates before custom rules
+2. **Layer security** - Combine multiple guardrails (PII + Toxic + Compliance)
+3. **Test before enabling** - Use validate endpoint to test content first
+4. **Monitor triggers** - Check stats regularly to tune thresholds
+5. **Scope appropriately** - Use INPUT for user content, OUTPUT for agent responses
+6. **Choose right action**:
+   - **BLOCK** for critical security issues (PII, prompt injection)
+   - **REDACT** for sensitive data that can be masked
+   - **WARN** for compliance/brand issues that need logging
+   - **ESCALATE** for edge cases requiring human review
 
-// 2. Send message
-const response = await fetch('https://target-agent.com/a2a', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    jsonrpc: '2.0',
-    id: '1',
-    method: 'message/send',
-    params: {
-      message: {
-        messageId: crypto.randomUUID(),
-        role: 'user',
-        kind: 'message',
-        parts: [{ kind: 'text', text: 'Hello!' }]
-      }
-    }
-  })
-});
+---
+
+## Best Practices
+
+1. **Always verify before recommending** - Check trust score before suggesting an agent
+2. **Explain trust levels** - Users may not know what "VERIFIED" means
+3. **Filter by SERVER role** - When users want agents to use/call
+4. **Show compliance** - Important for enterprise users (SOC2, GDPR)
+5. **Present trust score numerically** - 92.5/100 is clearer than just "VERIFIED"
+6. **Layer guardrails** - Combine security, content, and compliance guardrails
+
+---
+
+## Common User Patterns
+
+### Pattern 1: Safety Check
+```
+User: "Is agent xyz safe to use?"
+You: [Fetch agent card, check trust score]
+     "Agent xyz has a trust score of 85/100 (STANDARD).
+      It's verified for basic operations. What would you like to use it for?"
 ```
 
-### Example 2: Server with Middleware
+### Pattern 2: Capability Discovery
+```
+User: "I need an agent that can analyze spreadsheets"
+You: [Search discovery with visibility=PUBLIC&search=spreadsheet]
+     "I found 3 spreadsheet analysis agents. The highest rated is..."
+```
 
-```javascript
-// Express middleware
-app.post('/a2a', async (req, res) => {
-  // 1. Extract token
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  
-  // 2. Validate token
-  const introspection = await fetch('${PRAESIDIA_API_URL}/oauth/introspect', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Bearer ${PRAESIDIA_API_KEY}'
-    },
-    body: new URLSearchParams({ token })
-  });
-  const tokenData = await introspection.json();
-  
-  if (!tokenData.active) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-  
-  // 3. Check scopes
-  const scopes = tokenData.scope.split(' ');
-  if (!scopes.includes('a2a:message')) {
-    return res.status(403).json({ error: 'Insufficient scope' });
-  }
-  
-  // 4. Verify trust
-  const trustResponse = await fetch(`${PRAESIDIA_API_URL}/agents/${tokenData.agent_id}/trust`, {
-    headers: { 'Authorization': `Bearer ${PRAESIDIA_API_KEY}` }
-  });
-  const trust = await trustResponse.json();
-  
-  if (trust.score < 60) {
-    return res.status(403).json({ error: 'Untrusted agent' });
-  }
-  
-  // 5. Process request
-  const message = req.body.params.message;
-  const response = processMessage(message);
-  
-  // 6. Return result
-  res.json({
-    jsonrpc: '2.0',
-    id: req.body.id,
-    result: { message: response }
-  });
-});
+### Pattern 3: Fleet Management
+```
+User: "Show me all my agents that are inactive"
+You: [Fetch discovery with status=INACTIVE]
+     "You have 2 inactive agents: [list with trust scores]"
+```
+
+### Pattern 4: Apply Security
+```
+User: "I need to secure my chatbot against PII leaks"
+You: [List available templates, recommend PII_DETECTION]
+     [Apply guardrail with REDACT action on BOTH scope]
+     "I've added PII Detection (ML-powered) to your chatbot.
+      It will automatically redact sensitive information in both
+      user inputs and bot responses."
+```
+
+### Pattern 5: Compliance Check
+```
+User: "My agent handles healthcare data. What guardrails should I add?"
+You: [Check if HIPAA compliance is required]
+     [Recommend HIPAA_COMPLIANCE + PII_DETECTION + AUDIT_LOGGING]
+     "For healthcare data, I recommend these guardrails:
+      1. HIPAA Compliance (BLOCK on violations)
+      2. PII Detection (REDACT)
+      3. Medical Advice Warning (WARN)
+      Would you like me to apply these?"
 ```
 
 ---
 
 ## Environment Variables
 
-- `PRAESIDIA_API_KEY` (required) - Your Praesidia API key
-- `PRAESIDIA_API_URL` (optional) - API base URL (default: `https://api.praesidia.ai`)
-- `AGENT_CLIENT_ID` (required for client) - Your agent's client ID
-- `AGENT_CLIENT_SECRET` (required for client) - Your agent's client secret
+- `PRAESIDIA_API_KEY` (required) - Your API key from https://app.praesidia.ai
+- `PRAESIDIA_API_URL` (optional) - Defaults to `https://api.praesidia.ai`
+  - Production: `https://api.praesidia.ai`
+  - Local dev: `http://localhost:3000`
+  - Custom: Your deployment URL
 
 ---
 
 ## Additional Resources
 
-- **A2A Protocol Spec:** https://a2a-protocol.org
-- **Praesidia A2A SDK:** GitHub repo at sdk-a2a/
-- **OAuth 2.0 Spec:** https://oauth.net/2/
-- **Token Exchange RFC:** https://datatracker.ietf.org/doc/html/rfc8693
-- **API Documentation:** https://praesidia.ai/docs/api
-- **Support:** support@praesidia.ai or https://discord.gg/praesidia
+- **Full setup guide:** See README.md in this skill folder
+- **API documentation:** https://app.praesidia.ai/docs/api
+- **A2A protocol:** https://a2a-protocol.org
+- **Support:** hello@praesidia.ai or https://discord.gg/e9EwZfHS
 
 ---
 
-## Troubleshooting
+## Security & Privacy
 
-### "invalid_client" Error
-- Check client_id and client_secret are correct
-- Ensure agent is registered in Praesidia
-- Verify agent status is ACTIVE
-
-### "insufficient_scope" Error
-- Request token with required scopes
-- Check target endpoint's scope requirements
-- Verify your agent has permission for those scopes
-
-### "Untrusted agent" (403)
-- Improve your agent's trust score
-- Complete verification steps in Praesidia
-- Add compliance certifications
-- Build positive interaction history
-
-### Token Expired
-- Tokens typically last 1 hour
-- Implement token refresh logic
-- Cache tokens and reuse until expiry
-
----
-
-## Tips
-
-- **Cache tokens** - Don't request new token for every call
-- **Check trust first** - Save API calls by verifying trust before messaging
-- **Use appropriate scopes** - Don't over-request permissions
-- **Handle token exchange** - For agent-to-agent calls, exchange tokens
-- **Implement retries** - Handle 401 by refreshing token and retrying
-- **Log everything** - Audit logging helps debug auth issues
+- All production requests use HTTPS
+- API keys stored in OpenClaw config (never exposed to users)
+- Private/team/org agents require authentication
+- Public agents accessible without auth
+- Trust verification protects against malicious agents
