@@ -13,7 +13,7 @@ compatibility: >-
   via Streamable HTTP (/mcp) or SSE (/sse).
 metadata:
   author: fast-io
-  version: "1.20.0"
+  version: "1.25.0"
 homepage: "https://fast.io"
 ---
 
@@ -31,6 +31,30 @@ Fast.io gives AI agents a complete file management and collaboration platform. U
 |-----------|----------|
 | Streamable HTTP (preferred) | `mcp.fast.io/mcp` |
 | SSE (legacy) | `mcp.fast.io/sse` |
+
+## MCP Resources
+
+Two resources are available via `resources/list` and `resources/read`:
+
+| URI | Name | Description |
+|-----|------|-------------|
+| `skill://guide` | skill-guide | Full agent guide (text/markdown) |
+| `session://status` | session-status | Auth state as JSON: `authenticated`, `user_id`, `user_email`, `token_expires_at` |
+
+## MCP Prompts
+
+Eight guided prompts for common operations via `prompts/list` and `prompts/get`:
+
+| Prompt | Purpose |
+|--------|---------|
+| `get-started` | Onboarding: account, org, workspace |
+| `create-share` | Send/Receive/Exchange type selection |
+| `ask-ai` | AI chat scoping and polling |
+| `upload-file` | Choose upload method |
+| `transfer-to-human` | Ownership handoff |
+| `discover-content` | Find orgs/workspaces |
+| `invite-collaborator` | Member invitations |
+| `setup-branding` | Asset uploads |
 
 ## Getting Started
 
@@ -152,7 +176,7 @@ Single-step upload for text-based files (code, markdown, CSV, JSON, config). Cre
 
 ```
 upload-create-session → profile_type, profile_id, parent_node_id, filename, filesize
-upload-chunk → upload_id, chunk_number, content (text) or data (base64)
+upload-chunk → upload_id, chunk_number, content (text) or data (base64, optional)
 upload-finalize → upload_id (polls until stored, returns new_file_id)
 ```
 
@@ -225,6 +249,32 @@ When credits run out, transfer the org to a human who can upgrade to unlimited c
 | Events | 5 | search, details, acknowledge, summarize |
 | System | 7 | status, ping, health, feature flags, activity poll |
 | Real-time | 6 | presence, cursors, follow, WebSocket |
+
+## Permission Values (Quick Reference)
+
+**Organization creation** (`org-create`):
+
+| Parameter | Values |
+|-----------|--------|
+| `industry` | `unspecified`, `technology`, `healthcare`, `financial`, `education`, `manufacturing`, `construction`, `professional`, `media`, `retail`, `real_estate`, `logistics`, `energy`, `automotive`, `agriculture`, `pharmaceutical`, `legal`, `government`, `non_profit`, `insurance`, `telecommunications`, `research`, `entertainment`, `architecture`, `consulting`, `marketing` |
+| `background_mode` | `stretched`, `fixed` |
+
+**Workspace permissions** (`org-create-workspace`, `workspace-update`):
+
+| Parameter | Values |
+|-----------|--------|
+| `perm_join` | `Only Org Owners`, `Admin or above`, `Member or above` |
+| `perm_member_manage` | `Admin or above`, `Member or above` |
+
+**Share permissions** (`share-create`):
+
+| Parameter | Values |
+|-----------|--------|
+| `access_options` | `Only members of the Share or Workspace`, `Members of the Share, Workspace or Org`, `Anyone with a registered account`, `Anyone with the link` |
+| `invite` | `owners`, `guests` |
+| `notify` | `never`, `notify_on_file_received`, `notify_on_file_sent_or_received` |
+
+See the full guide for complete parameter documentation and constraints.
 
 ## Detailed Reference
 

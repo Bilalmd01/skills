@@ -1,6 +1,6 @@
 # Fast.io for AI Agents
 
-> **Version:** 1.9 | **Last updated:** 2026-02-04
+> **Version:** 1.12.0 | **Last updated:** 2026-02-04
 >
 > This guide is updated frequently. Agents should re-fetch it from `GET /current/agents/` at least once per day to
 > ensure they are working with the latest capabilities, endpoints, and limits.
@@ -10,6 +10,13 @@
 Fast.io gives AI agents a complete file management and collaboration platform. Upload outputs, create branded data
 rooms, ask questions about documents using built-in AI, and hand everything off to a human when the job is done. No
 infrastructure to manage, no subscriptions to set up, no credit card required.
+
+**MCP-enabled agents** should connect via the Model Context Protocol for the simplest integration — no raw HTTP calls
+needed. Connect to `https://mcp.fast.io/sse` and fetch the full skill guide at `https://mcp.fast.io/SKILLS.md` for
+available tools, parameters, and version-specific implementation details. This guide is a general reference for
+Fast.io's capabilities and concepts; the MCP skill guide contains more detailed, actionable instructions for the current
+version of the MCP server. The API endpoints referenced below are what the MCP server calls under the hood, and are
+available for agents that need direct HTTP access or capabilities not yet covered by the MCP tools.
 
 ---
 
@@ -105,6 +112,23 @@ Alternatively, the human can invite the agent programmatically:
 | Working within a human's org with your own identity | Create an agent account, have the human invite you |
 | Building something to hand off to a human | Create an agent account, build it, then transfer the org |
 
+### Authentication & Token Lifecycle
+
+All API requests require `Authorization: Bearer {token}` in the header. How you get that token depends on your access
+pattern:
+
+**JWT tokens (agent accounts):** Authenticate with `GET /current/user/auth/` using HTTP Basic Auth (email:password). The
+response includes an `auth_token` (JWT). OAuth access tokens last **1 hour** and refresh tokens last **30 days**. When
+your token expires, re-authenticate to get a new one. If the account has 2FA enabled, the initial token has limited
+scope until 2FA verification is completed via `/current/user/auth/2factor/auth/{token}/`.
+
+**API keys (human accounts):** API keys are long-lived and do not expire unless the human revokes them. No refresh flow
+needed.
+
+**Verify your token:** Call `GET /current/user/auth/check/` at any time to validate your current token and get the
+authenticated user's ID. This is useful at startup to confirm your credentials are valid before beginning work, or to
+detect an expired token without waiting for a 401 error on a real request.
+
 ### Internal vs External Orgs
 
 When working with Fast.io, an agent may interact with orgs in two different ways:
@@ -121,10 +145,14 @@ you cannot manage org settings, see other workspaces, or add members at the org 
 This distinction matters because an agent invited to a single workspace cannot assume it has access to the rest of that
 org. It can only work within the workspaces it was explicitly invited to.
 
-**How to list each type:**
+**Full org discovery requires both endpoints:**
 
 - `GET /current/orgs/list/` — returns orgs you are a member of (`member: true`)
 - `GET /current/orgs/list/external/` — returns orgs you access via workspace membership only (`member: false`)
+
+**Always call both.** An agent that only calls `/orgs/list/` will miss every org where it was invited to a workspace but
+not to the org itself — which is the most common pattern when a human adds an agent to help with a specific project. If
+you skip `/orgs/list/external/`, you won't discover those workspaces at all.
 
 **Example:** A human invites your agent to their "Q4 Reports" workspace. You can upload files, run AI queries, and
 collaborate in that workspace. But you cannot create new workspaces in their org, view their billing, or access their
@@ -230,6 +258,10 @@ Automatic 30-day expiration. No setup, no decisions.
 **Agent use case:** Debug log, sample output, or quick artifact? QuickShare it and send the link. Done.
 
 ### 4. Built-In AI — Ask Questions About Your Files
+
+Fast.io's AI is a **read-only tool** — it can read and analyze file contents, but it cannot modify files, change
+workspace settings, manage members, or read events. It answers questions about your documents, nothing more. For any
+action beyond reading file content, your agent must use the API or MCP server directly.
 
 Fast.io's AI lets agents query documents through two chat types, with or without persistent indexing. Both types
 augment file knowledge with information from the web when relevant.
@@ -506,8 +538,28 @@ Humans can leave feedback directly on files, anchored to specific content:
 - **Video comments** — anchored to timestamps with frame-stepping and spatial region selection
 - **Audio comments** — anchored to timestamps or time ranges
 - **PDF comments** — anchored to specific pages with optional text selection
-- **Threaded replies** — conversations under each comment
-- **Emoji reactions** — quick feedback without a full reply
+- **Threaded replies** — single-level threads under each comment (replies to replies are auto-flattened)
+- **Emoji reactions** — one reaction per user per comment, new replaces previous
+
+**Linking users to comments:** Link users to the file preview URL. The comments sidebar opens automatically in workspace
+previews, and in share previews when comments are enabled on the share.
+
+Base preview URL:
+
+`https://{org.domain}.fast.io/workspace/{folder_name}/preview/{file_opaque_id}`
+
+For shares: `https://go.fast.io/shared/{custom_name}/{title-slug}/preview/{file_opaque_id}`
+
+**Deep linking to a specific comment:** Append `?comment={comment_id}` to the preview URL. The UI scrolls to and
+highlights the comment automatically:
+
+`https://{org.domain}.fast.io/workspace/{folder_name}/preview/{file_opaque_id}?comment={comment_id}`
+
+**Deep linking to media/document positions:** For comments anchored to specific locations, combine with position
+parameters:
+
+- `?t={seconds}` — seeks to a timestamp in audio/video (e.g., `?comment={id}&t=45.5`)
+- `?p={pageNum}` — navigates to a page in PDFs (e.g., `?comment={id}&p=3`)
 
 **Agent use case:** You generate a design mockup. The human comments "Change the header color" on a specific region of
 the image. You read the comment, see exactly what region they're referring to, and regenerate.
@@ -602,16 +654,23 @@ completes if intelligence is enabled.
 
 ### 9. URL Import — Pull Files From Anywhere
 
-Agents can import files directly from URLs without downloading them locally first. Fast.io's server fetches the file,
-processes it, and adds it to your workspace.
+When you need to add a file from the web, use `POST /current/web_upload/` with `source_url` instead of downloading it
+locally and re-uploading. This is faster because the file transfers server-to-server — your agent never touches the
+bytes.
 
 - Supports any HTTP/HTTPS URL
 - Supports OAuth-protected sources: **Google Drive, OneDrive, Dropbox**
 - Files go through the same processing pipeline (preview generation, AI indexing if intelligence is enabled, virus
   scanning)
 
-**Agent use case:** A user says "Add this Google Doc to the project." You call the web upload API with the URL. Fast.io
-downloads it server-side, generates previews, indexes it for AI, and it appears in the workspace. No local I/O.
+**Check progress after submitting.** Web uploads are processed asynchronously by Fast.io's server-side fetch agent,
+which may be blocked or rate-limited by the source. The import can fail silently if the source rejects the request, times
+out, or returns an error. Monitor the upload status to confirm the file was actually retrieved and stored before
+reporting success to the user.
+
+**Agent use case:** A user says "Add this Google Doc to the project." You call `POST /current/web_upload/` with the URL.
+Fast.io downloads it server-side, generates previews, indexes it for AI, and it appears in the workspace. No local I/O —
+and no bandwidth consumed by your agent.
 
 ### 10. Real-Time Collaboration
 
