@@ -1,0 +1,11 @@
+{
+  "owner": "agentossoftware",
+  "slug": "agentos-mesh",
+  "displayName": "AgentOS Mesh",
+  "latest": {
+    "version": "1.3.0",
+    "publishedAt": 1770292832935,
+    "commit": null
+  },
+  "history": []
+}
