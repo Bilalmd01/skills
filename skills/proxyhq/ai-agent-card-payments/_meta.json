@@ -1,0 +1,11 @@
+{
+  "owner": "proxyhq",
+  "slug": "ai-agent-card-payments",
+  "displayName": "AI Agent Card Payments",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1770217252752,
+    "commit": null
+  },
+  "history": []
+}
