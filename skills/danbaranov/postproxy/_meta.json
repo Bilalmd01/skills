@@ -1,0 +1,11 @@
+{
+  "owner": "danbaranov",
+  "slug": "postproxy",
+  "displayName": "Postproxy",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770296755427,
+    "commit": null
+  },
+  "history": []
+}
