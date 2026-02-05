@@ -1,0 +1,11 @@
+{
+  "owner": "henrino3",
+  "slug": "heimdall",
+  "displayName": "Heimdall Security Scanner",
+  "latest": {
+    "version": "4.0.0",
+    "publishedAt": 1770297018125,
+    "commit": null
+  },
+  "history": []
+}
