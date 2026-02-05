@@ -3,11 +3,16 @@
   "slug": "tubescribe",
   "displayName": "TubeScribe",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1770287778934,
-    "commit": "https://github.com/clawdbot/skills/commit/29d6f3c46c242e79e9daf819036bf9fc868b9d21"
+    "version": "1.0.8",
+    "publishedAt": 1770298864004,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1770287778934,
+      "commit": "https://github.com/clawdbot/skills/commit/29d6f3c46c242e79e9daf819036bf9fc868b9d21"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1770287582417,
