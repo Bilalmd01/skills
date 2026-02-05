@@ -1,103 +1,159 @@
-# 🦋 Bluesky Skill
+# 🦋 Bluesky CLI
 
-A Moltbot skill for interacting with Bluesky (AT Protocol) from the command line.
+[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)](https://github.com/jeffaf/bluesky-skill)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.8+-yellow.svg)](https://python.org)
 
-**Version:** 1.2.0
+A full-featured command-line interface for [Bluesky](https://bsky.app) (AT Protocol). Post, reply, like, repost, follow, block, mute, search — everything you need to engage on Bluesky from your terminal.
 
-## Features
+**Built for [OpenClaw](https://github.com/openclaw/openclaw)** — works standalone too.
 
-- **Timeline** - View your home feed
-- **Post** - Create new posts (with `--dry-run` preview)
-- **Search** - Search posts across Bluesky
-- **Notifications** - Check likes, reposts, follows, mentions
-- **Profile** - Look up user profiles
-- **Delete** - Remove your posts
+## ✨ Features
 
-## Setup
+| Category | Commands |
+|----------|----------|
+| **Content** | `post`, `reply`, `quote`, `delete` |
+| **Engagement** | `like`, `unlike`, `repost`, `unrepost` |
+| **Social** | `follow`, `unfollow`, `profile` |
+| **Moderation** | `block`, `unblock`, `mute`, `unmute` |
+| **Discovery** | `timeline`, `search`, `notifications`, `thread` |
+| **Media** | Image attachments with alt text |
 
-### 1. Get an App Password
+**Plus:** JSON output on all read commands, dry-run mode, auto-linked URLs and @mentions.
 
-1. Go to [bsky.app](https://bsky.app) → Settings → Privacy and Security → App Passwords
-2. Create a new app password (looks like `xxxx-xxxx-xxxx-xxxx`)
+## 🚀 Quick Start
 
-### 2. Login
+### Step 1: Get an App Password from Bluesky
+
+1. Open [bsky.app](https://bsky.app) and log in
+2. Click your avatar → **Settings**
+3. Go to **Privacy and Security** → **App Passwords**
+4. Click **Add App Password**
+5. Name it something like "CLI" or "OpenClaw"
+6. Copy the password (looks like `xxxx-xxxx-xxxx-xxxx`)
+
+> ⚠️ **Save this password somewhere safe** — Bluesky only shows it once!
+
+### Step 2: Login via CLI
+
+Tell your OpenClaw agent:
+> "Log me into Bluesky. My handle is `yourname.bsky.social` and my app password is `xxxx-xxxx-xxxx-xxxx`"
+
+Or run directly:
+```bash
+bsky login --handle yourname.bsky.social --password xxxx-xxxx-xxxx-xxxx
+```
+
+**Your password is used once to get a session token, then immediately discarded. It's never stored.**
+
+### Step 3: Verify & Start Posting
 
 ```bash
-bsky login --handle yourhandle.bsky.social --password xxxx-xxxx-xxxx-xxxx
+bsky whoami                              # Confirm you're logged in
+bsky post "Hello from the command line! 🦋"  # Your first post!
 ```
 
-### 3. Verify
+## 📖 Usage
+
+### Posting & Content
 
 ```bash
-bsky whoami
+bsky post "Hello world!"                              # Simple post
+bsky post "Look!" --image pic.jpg --alt "A sunset"    # With image
+bsky reply <url> "Great point!"                       # Reply
+bsky quote <url> "This is important"                  # Quote-post
+bsky delete <url>                                     # Delete your post
 ```
 
-## Usage
+### Engagement
 
 ```bash
-# Authentication
-bsky login --handle user.bsky.social --password xxxx-xxxx-xxxx-xxxx
-bsky logout
-bsky whoami
-
-# Timeline
-bsky timeline          # Show 10 posts
-bsky tl -n 20          # Show 20 posts
-
-# Post
-bsky post "Hello Bluesky!"
-bsky p "Short post"         # Alias
-bsky post "Test" --dry-run  # Preview without posting
-
-# Delete
-bsky delete <post_id>  # Delete by ID
-bsky rm <url>          # Delete by URL
-
-# Search
-bsky search "query"
-bsky search "offsec" -n 20
-
-# Notifications  
-bsky notifications
-bsky notif -n 30
-
-# Profile
-bsky profile                        # Your profile
-bsky profile @someone.bsky.social   # Someone else's
-
-# Version
-bsky --version
+bsky like <url>          # ❤️ Like a post
+bsky unlike <url>        # Remove like
+bsky repost <url>        # 🔁 Boost (aliases: boost, rt)
+bsky unrepost <url>      # Remove repost
 ```
 
-## Output Format
+### Social
 
-```
-@handle · Jan 25 14:30
-  Post text here...
-  ❤️ 42  🔁 5  💬 3
-  🔗 https://bsky.app/profile/handle/post/id
-```
-
-## Requirements
-
-- Python 3.8+
-
-## Installation
-
-Via MoltHub:
 ```bash
-molthub install bluesky
+bsky follow @someone.bsky.social    # Follow
+bsky unfollow @someone              # Unfollow
+bsky profile @someone               # View profile
 ```
 
-Or clone directly:
+### Moderation
+
+```bash
+bsky block @troll.bsky.social       # 🚫 Block
+bsky unblock @someone               # Unblock
+bsky mute @noisy.bsky.social        # 🔇 Mute
+bsky unmute @someone                # Unmute
+```
+
+### Discovery
+
+```bash
+bsky timeline                       # Your home feed
+bsky timeline -n 30                 # More posts
+bsky search "topic"                 # Search posts
+bsky notifications                  # Your notifications
+bsky thread <url>                   # View conversation
+```
+
+### JSON Output
+
+Add `--json` to any read command for structured output:
+
+```bash
+bsky timeline --json | jq '.[0].text'
+bsky search "AI" --json
+bsky notifications --json
+```
+
+## 🔒 Security
+
+- **Password never stored** — used once to get a session token, then discarded
+- **Session tokens auto-refresh** — no need to re-login
+- **Config file permissions** — 600 (owner-only read/write)
+- **Location:** `~/.config/bsky/config.json`
+
+## 📦 Installation
+
+### For OpenClaw
+
+```bash
+clawdhub install bluesky
+```
+
+### Manual
+
 ```bash
 git clone https://github.com/jeffaf/bluesky-skill.git ~/clawd/skills/bluesky
+cd ~/clawd/skills/bluesky/scripts
+./bsky --version  # Auto-creates venv on first run
 ```
 
-## License
+### Requirements
 
-MIT
+- Python 3.8+
+- `atproto` package (installed automatically on first run via venv)
+
+## 🎯 Tips
+
+- **Handles:** Auto-appends `.bsky.social` if no domain specified
+- **URLs:** Both `https://bsky.app/...` and `at://` URIs work
+- **Dry run:** Use `--dry-run` on post/reply/quote to preview
+- **Images:** Max 1MB, alt text required (accessibility)
+
+## 📝 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+## 📄 License
+
+MIT — do whatever you want with it.
 
 ---
 
-*Built for [Moltbot](https://github.com/moltbot/moltbot)*
+Made with 🦞 by [jeffaf](https://github.com/jeffaf) and [Mai](https://github.com/openclaw/openclaw)
