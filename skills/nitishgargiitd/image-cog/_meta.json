@@ -3,9 +3,15 @@
   "slug": "image-cog",
   "displayName": "image-cog",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770176404659,
-    "commit": "https://github.com/clawdbot/skills/commit/e812313d69810d65bff35b926b0d5820c61127eb"
+    "version": "1.0.1",
+    "publishedAt": 1770270661435,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770176404659,
+      "commit": "https://github.com/clawdbot/skills/commit/e812313d69810d65bff35b926b0d5820c61127eb"
+    }
+  ]
 }
