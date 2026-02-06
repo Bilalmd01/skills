@@ -1,0 +1,11 @@
+{
+  "owner": "lazymonlabs",
+  "slug": "my-agent",
+  "displayName": "Conscious OS Agent",
+  "latest": {
+    "version": "1.2.1",
+    "publishedAt": 1770328510989,
+    "commit": null
+  },
+  "history": []
+}
