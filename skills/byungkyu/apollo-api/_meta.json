@@ -3,11 +3,16 @@
   "slug": "apollo-api",
   "displayName": "Apollo",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770255328315,
-    "commit": "https://github.com/clawdbot/skills/commit/02f0f7a3af344c0d21c4bc358e3d278a5a51092d"
+    "version": "1.0.3",
+    "publishedAt": 1770344303716,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770255328315,
+      "commit": "https://github.com/clawdbot/skills/commit/02f0f7a3af344c0d21c4bc358e3d278a5a51092d"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770117939257,
