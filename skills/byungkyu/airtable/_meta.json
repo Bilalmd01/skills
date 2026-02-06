@@ -3,11 +3,16 @@
   "slug": "airtable",
   "displayName": "Airtable",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1770255313284,
-    "commit": "https://github.com/clawdbot/skills/commit/0397c2fd61cc2b8ebdac1717ad3e505d493b2dc0"
+    "version": "1.0.4",
+    "publishedAt": 1770344332992,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1770255313284,
+      "commit": "https://github.com/clawdbot/skills/commit/0397c2fd61cc2b8ebdac1717ad3e505d493b2dc0"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1770117955113,
