@@ -1,7 +1,7 @@
 ---
 name: google-slides
 description: |
-  Google Slides API integration with managed OAuth. Create presentations, add slides, insert content, and manage slide formatting. Use this skill when users want to interact with Google Slides.
+  Google Slides API integration with managed OAuth. Create presentations, add slides, insert content, and manage slide formatting. Use this skill when users want to interact with Google Slides. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
 compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
@@ -16,10 +16,14 @@ Access the Google Slides API with managed OAuth authentication. Create and manag
 
 ```bash
 # Create a new presentation
-curl -s -X POST 'https://gateway.maton.ai/google-slides/v1/presentations' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{"title": "My Presentation"}'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'title': 'My Presentation'}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/google-slides/v1/presentations', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ## Base URL
@@ -35,7 +39,7 @@ Replace `{native-api-path}` with the actual Google Slides API endpoint path. The
 All requests require the Maton API key in the Authorization header:
 
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer $MATON_API_KEY
 ```
 
 **Environment Variable:** Set your API key as `MATON_API_KEY`:
@@ -56,44 +60,37 @@ Manage your Google OAuth connections at `https://ctrl.maton.ai`.
 
 ### List Connections
 
-```python
-import requests
-import os
-
-response = requests.get(
-    "https://ctrl.maton.ai/connections",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"},
-    params={"app": "google-slides", "status": "ACTIVE"}
-)
-connections = response.json()
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=google-slides&status=ACTIVE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Create Connection
 
-```python
-import requests
-import os
-
-response = requests.post(
-    "https://ctrl.maton.ai/connections",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"},
-    json={"app": "google-slides"}
-)
-connection = response.json()
+```bash
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'app': 'google-slides'}).encode()
+req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Get Connection
 
-```python
-import requests
-import os
-
-connection_id = "21fd90f9-5935-43cd-b6c8-bde9d915ca80"
-response = requests.get(
-    f"https://ctrl.maton.ai/connections/{connection_id}",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"}
-)
-connection = response.json()
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -115,33 +112,29 @@ Open the returned `url` in a browser to complete OAuth authorization.
 
 ### Delete Connection
 
-```python
-import requests
-import os
-
-connection_id = "21fd90f9-5935-43cd-b6c8-bde9d915ca80"
-response = requests.delete(
-    f"https://ctrl.maton.ai/connections/{connection_id}",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"}
-)
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}', method='DELETE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Specifying Connection
 
 If you have multiple Google Slides connections, specify which one to use with the `Maton-Connection` header:
 
-```python
-import requests
-import os
-
-response = requests.post(
-    "https://gateway.maton.ai/google-slides/v1/presentations",
-    headers={
-        "Authorization": f"Bearer {os.environ['MATON_API_KEY']}",
-        "Maton-Connection": "21fd90f9-5935-43cd-b6c8-bde9d915ca80"
-    },
-    json={"title": "My Presentation"}
-)
+```bash
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'title': 'My Presentation'}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/google-slides/v1/presentations', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+req.add_header('Maton-Connection', '21fd90f9-5935-43cd-b6c8-bde9d915ca80')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -488,6 +481,8 @@ requests.post(
 - Multiple requests in a batchUpdate are applied atomically
 - Sizes and positions use PT (points) as the unit (72 points = 1 inch)
 - Use `replaceAllText` for template-based presentation generation
+- IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets to disable glob parsing
+- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
 
 ## Error Handling
 
@@ -498,6 +493,27 @@ requests.post(
 | 404 | Presentation not found |
 | 429 | Rate limited (10 req/sec per account) |
 | 4xx/5xx | Passthrough error from Google Slides API |
+
+### Troubleshooting: Invalid API Key
+
+**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
+
+1. Check that the `MATON_API_KEY` environment variable is set:
+
+```bash
+echo $MATON_API_KEY
+```
+
+2. Verify the API key is valid by listing connections:
+
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
+```
 
 ## Resources
 

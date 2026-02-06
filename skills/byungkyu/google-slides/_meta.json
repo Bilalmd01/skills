@@ -3,9 +3,15 @@
   "slug": "google-slides",
   "displayName": "Google Slides",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770240848066,
-    "commit": "https://github.com/clawdbot/skills/commit/8654ab9c4262a8c8de06ad038baa0cd0f96a6af8"
+    "version": "1.0.1",
+    "publishedAt": 1770342935973,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770240848066,
+      "commit": "https://github.com/clawdbot/skills/commit/8654ab9c4262a8c8de06ad038baa0cd0f96a6af8"
+    }
+  ]
 }
