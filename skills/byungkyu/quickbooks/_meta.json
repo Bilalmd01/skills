@@ -3,11 +3,16 @@
   "slug": "quickbooks",
   "displayName": "QuickBooks",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770117528756,
-    "commit": "https://github.com/clawdbot/skills/commit/ff20e42870e9705b3b35e8da1e36a1df6439a362"
+    "version": "1.0.2",
+    "publishedAt": 1770343729198,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770117528756,
+      "commit": "https://github.com/clawdbot/skills/commit/ff20e42870e9705b3b35e8da1e36a1df6439a362"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770023744767,
