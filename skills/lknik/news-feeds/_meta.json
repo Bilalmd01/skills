@@ -1,11 +1,17 @@
 {
   "owner": "lknik",
   "slug": "news-feeds",
-  "displayName": "Simple RSS feed for news.",
+  "displayName": "Simple RSS news feed",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770299429270,
-    "commit": "https://github.com/clawdbot/skills/commit/b52f0c69a2e43488ec1952a371b588395399a94d"
+    "version": "1.0.1",
+    "publishedAt": 1770380724773,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770299429270,
+      "commit": "https://github.com/clawdbot/skills/commit/b52f0c69a2e43488ec1952a371b588395399a94d"
+    }
+  ]
 }
