@@ -3,11 +3,16 @@
   "slug": "stripe-api",
   "displayName": "Stripe",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770117429583,
-    "commit": "https://github.com/clawdbot/skills/commit/21f82455747b9b70893f1534de3011a14c4b8b71"
+    "version": "1.0.2",
+    "publishedAt": 1770343638867,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770117429583,
+      "commit": "https://github.com/clawdbot/skills/commit/21f82455747b9b70893f1534de3011a14c4b8b71"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770023891008,
