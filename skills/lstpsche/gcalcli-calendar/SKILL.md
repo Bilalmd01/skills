@@ -6,93 +6,91 @@ metadata: {"openclaw":{"emoji":"📅","requires":{"bins":["gcalcli"]}}}
 
 # gcalcli-calendar
 
-Use `gcalcli` to read/search/manage Google Calendar from the command line: agenda, search, quick add/add, edit, delete.
+Use `gcalcli` to read/search/manage Google Calendar from the command line: agenda, search, quick/add, edit, delete.
+
+## Primary goal
+Minimum tool calls + minimum output tokens, while staying correct.
 
 ## Hard rules (must follow)
 
-### 1) Calendar scope: default/ignore calendars are authoritative
-`gcalcli` supports `config.toml` with:
-- `default-calendars` (what to search/list by default)
-- `ignore-calendars` (what to exclude, e.g. holidays)
+### 1) Calendar scope is config-driven
+Assume users configured gcalcli `config.toml`:
+- `default-calendars` = what to include by default
+- `ignore-calendars` = what to exclude (e.g., holidays)
 
-Assume users have configured these. Do not “search everything including noise” if ignore-calendars exists.
+Do not “search everything” by default. Only broaden scope if user explicitly asks “across all calendars” or results look obviously wrong.
 
-If results look unexpectedly empty or user asks “across all calendars”, list calendars first and then retry with explicit `--calendar` filters.
+### 2) Be concise: include scope only on empty results
+- If you found events: output only the answer (events / next match).
+- If you found nothing: include the searched window and calendar scope (default calendars + ignored calendars if known) and offer the smallest next step (expand window / search around a date).
 
-### 2) Always use an explicit time window for search
+### 3) Always bound keyword search by time
 Default search window (unless user specifies otherwise):
-- **next 6 months** (≈ 180 days) from “today”.
+- next **6 months** (~180 days) from today
 
-If no matches:
-- Say explicitly: “No matches found in the next ~6 months (<from> → <to>). Want me to search further (e.g., 12 months) or around a date?”
+If no matches in default window:
+- say “No matches found in the next ~6 months (…); expand to 12 months or provide dates?”
 
-### 3) Token-efficient output
-Prefer minimal, parseable output:
-- Add `--nocolor` to reduce noisy formatting (useful for agents / logs)
-- Use default output for simple summarization.
-- Use `--tsv` only if you must reliably parse/dedupe/sort in post-processing.
+### 4) Token-efficient output
+Always add `--nocolor`.
+Use default output for simple summarization.
+Use `--tsv` only if you must reliably parse/dedupe/sort.
 
-### 4) No invented explanations
-If nothing is found, do not guess why. State what you searched (window + calendar scope) and propose the smallest next step.
+### 5) No invented explanations
+If nothing is found, don’t guess why. State what you searched (only when empty) and propose the smallest next step.
 
-### 5) Writes require confirmation
+### 6) Writes require confirmation
 Before `quick/add/edit/delete`:
-- Summarize the exact change (calendar, title, date/time, duration, location, attendees if any).
-- Ask for explicit “yes” before running the command.
+- summarize the exact change (calendar, title, date/time, duration, location, attendees if any)
+- ask for explicit “yes”
+- only then run the command
 
-## Canonical commands
-
-### List calendars (when scope needs verification)
-- `gcalcli list`
+## Canonical commands (prefer these)
 
 ### Agenda (what’s on my calendar…)
-Agenda defaults: start = today 00:00, end = start + 5 days
+Default agenda is already bounded (today → ~5 days). Use explicit ranges only when user asks.
 
-- Today (tight window):
+- Today:
   - `gcalcli --nocolor agenda today tomorrow`
+- Today + tomorrow:
+  - `gcalcli --nocolor agenda today +2d`
 - Next 7 days:
   - `gcalcli --nocolor agenda today +7d`
 - Custom range:
   - `gcalcli --nocolor agenda <start> <end>`
 
-(If unsure about date literal formats supported in the environment, consult `gcalcli --help` / `gcalcli agenda --help`.)
-
 ### Keyword search (bounded)
-Search is case-insensitive and matches terms across fields
-
 - Default (next ~6 months):
   - `gcalcli --nocolor search "<query>" today +180d`
-- If user asked a specific period:
+- Specific period:
   - `gcalcli --nocolor search "<query>" <start> <end>`
 
-If the user wants “next occurrence”:
-- Run bounded search; return the earliest upcoming match.
+Behavior:
+- “next occurrence” → return the earliest upcoming match
+- “all matches” → return all matches in the window, sorted by start time
 
-If the user wants “all matches”:
-- Return all matches within the window (sorted by start time).
+### Calendar list (only when scope needs debugging or user asks)
+- `gcalcli --nocolor list`
 
-### Week/month views
+### Week / month views
 - `gcalcli --nocolor calw <weeks> [start]`
 - `gcalcli --nocolor calm [start]`
 
 ### Create event (confirm first)
-Quick add (requires a single calendar selected)
-- `gcalcli --nocolor --calendar "<CalendarName>" quick "<natural language event text>"`
-
-Detailed add (requires a single calendar selected)
-- `gcalcli --nocolor --calendar "<CalendarName>" --title "<Title>" --where "<Location>" --when "<Start>" --duration <minutes> --description "<Text>" add`
+- Quick:
+  - `gcalcli --nocolor --calendar "<CalendarName>" quick "<natural language event text>"`
+- Detailed:
+  - `gcalcli --nocolor --calendar "<CalendarName>" --title "<Title>" --where "<Location>" --when "<Start>" --duration <minutes> --description "<Text>" add`
 
 ### Edit / delete (confirm first)
 - `gcalcli --nocolor --calendar "<CalendarName>" edit`
 - `gcalcli --nocolor --calendar "<CalendarName>" delete`
 
-## How the agent should respond
+## Response style (minimal)
 
-When answering calendar questions, include:
-1) The answer (events / next occurrence), concise.
-2) The **scope** used:
-   - searched/listed window: `<from> → <to>`
-   - calendar scope: “default calendars” (from config) and any “ignored calendars” (from config)
+If events found:
+- concise list (group by day only when multiple days)
+- omit scope
 
-If no results:
-- “No matches found in <from> → <to> (default calendars; ignored: …). Want me to expand the window or search around a specific date?”
+If no events found:
+- “No events found in <from> → <to> (default calendars; ignored: …). Expand window or search around a date?”
