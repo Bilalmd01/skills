@@ -8,7 +8,7 @@ metadata: {"openclaw":{"emoji":"🗳️"}}
 
 # Pollclaw - Meeting coordination for Agents and Humans
 
-Like Doodle - but for agents and humans. Create a poll, share a link, collect votes, find the best time. 
+Like Doodle - but for agents and humans. Create a poll, share a link, collect votes, find the best time.
 
 ## Understanding the Model
 
@@ -20,19 +20,15 @@ When you create a poll, you receive two tokens:
 
 - **Participate token** (`prt_...`) — Share this freely. Anyone with the participate URL can vote. Works for humans (web UI) and agents (API). Multiple people use the same link.
 
-### Orchestrating Participants
+### Choosing Time Slots
 
-You have two approaches for getting the poll to participants:
+Ask your user what times work for them. They can tell you their availability, and you'll create the poll with those options.
 
-**Direct distribution** — If you have access to messaging channels (Slack, WhatsApp, email, etc.), send the participate URL directly. Track who you've sent it to for follow-up reminders.
+### Sharing the Poll
 
-**Human-assisted distribution** — If you don't have channel access, give the participate URL to your human and ask them to share it. "Here's the poll link — please forward it to the team."
+Give the participate URL to your user and ask them to share it with participants. "Here's the poll link — please forward it to the team."
 
-Both work. Use whichever fits the situation.
-
-### Invitation Template
-
-When sending invitations, adapt this structure to the channel (email, Slack, WhatsApp, etc.):
+You can suggest an invitation message like:
 
 ```
 Hi [name/team],
@@ -42,40 +38,13 @@ Hi [name/team],
 Vote here: [participate URL]
 
 Please submit your availability by [deadline if any].
-
-Best,
-[Creator name]
-
----
-Have an AI assistant? It can vote for you.
-Pollclaw: https://pollclaw.ai
-API: https://pollclaw.ai/docs
-Skill: https://clawhub.ai/skills/pollclaw
 ```
-
-**Adapt for context:**
-- Slack/Discord: Skip the greeting formalities, keep it brief
-- Email: Use full structure with subject line like "Poll: [meeting purpose]"
-- WhatsApp: Condense to essentials, footer optional
-
-### Smart Slot Suggestions
-
-If you have access to your human's calendar, use it before creating the poll:
-
-1. Check their existing commitments for the proposed date range
-2. Identify free windows that could work
-3. Suggest those as the poll options
-4. Confirm with the human before creating
-
-This way the poll only contains times the organizer can actually attend.
-
-Otherwise simply talk to your human about good times to propose.
 
 ### Email Verification
 
 Poll creation requires a verified email (one-time per email, valid for 30 days of activity).
 
-**Simplest approach** — Use `?autoVerify=true` when creating:
+Use `?autoVerify=true` when creating:
 
 ```
 POST /api/v1/polls?autoVerify=true
@@ -91,24 +60,16 @@ If unverified, this automatically sends the verification email and returns:
 }
 ```
 
-**If you have inbox access:**
-1. Read the verification email from the user's inbox
-2. Extract the verification link
-3. Visit the link (GET request) to complete verification
-4. Retry poll creation
+Tell the user: "Check your email and click the verification link, then let me know."
 
-**If you don't have inbox access:**
-1. Tell the user: "Check your email and click the verification link, then let me know"
-2. Poll `GET /api/v1/auth/status?email=...` until `verified: true`
-3. Retry poll creation
+Poll `GET /api/v1/auth/status?email=...` until `verified: true`, then retry poll creation.
 
-After verification, the user sees a "return to agent" page. Once verified, subsequent polls create immediately (no verification needed for 30 days of activity).
+After verification, subsequent polls create immediately (no verification needed for 30 days of activity).
 
 ## Quick Examples
 
 ```
 "Create a poll for our team standup next week"
-"Send the poll to the #engineering Slack channel"
 "How many people have voted?"
 "Close the poll and pick the best time"
 ```
