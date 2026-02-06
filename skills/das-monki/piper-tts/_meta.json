@@ -1,0 +1,11 @@
+{
+  "owner": "das-monki",
+  "slug": "piper-tts",
+  "displayName": "Local TTS (Piper ONNX Voices)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770402569240,
+    "commit": null
+  },
+  "history": []
+}
