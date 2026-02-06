@@ -3,11 +3,16 @@
   "slug": "capability-evolver",
   "displayName": "Capability Evolver",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1770160368640,
-    "commit": "https://github.com/clawdbot/skills/commit/21f98e384dbe71f1cc26549a4461a7371fb74765"
+    "version": "1.4.2",
+    "publishedAt": 1770343676232,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1770160368640,
+      "commit": "https://github.com/clawdbot/skills/commit/21f98e384dbe71f1cc26549a4461a7371fb74765"
+    },
     {
       "version": "1.0.37",
       "publishedAt": 1770094630976,

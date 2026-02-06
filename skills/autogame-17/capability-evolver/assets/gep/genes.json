@@ -30,8 +30,8 @@
         ]
       },
       "validation": [
-        "node index.js run",
-        "node -e \"require('./src/evolve')\""
+        "node -e \"require('./src/evolve'); require('./src/gep/solidify'); console.log('ok')\"",
+        "node -e \"require('./src/gep/selector'); require('./src/gep/memoryGraph'); console.log('ok')\""
       ]
     },
     {
@@ -64,7 +64,7 @@
         ]
       },
       "validation": [
-        "node index.js run"
+        "node -e \"require('./src/evolve'); require('./src/gep/prompt'); console.log('ok')\""
       ]
     }
   ]

@@ -135,6 +135,10 @@ function rewritePackageJson(outDirAbs) {
     pkg.scripts = {
       start: 'node index.js',
       run: 'node index.js run',
+      solidify: 'node index.js solidify',
+      'a2a:export': 'node scripts/a2a_export.js',
+      'a2a:ingest': 'node scripts/a2a_ingest.js',
+      'a2a:promote': 'node scripts/a2a_promote.js',
     };
     fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
   } catch (e) {
