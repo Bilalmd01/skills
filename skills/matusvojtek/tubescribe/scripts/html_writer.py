@@ -80,11 +80,16 @@ def process_inline_formatting(text: str) -> str:
     text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
     text = re.sub(r'(?<!\w)_(.+?)_(?!\w)', r'<em>\1</em>', text)
     
-    # Links: [text](url)
-    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2" target="_blank">\1</a>', text)
+    # Links: [text](url) — only allow safe URLs
+    def safe_link(match):
+        link_text, url = match.groups()
+        # Only allow http, https, and relative URLs (prevent javascript: etc.)
+        if url.startswith(('http://', 'https://', '/')):
+            safe_url = escape_html(url)
+            return f'<a href="{safe_url}" target="_blank">{link_text}</a>'
+        return f'{link_text} ({url})'  # Don't make unsafe URLs clickable
     
-    # Escape remaining HTML chars (but not our tags)
-    # This is tricky - for now, trust the input is safe
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', safe_link, text)
     
     return text
 

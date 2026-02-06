@@ -1,13 +1,18 @@
 {
   "owner": "matusvojtek",
   "slug": "tubescribe",
-  "displayName": "TubeScribe",
+  "displayName": "Tubescribe",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1770298864004,
-    "commit": "https://github.com/clawdbot/skills/commit/1d0617ea6a32d0476b19ca8ba47d17990cd4e4fc"
+    "version": "1.1.1",
+    "publishedAt": 1770352257905,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1770298864004,
+      "commit": "https://github.com/clawdbot/skills/commit/1d0617ea6a32d0476b19ca8ba47d17990cd4e4fc"
+    },
     {
       "version": "1.0.7",
       "publishedAt": 1770287778934,

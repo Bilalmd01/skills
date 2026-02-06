@@ -20,7 +20,9 @@ DEFAULT_CONFIG = {
     # Output settings
     "output": {
         "folder": str(Path.home() / "Documents" / "TubeScribe"),
-        "open_folder_after": True,      # Open folder when done (not individual files)
+        "open_folder_after": True,      # Open output folder when done
+        "open_document_after": False,   # Auto-open generated document (docx/html/md)
+        "open_audio_after": False,      # Auto-open generated audio summary
     },
     
     # Document settings
@@ -43,12 +45,24 @@ DEFAULT_CONFIG = {
             "af_heart": 0.6,
             "af_sky": 0.4,
         },
+        "speed": 1.05,                  # Playback speed (1.0 = normal, 1.05 = 5% faster)
     },
     
     # Processing settings
     "processing": {
         "subagent_timeout": 600,        # Seconds for sub-agent processing
         "cleanup_temp_files": True,     # Remove /tmp files after completion
+    },
+    
+    # Comments settings
+    "comments": {
+        "max_count": 50,                # Number of comments to fetch
+        "timeout": 90,                  # Timeout for comment fetching (seconds)
+    },
+    
+    # Queue settings
+    "queue": {
+        "stale_minutes": 30,            # Consider processing stale after this many minutes
     },
 }
 
