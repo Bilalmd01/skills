@@ -1,0 +1,11 @@
+{
+  "owner": "acfranzen",
+  "slug": "glance",
+  "displayName": "Glance",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770310570244,
+    "commit": null
+  },
+  "history": []
+}
