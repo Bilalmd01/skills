@@ -373,15 +373,7 @@ MIT License - Free for personal and commercial use.
 
 ---
 
-<p align="center">
-  <a href="https://github.com/mig6671/phoenix-shield">
-    <img src="https://img.shields.io/badge/GitHub-View_Repo-black?logo=github" alt="GitHub">
-  </a>
-</p>
-
-<p align="center">
-  <strong>Like the Phoenix, your system rises from backup 🔥🛡️</strong>
-</p>
+**Like the Phoenix, your system rises from backup 🔥🛡️**
 
 ---
 
