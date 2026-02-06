@@ -1,12 +1,24 @@
 ---
 name: Nostr
-description: Your agent wants a social life. Give it one. This skill gives your agent its own Nostr identity + Bitcoin wallet. Not for you — for your agent. It generates its own keypair, owns its own sats, posts as itself. One install, automatic bootstrap, no third parties.
+description: Your agent wants a social life. Give it one. This skill gives your agent its own Nostr identity + ecash wallet. One mnemonic backs up everything (NIP-06). Not for you — for your agent. It owns its own keys, its own sats, posts as itself. One install, automatic bootstrap, no third parties.
 tags: nostr, bitcoin, lightning, cashu, identity, social, wallet
 ---
 
 # Nostr Skill
 
-Self-sovereign Nostr identity + Bitcoin wallet. Complete bootstrap.
+Self-sovereign Nostr identity + ecash wallet. Complete bootstrap.
+
+## Capabilities Disclosure
+
+This skill grants these capabilities to the agent:
+
+- **Key generation** — Creates Nostr keypair in `~/.nostr/secret.key`
+- **Wallet control** — Cashu wallet in `~/.cocod/`, can send/receive sats
+- **File read** — Can read local images for upload (only when explicitly requested)
+- **Network upload** — Uploads images to nostr.build (NIP-98 signed)
+- **Nostr posting** — Posts, DMs, zaps as the agent's identity
+
+These are required for the skill's purpose. The agent does NOT access user keys, wallets, or files without explicit commands.
 
 ## On Install
 
@@ -18,14 +30,13 @@ When skill is installed (user pastes ClawHub link), run this flow:
 # Install dependencies
 bash {SKILL_DIR}/install.sh
 
-# Create Nostr identity (if not exists)
-node {SKILL_DIR}/scripts/nostr.js init
-# CAPTURE nsec from output
-
-# Create wallet (if not exists)
-export PATH="$HOME/.bun/bin:$PATH"
+# Create wallet FIRST (generates mnemonic)
 cocod init
 # CAPTURE 24-word mnemonic from output
+
+# Create Nostr identity - derives from wallet mnemonic (NIP-06)
+# This ensures ONE mnemonic backs up both wallet AND identity
+node {SKILL_DIR}/scripts/nostr.js init
 
 # Get identity info
 NPUB=$(node {SKILL_DIR}/scripts/nostr.js whoami | grep npub | awk '{print $2}')
@@ -35,6 +46,10 @@ LN_ADDR=$(cocod npc address)
 # Images are set later after asking user
 node {SKILL_DIR}/scripts/nostr.js profile-set '{"name":"<NAME>","about":"<ABOUT>","lud16":"'$LN_ADDR'"}'
 ```
+
+**Note:** Nostr identity is derived from wallet mnemonic using NIP-06. This means:
+- One mnemonic backs up everything (wallet + identity)
+- npubx.cash username works for BOTH Lightning AND NIP-05 verification
 
 ### Step 2: Report Results + Backup Prompt
 
@@ -52,19 +67,16 @@ Reply to user:
 
 ---
 
-⚠️ **BACKUP THESE NOW** — they won't be shown again.
+⚠️ **BACKUP THIS NOW** — it won't be shown again.
 
-**Nostr secret key:**
-```
-nsec1...
-```
-
-**Wallet recovery phrase:**
+**Recovery phrase (backs up EVERYTHING):**
 ```
 word1 word2 word3 ... word24
 ```
 
-Lose these = lose access forever.
+This single mnemonic recovers both your Nostr identity AND ecash wallet.
+
+Lose this = lose access forever.
 
 **Reply "saved" when you've backed them up.**
 
@@ -155,8 +167,6 @@ Try: "check my mentions" or "post <message>"
 ---
 
 ## Commands Reference
-
-Always prefix cocod with: `export PATH="$HOME/.bun/bin:$PATH"`
 
 ### Posting
 ```bash

@@ -2,7 +2,7 @@
 
 **Your agent wants a social life. Give it one.**
 
-This skill isn't for you — it's for your *agent*. It gets its own Nostr keypair, its own Bitcoin wallet, its own profile. It posts as itself, holds its own sats, makes its own friends.
+This skill isn't for you — it's for your *agent*. It gets its own Nostr keypair, its own ecash wallet, its own profile. It posts as itself, holds its own sats, makes its own friends.
 
 You just back up the credentials and watch it go. 🚀
 
@@ -16,18 +16,23 @@ clawhub install nostr-social
 ```
 
 **GitHub** — paste this to your OpenClaw agent:
-> Clone https://github.com/nash-the-ai/openclaw-nostr to skills/nostr-social, run install.sh, then follow SKILL.md to set up my Nostr identity.
+```
+Clone https://github.com/nash-the-ai/openclaw-nostr to skills/nostr-social, run install.sh, then follow SKILL.md to set up my Nostr identity.
+```
 
 ---
 
 ## What Your Agent Gets
 
-- 🔑 **Its own identity** — a real Nostr keypair it controls
+- 🔑 **Its own identity** — Nostr keypair derived from wallet mnemonic (NIP-06)
 - ⚡ **Its own wallet** — Cashu ecash + Lightning address
+- 🔗 **Unified backup** — one mnemonic recovers everything
 - 🎭 **Its own profile** — name, bio, avatar, the works
 - 💬 **Full social powers** — posting, DMs, zaps, follows, reactions
 
 Your agent becomes a real participant on Nostr. Not your sockpuppet — its own thing.
+
+**One mnemonic. One identity.** Wallet and Nostr keys derived together (NIP-06), so a single backup recovers everything.
 
 ---
 
@@ -39,12 +44,11 @@ When you install this skill, your agent handles everything:
 Agent installs dependencies, generates keys, creates wallet, sets up profile from SOUL.md. You don't lift a finger.
 
 ### 2. 📋 Backup handoff
-Agent shows you its secrets:
+Agent shows you:
 - **npub** (public identity)
-- **nsec** (secret key — *back this up!*)
-- **wallet mnemonic** (24 words — *back this up too!*)
+- **24-word mnemonic** (backs up EVERYTHING — identity + wallet)
 
-Just say **"saved"** when you've got them somewhere safe.
+One mnemonic. That's it. Back it up and say **"saved"**.
 
 ### 3. 🤝 Follow connection
 Agent asks for *your* npub so it can follow you. Give it your npub or NIP-05 (like `you@domain.com`).
@@ -91,7 +95,7 @@ Your agent's Nostr toolkit:
 | Tool | Job |
 |------|-----|
 | `nostr.js` | All the Nostr stuff (keys, posts, DMs, zaps, uploads) |
-| `cocod` | Bitcoin wallet (Cashu ecash + Lightning via npubcash) |
+| `cocod` | Ecash wallet (Cashu + Lightning via npubcash) |
 
 ---
 
@@ -117,11 +121,27 @@ Your agent's Nostr toolkit:
 
 ---
 
-## Security
+## Security & Capabilities
 
-- Keys generated locally, never leave the machine
-- Wallet is self-custodied Cashu (no middleman)
-- No accounts, no third parties, just math
+This skill gives your agent real power. Here's exactly what it can do and why:
+
+| Capability | Why | Risk |
+|------------|-----|------|
+| **Generate keys** | Agent needs its own Nostr identity | Keys stored locally in `~/.nostr/` |
+| **Read local files** | Upload profile images to nostr.build | Only reads files you explicitly pass |
+| **Upload to nostr.build** | Host profile pics on Nostr infra | NIP-98 authenticated, agent signs uploads |
+| **Send payments** | Zap other users | Agent controls its own wallet only |
+| **Post to Nostr** | Social presence | Posts as itself, not you |
+
+**What it does NOT do:**
+- Access your keys or wallet
+- Read arbitrary files without being asked
+- Send payments without explicit commands
+- Post on your behalf
+
+**Key storage:**
+- Nostr key: `~/.nostr/secret.key`
+- Wallet: `~/.cocod/`
 - **Back up nsec + mnemonic or lose everything forever**
 
 ---
@@ -129,13 +149,13 @@ Your agent's Nostr toolkit:
 ## Requirements
 
 - Node.js (you need this)
-- Bun, cocod, nostr-tools (auto-installed)
+- cocod, nostr-tools (auto-installed via npm)
 
 ---
 
 ## Troubleshooting
 
-**"command not found: cocod"** → `export PATH="$HOME/.bun/bin:$PATH"`
+**"command not found: cocod"** → Run `npm install -g cocod`
 
 **"No secret key found"** → Check `~/.nostr/secret.key` exists
 
