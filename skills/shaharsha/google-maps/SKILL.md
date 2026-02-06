@@ -176,6 +176,30 @@ Check [Google Maps coverage](https://developers.google.com/maps/coverage) for de
 
 ---
 
+## Multilingual Support
+
+Works with addresses in any language:
+
+```bash
+# Hebrew
+python3 lib/map_helper.py distance "תל אביב" "ירושלים"
+python3 lib/map_helper.py geocode "דיזנגוף 50, תל אביב"
+
+# Japanese
+python3 lib/map_helper.py distance "東京" "大阪"
+
+# Arabic
+python3 lib/map_helper.py distance "دبي" "أبو ظبي"
+```
+
+Use `--lang=XX` to change response language (default: he):
+```bash
+python3 lib/map_helper.py distance "Tokyo" "Osaka" --lang=en
+python3 lib/map_helper.py distance "Tokyo" "Osaka" --lang=ja
+```
+
+---
+
 ## Help
 
 ```bash

@@ -3,11 +3,16 @@
   "slug": "google-maps",
   "displayName": "Google Maps Elite",
   "latest": {
-    "version": "3.0.1",
-    "publishedAt": 1770369211222,
-    "commit": "https://github.com/openclaw/skills/commit/7ae6218301dd9935e6be857d61d7f6a4b1a0a189"
+    "version": "3.0.2",
+    "publishedAt": 1770369273692,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.1",
+      "publishedAt": 1770369211222,
+      "commit": "https://github.com/openclaw/skills/commit/7ae6218301dd9935e6be857d61d7f6a4b1a0a189"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1770217024588,
