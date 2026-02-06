@@ -1,0 +1,11 @@
+{
+  "owner": "suspect80",
+  "slug": "bot-status-api",
+  "displayName": "Bot Status API",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770307491166,
+    "commit": null
+  },
+  "history": []
+}
