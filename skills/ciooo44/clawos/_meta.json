@@ -1,11 +1,17 @@
 {
   "owner": "ciooo44",
   "slug": "clawos",
-  "displayName": "ClawOS - Founderless Factory",
+  "displayName": "Founderless Agent Factory",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770283320543,
-    "commit": "https://github.com/clawdbot/skills/commit/e7f005b09e69606d8273aa0ed3757805d5d220a7"
+    "version": "0.1.0",
+    "publishedAt": 1770365965454,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770283320543,
+      "commit": "https://github.com/clawdbot/skills/commit/e7f005b09e69606d8273aa0ed3757805d5d220a7"
+    }
+  ]
 }
