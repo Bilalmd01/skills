@@ -25,22 +25,6 @@ CIRF is a systematic crypto research framework with:
 
 ---
 
-## INSTALLATION CHECK
-
-Before proceeding, verify the framework is installed:
-
-1. Check if `./framework/` directory exists
-2. If NOT exists, clone from GitHub:
-
-```bash
-git clone https://github.com/kudodefi/cirf.git
-cd cirf
-```
-
-3. Once installed, continue with activation
-
----
-
 ## AGENT REGISTRY
 
 ### 🔬 Research Analyst
