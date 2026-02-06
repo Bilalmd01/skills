@@ -703,7 +703,7 @@ issues = response.json()
 - Content must be Base64 encoded when creating/updating files
 - Rate limits: 5000 requests/hour for authenticated users, 30 searches/minute
 - Search queries may timeout on very broad patterns
-- Some endpoints require specific OAuth scopes (e.g., `read:org` for organization operations)
+- Some endpoints require specific OAuth scopes (e.g., `read:org` for organization operations). If you receive a scope error, contact Maton support at support@maton.ai with the specific operations/APIs you need and your use-case
 - IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets to disable glob parsing
 - IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments
 
