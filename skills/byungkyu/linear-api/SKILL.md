@@ -500,7 +500,7 @@ data = response.json()
 - Workflow state types: `backlog`, `unstarted`, `started`, `completed`, `canceled`
 - The GraphQL schema is introspectable at `https://api.linear.app/graphql`
 - Use `searchIssues(term: "...")` for full-text search across issues
-- Some mutations (delete, create labels/projects) may require additional OAuth scopes
+- Some mutations (delete, create labels/projects) may require additional OAuth scopes. If you receive a scope error, contact Maton support at support@maton.ai with the specific operations/APIs you need and your use-case
 
 ## Error Handling
 
