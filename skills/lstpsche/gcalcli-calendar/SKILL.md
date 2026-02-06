@@ -1,96 +1,116 @@
 ---
 name: gcalcli-calendar
-description: "Google Calendar skill for gcalcli: fast agenda (today/week/range), bounded keyword search, and safe event actions."
+description: "Google Calendar via gcalcli: today-only agenda by default, bounded meaning-first lookup via agenda scans, and fast create/delete with verification--optimized for low tool calls and minimal output."
 metadata: {"openclaw":{"emoji":"📅","requires":{"bins":["gcalcli"]}}}
 ---
 
 # gcalcli-calendar
 
-Use `gcalcli` to read/search/manage Google Calendar from the command line: agenda, search, quick/add, edit, delete.
+Use `gcalcli` to read/search/manage Google Calendar with minimal tool calls and minimal output.
 
-## Primary goal
-Minimum tool calls + minimum output tokens, while staying correct.
+## Rules
 
-## Hard rules (must follow)
+### Output & language
+- Don't print CLI commands/flags/tool details unless the user explicitly asks (e.g. "show commands used", "/debug", "/commands").
+- If asked for commands: print ALL executed commands in order (including retries) and nothing else.
+- Don't mix languages within one reply.
+- Be concise. No scope unless nothing found.
 
-### 1) Calendar scope is config-driven
-Assume users configured gcalcli `config.toml`:
-- `default-calendars` = what to include by default
-- `ignore-calendars` = what to exclude (e.g., holidays)
+### Dates & formatting
+- Human-friendly dates by default. ISO only if explicitly requested.
+- Don't quote event titles unless needed to disambiguate.
 
-Do not “search everything” by default. Only broaden scope if user explicitly asks “across all calendars” or results look obviously wrong.
+### Calendar scope
+- Trust gcalcli config (default/ignore calendars). Don't broaden scope unless user asks "across all calendars" or results are clearly wrong.
 
-### 2) Be concise: include scope only on empty results
-- If you found events: output only the answer (events / next match).
-- If you found nothing: include the searched window and calendar scope (default calendars + ignored calendars if known) and offer the smallest next step (expand window / search around a date).
+### Agenda (today-only by default)
+- If user asks "agenda" without a period, return today only.
+- Expand only if explicitly asked (tomorrow / next N days / date range).
 
-### 3) Always bound keyword search by time
-Default search window (unless user specifies otherwise):
-- next **6 months** (~180 days) from today
+### Weekday requests (no mental math)
+If user says "on Monday/Tuesday/..." without a date:
+1) fetch next 14 days agenda once,
+2) pick matching day/event from tool output,
+3) proceed (or disambiguate if multiple).
 
-If no matches in default window:
-- say “No matches found in the next ~6 months (…); expand to 12 months or provide dates?”
+### Finding events: prefer deterministic agenda scan (meaning-first)
+When locating events to cancel/delete/edit:
+- Prefer `agenda` over `search`.
+- Use a bounded window and match events by meaning (semantic match) rather than exact text.
+- Default locate windows:
+  - If user gives an exact date: scan that day only.
+  - If user gives a weekday: scan next 14 days.
+  - If user gives only meaning words ("train", "lecture", etc.) with no date: scan next 30 days first.
+  - If still not found: expand to 180 days and say so only if still empty.
 
-### 4) Token-efficient output
-Always add `--nocolor`.
-Use default output for simple summarization.
-Use `--tsv` only if you must reliably parse/dedupe/sort.
+Use gcalcli `search` only as a fallback when:
+- the time window would be too large to scan via agenda (token-heavy), or
+- the user explicitly asked to "search".
 
-### 5) No invented explanations
-If nothing is found, don’t guess why. State what you searched (only when empty) and propose the smallest next step.
+### Search (bounded)
+- Default search window: next ~180 days (unless user specified otherwise).
+- If no matches: say "No matches in next ~6 months (<from>-><to>)" and offer to expand.
+- Show scope only when nothing is found.
 
-### 6) Writes require confirmation
-Before `quick/add/edit/delete`:
-- summarize the exact change (calendar, title, date/time, duration, location, attendees if any)
-- ask for explicit “yes”
-- only then run the command
+### Tool efficiency
+- Default: use `--nocolor` to reduce formatting noise and tokens.
+- Use `--tsv` only if you must parse/dedupe/sort.
 
-## Canonical commands (prefer these)
+## Actions policy (optimized)
 
-### Agenda (what’s on my calendar…)
-Default agenda is already bounded (today → ~5 days). Use explicit ranges only when user asks.
+### Unambiguous actions run immediately
+For cancel/delete/edit actions:
+- Do NOT ask for confirmation by default.
+- Run immediately ONLY if the target event is unambiguous:
+  - single clear match in a tight window, OR
+  - user specified exact date+time and a matching event exists.
 
-- Today:
-  - `gcalcli --nocolor agenda today tomorrow`
-- Today + tomorrow:
-  - `gcalcli --nocolor agenda today +2d`
-- Next 7 days:
-  - `gcalcli --nocolor agenda today +7d`
-- Custom range:
+If ambiguous (multiple candidates):
+- Ask a short disambiguation question listing the smallest set of candidates (1-3 lines) and wait.
+
+### Create events: overlap check MUST be cross-calendar (non-ignored scope)
+When creating an event:
+- Always run a best-effort overlap check across ALL non-ignored calendars by scanning agenda WITHOUT `--calendar`.
+  - This ensures overlaps are detected even if the new event is created into a specific calendar.
+- If overlap exists with busy events:
+  - Ask for confirmation before creating.
+- If no overlap:
+  - Create immediately.
+
+### Deletes must be reliable
+- Use non-interactive delete with `--iamaexpert` (avoid gcalcli prompts).
+- Verify once via agenda in the same tight window.
+- If verification still shows the event, do one retry with `--refresh`.
+- Never claim success unless verification confirms.
+
+## Canonical commands
+
+### Agenda (deterministic listing)
+- Today: `gcalcli --nocolor agenda today tomorrow`
+- Next 14d (weekday resolution): `gcalcli --nocolor agenda today +14d`
+- Next 30d (meaning-first locate): `gcalcli --nocolor agenda today +30d`
+- Custom: `gcalcli --nocolor agenda <start> <end>`
+
+### Search (fallback / explicit request)
+- Default (~6 months): `gcalcli --nocolor search "<query>" today +180d`
+- Custom: `gcalcli --nocolor search "<query>" <start> <end>`
+
+### Create
+- Overlap preflight (tight, cross-calendar):
   - `gcalcli --nocolor agenda <start> <end>`
+  - IMPORTANT: do NOT add `--calendar` here; overlaps must be checked across all non-ignored calendars.
+- Create into a specific calendar:
+  - Quick: `gcalcli --nocolor --calendar "<CalendarName>" quick "<event text>"`
+  - Add: `gcalcli --nocolor --calendar "<CalendarName>" --title "<Title>" --when "<Start>" --duration <minutes> add`
 
-### Keyword search (bounded)
-- Default (next ~6 months):
-  - `gcalcli --nocolor search "<query>" today +180d`
-- Specific period:
-  - `gcalcli --nocolor search "<query>" <start> <end>`
-
-Behavior:
-- “next occurrence” → return the earliest upcoming match
-- “all matches” → return all matches in the window, sorted by start time
-
-### Calendar list (only when scope needs debugging or user asks)
-- `gcalcli --nocolor list`
-
-### Week / month views
-- `gcalcli --nocolor calw <weeks> [start]`
-- `gcalcli --nocolor calm [start]`
-
-### Create event (confirm first)
-- Quick:
-  - `gcalcli --nocolor --calendar "<CalendarName>" quick "<natural language event text>"`
-- Detailed:
-  - `gcalcli --nocolor --calendar "<CalendarName>" --title "<Title>" --where "<Location>" --when "<Start>" --duration <minutes> --description "<Text>" add`
-
-### Edit / delete (confirm first)
-- `gcalcli --nocolor --calendar "<CalendarName>" edit`
-- `gcalcli --nocolor --calendar "<CalendarName>" delete`
-
-## Response style (minimal)
-
-If events found:
-- concise list (group by day only when multiple days)
-- omit scope
-
-If no events found:
-- “No events found in <from> → <to> (default calendars; ignored: …). Expand window or search around a date?”
+### Delete (no confirmation if unambiguous)
+- Locate via agenda (preferred):
+  - `gcalcli --nocolor agenda <dayStart> <dayEnd>` (exact date)
+  - `gcalcli --nocolor agenda today +14d` (weekday)
+  - `gcalcli --nocolor agenda today +30d` (meaning only)
+- Delete (non-interactive, bounded):
+  - `gcalcli --nocolor --iamaexpert delete "<query>" <start> <end>`
+- Verify (same window):
+  - `gcalcli --nocolor agenda <dayStart> <dayEnd>`
+- Optional one retry if still present:
+  - `gcalcli --nocolor --refresh agenda <dayStart> <dayEnd>`
