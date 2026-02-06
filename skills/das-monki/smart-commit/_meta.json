@@ -1,0 +1,11 @@
+{
+  "owner": "das-monki",
+  "slug": "smart-commit",
+  "displayName": "Smart Commit (Conventional Commits)",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770416906581,
+    "commit": null
+  },
+  "history": []
+}
