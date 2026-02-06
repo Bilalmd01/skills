@@ -3,11 +3,16 @@
   "slug": "gmail",
   "displayName": "Gmail",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770255430194,
-    "commit": "https://github.com/clawdbot/skills/commit/3cae502dea3e912968a70e69d02a43b836354d0b"
+    "version": "1.0.3",
+    "publishedAt": 1770344257779,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770255430194,
+      "commit": "https://github.com/clawdbot/skills/commit/3cae502dea3e912968a70e69d02a43b836354d0b"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770117885915,
