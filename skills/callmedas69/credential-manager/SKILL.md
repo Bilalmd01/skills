@@ -43,6 +43,27 @@ Scattered credentials = scattered attack surface. This skill fixes that.
 6. **Enforces** best practices
 7. **Cleans up** old files after migration
 
+## Detection Parameters
+
+The skill automatically detects credentials by scanning for:
+
+**File Patterns:**
+- `credentials.json` files in config directories
+- `.env` files
+- Memory files with `-creds` or `credentials` in the name
+
+**Sensitive Key Patterns:**
+- API keys, access tokens, bearer tokens
+- Secrets, passwords, passphrases
+- OAuth consumer keys
+- Private keys, signing keys, wallet keys
+- Mnemonics and seed phrases
+
+**Security Checks:**
+- File permissions (must be `600`)
+- Git-ignore protection
+- Format validation
+
 ## Quick Start
 
 ### Full Migration (Recommended)

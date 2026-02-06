@@ -26,11 +26,17 @@ SENSITIVE_KEYS = [
     r"access[_-]?token",
     r"secret",
     r"password",
+    r"passphrase",
     r"credentials",
     r"auth",
     r"bearer",
     r"oauth",
     r"consumer[_-]?key",
+    r"private[_-]?key",
+    r"mnemonic",
+    r"seed[_-]?phrase",
+    r"signing[_-]?key",
+    r"wallet[_-]?key",
 ]
 
 def scan_json_file(path: Path) -> Dict:
