@@ -1,0 +1,11 @@
+{
+  "owner": "eid33552-maker",
+  "slug": "groq-orpheus-tts",
+  "displayName": "Groq Orpheus Tts",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770319170470,
+    "commit": null
+  },
+  "history": []
+}
