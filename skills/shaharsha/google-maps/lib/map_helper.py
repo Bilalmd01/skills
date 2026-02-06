@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Google Maps Elite v3.0 - Next-Gen Maps Integration for OpenClaw
+Google Maps v3.1 - Next-Gen Maps Integration for OpenClaw
 Author: Leo 🦁
 Updated: 2026-02-06
 
@@ -34,12 +34,16 @@ import re
 
 
 class GoogleMapsElite:
-    """Elite Google Maps integration for OpenClaw - v3.0 with Routes API."""
+    """Google Maps integration for OpenClaw - v3.0 with Routes API."""
+    
+    # Default language: check env var, fall back to English
+    DEFAULT_LANG = os.getenv("GOOGLE_MAPS_LANG", "en")
     
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE_MAPS_API_KEY")
         self.maps_base = "https://maps.googleapis.com/maps/api"
         self.routes_base = "https://routes.googleapis.com"
+        self._current_lang = self.DEFAULT_LANG  # Track current request language
     
     def _validate_key(self):
         if not self.api_key:
@@ -110,18 +114,33 @@ class GoogleMapsElite:
         """Convert '1234s' to human readable format."""
         if not duration_str:
             return None
+        lang = getattr(self, '_current_lang', self.DEFAULT_LANG)
         seconds = int(duration_str.rstrip('s'))
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
-        if hours > 0:
-            return f"{hours} שעות {minutes} דקות" if minutes > 0 else f"{hours} שעות"
-        return f"{minutes} דקות"
+        
+        if lang == "he":
+            if hours > 0:
+                return f"{hours} שעות {minutes} דקות" if minutes > 0 else f"{hours} שעות"
+            return f"{minutes} דקות"
+        else:
+            # English/international
+            if hours > 0:
+                return f"{hours} hr {minutes} min" if minutes > 0 else f"{hours} hr"
+            return f"{minutes} min"
     
     def _format_distance(self, meters):
         """Convert meters to km or m."""
-        if meters >= 1000:
-            return f"{meters/1000:.1f} ק\"מ"
-        return f"{meters} מ'"
+        lang = getattr(self, '_current_lang', self.DEFAULT_LANG)
+        if lang == "he":
+            if meters >= 1000:
+                return f"{meters/1000:.1f} ק\"מ"
+            return f"{meters} מ'"
+        else:
+            # English/international - use km
+            if meters >= 1000:
+                return f"{meters/1000:.1f} km"
+            return f"{meters} m"
     
     def _travel_mode(self, mode):
         """Convert user-friendly mode to Routes API enum."""
@@ -156,8 +175,9 @@ class GoogleMapsElite:
 
     # ==================== GEOCODING ====================
     
-    def geocode(self, address, language="he"):
+    def geocode(self, address, language=None):
         """Convert address to coordinates (forward geocoding)."""
+        language = language or self.DEFAULT_LANG
         error = self._validate_key()
         if error:
             return error
@@ -184,8 +204,9 @@ class GoogleMapsElite:
         
         return {"error": f"Geocoding failed: {res.get('status')}"}
     
-    def reverse_geocode(self, lat, lng, language="he"):
+    def reverse_geocode(self, lat, lng, language=None):
         """Convert coordinates to address (reverse geocoding)."""
+        language = language or self.DEFAULT_LANG
         error = self._validate_key()
         if error:
             return error
@@ -211,8 +232,9 @@ class GoogleMapsElite:
 
     # ==================== PLACES ====================
     
-    def search(self, query, location="32.0684,34.7905", radius=2000, open_now=False, language="he"):
+    def search(self, query, location="32.0684,34.7905", radius=2000, open_now=False, language=None):
         """Search for places by text query."""
+        language = language or self.DEFAULT_LANG
         error = self._validate_key()
         if error:
             return error
@@ -238,8 +260,9 @@ class GoogleMapsElite:
         
         return results
     
-    def details(self, place_id, language="he"):
+    def details(self, place_id, language=None):
         """Get detailed information about a place."""
+        language = language or self.DEFAULT_LANG
         error = self._validate_key()
         if error:
             return error
@@ -297,7 +320,7 @@ class GoogleMapsElite:
             }
         }
     
-    def distance(self, origin, destination, mode="driving", language="he",
+    def distance(self, origin, destination, mode="driving", language=None,
                  departure_time=None, arrival_time=None, traffic_model=None, avoid=None):
         """
         Calculate distance and duration between two points using Routes API.
@@ -314,6 +337,8 @@ class GoogleMapsElite:
         Returns:
             dict with distance, duration, duration_in_traffic
         """
+        language = language or self.DEFAULT_LANG
+        self._current_lang = language  # Store for formatting functions
         error = self._validate_key()
         if error:
             return error
@@ -419,7 +444,7 @@ class GoogleMapsElite:
 
     # ==================== ROUTES API - DIRECTIONS ====================
     
-    def directions(self, origin, destination, mode="driving", language="he",
+    def directions(self, origin, destination, mode="driving", language=None,
                    departure_time=None, arrival_time=None, alternatives=False,
                    avoid=None, waypoints=None, optimize_waypoints=False,
                    fuel_efficient=False, shorter_distance=False):
@@ -442,6 +467,8 @@ class GoogleMapsElite:
         Returns:
             Route information with steps, duration, distance
         """
+        language = language or self.DEFAULT_LANG
+        self._current_lang = language  # Store for formatting functions
         error = self._validate_key()
         if error:
             return error
@@ -732,7 +759,7 @@ class GoogleMapsElite:
 def print_help():
     """Print usage information."""
     help_text = """
-Google Maps Elite v3.0 (Routes API) - Usage:
+Google Maps v3.1 (Routes API) - Usage:
 
 ═══════════════════════════════════════════════════════════════
 DISTANCE & TRAVEL TIME
@@ -823,7 +850,7 @@ if __name__ == "__main__":
     def has_flag(flag):
         return f"--{flag}" in sys.argv
     
-    lang = get_arg("lang", "he")
+    lang = get_arg("lang")  # None = use DEFAULT_LANG from env or "en"
     
     result = None
     

@@ -1,13 +1,18 @@
 {
   "owner": "shaharsha",
   "slug": "google-maps",
-  "displayName": "Google Maps Elite",
+  "displayName": "Google Maps",
   "latest": {
-    "version": "3.0.2",
-    "publishedAt": 1770369273692,
-    "commit": "https://github.com/openclaw/skills/commit/61c1a940e520592b941c54abcc4cce9e15eaf3db"
+    "version": "3.1.1",
+    "publishedAt": 1770369759401,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.2",
+      "publishedAt": 1770369273692,
+      "commit": "https://github.com/openclaw/skills/commit/61c1a940e520592b941c54abcc4cce9e15eaf3db"
+    },
     {
       "version": "3.0.1",
       "publishedAt": 1770369211222,

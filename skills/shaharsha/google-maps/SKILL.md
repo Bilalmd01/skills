@@ -13,14 +13,31 @@ metadata: {"clawdbot":{"emoji":"🗺️","requires":{"env":["GOOGLE_API_KEY"]},"
 allowed-tools: [exec]
 ---
 
-# Google Maps Elite v3.0 🗺️
+# Google Maps 🗺️
 
-Google Maps integration powered by the NEW Routes API.
+Google Maps integration powered by the Routes API.
 
 ## Requirements
 
 - `GOOGLE_API_KEY` environment variable
 - Enable in Google Cloud Console: Routes API, Places API, Geocoding API
+
+## Configuration
+
+| Env Variable | Default | Description |
+|--------------|---------|-------------|
+| `GOOGLE_API_KEY` | - | Required. Your Google Maps API key |
+| `GOOGLE_MAPS_LANG` | `en` | Response language (en, he, ja, etc.) |
+
+Set in OpenClaw config:
+```json
+{
+  "env": {
+    "GOOGLE_API_KEY": "AIza...",
+    "GOOGLE_MAPS_LANG": "en"
+  }
+}
+```
 
 ## Script Location
 
@@ -192,9 +209,16 @@ python3 lib/map_helper.py distance "東京" "大阪"
 python3 lib/map_helper.py distance "دبي" "أبو ظبي"
 ```
 
-Use `--lang=XX` to change response language (default: he):
+**Language configuration:**
+
+1. Set default via env: `GOOGLE_MAPS_LANG=he` (persists)
+2. Override per-request: `--lang=ja`
+
 ```bash
-python3 lib/map_helper.py distance "Tokyo" "Osaka" --lang=en
+# Set Hebrew as default in OpenClaw config
+GOOGLE_MAPS_LANG=he
+
+# Override for specific request
 python3 lib/map_helper.py distance "Tokyo" "Osaka" --lang=ja
 ```
 
