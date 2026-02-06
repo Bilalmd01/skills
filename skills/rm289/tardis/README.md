@@ -222,6 +222,53 @@ python sendgrid_webhook.py --process-events --json
 4. Click **"Test Integration"** to verify all events fire correctly
 5. **Don't forget to click Save!**
 
+### Exposing Your Webhook (Tunnels)
+
+Since SendGrid needs to reach your webhook server, you'll need a public URL. Here are your options:
+
+**Option 1: Cloudflare Tunnel (Recommended for production)**
+```bash
+# One-time setup (free Cloudflare account required)
+cloudflared tunnel login
+cloudflared tunnel create tardis-webhook
+
+# Run the tunnel (permanent URL)
+cloudflared tunnel run --url http://localhost:8089 tardis-webhook
+```
+
+**Option 2: Temporary Cloudflare Tunnel (No account needed)**
+```bash
+# Quick & free, but URL changes each restart
+cloudflared tunnel --url http://localhost:8089
+# Gives you: https://random-words.trycloudflare.com
+```
+
+**Option 3: ngrok (Free tier available)**
+```bash
+# Sign up at ngrok.com for a free auth token
+ngrok http 8089
+```
+
+After starting your tunnel, update the webhook URL in SendGrid settings.
+
+> **Note:** The unsubscribe functionality works regardless of whether you run the webhook server—SendGrid handles unsubscribes server-side. The webhook just lets you *see* the events for logging and analytics.
+
+### Discord Webhook Setup (Recommended)
+
+For reliable Discord notifications, use a Discord webhook URL directly:
+
+```bash
+python sendgrid_webhook.py --port 8089 \
+  --discord-webhook "https://discord.com/api/webhooks/YOUR_ID/YOUR_TOKEN"
+```
+
+To create a Discord webhook:
+1. **Server Settings** → **Integrations** → **Webhooks**
+2. Click **New Webhook**
+3. Select your channel and copy the URL
+
+> **Troubleshooting:** If you get HTTP 403 errors, ensure your code includes a `User-Agent` header—Discord/Cloudflare blocks requests without one.
+
 ---
 
 ## 🎯 Use Cases
