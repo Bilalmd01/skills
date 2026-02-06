@@ -1,0 +1,11 @@
+{
+  "owner": "benediktschackenberg",
+  "slug": "azure-proxy",
+  "displayName": "Azure OpenAI Proxy",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770388661226,
+    "commit": null
+  },
+  "history": []
+}
