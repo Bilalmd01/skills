@@ -4,11 +4,30 @@ const os = require('os');
 const { execSync } = require('child_process');
 const { getRepoRoot, getMemoryDir } = require('./gep/paths');
 const { extractSignals } = require('./gep/signals');
-const { loadGenes, loadCapsules, getLastEventId, appendCandidateJsonl, readRecentCandidates } = require('./gep/assetStore');
-const { selectGeneAndCapsule } = require('./gep/selector');
+const {
+  loadGenes,
+  loadCapsules,
+  readAllEvents,
+  getLastEventId,
+  appendCandidateJsonl,
+  readRecentCandidates,
+  readRecentExternalCandidates,
+} = require('./gep/assetStore');
+const { selectGeneAndCapsule, matchPatternToSignals } = require('./gep/selector');
 const { buildGepPrompt } = require('./gep/prompt');
 const { extractCapabilityCandidates, renderCandidatesPreview } = require('./gep/candidates');
-const { getMemoryAdvice, recordAttempt, recordOutcomeFromState, memoryGraphPath } = require('./gep/memoryGraph');
+const {
+  getMemoryAdvice,
+  recordSignalSnapshot,
+  recordHypothesis,
+  recordAttempt,
+  recordOutcomeFromState,
+  memoryGraphPath,
+} = require('./gep/memoryGraph');
+const { readStateForSolidify, writeStateForSolidify } = require('./gep/solidify');
+const { buildMutation, isHighRiskMutationAllowed } = require('./gep/mutation');
+const { selectPersonalityForRun } = require('./gep/personality');
+const { clip, writePromptArtifact, renderSessionsSpawnCall } = require('./gep/bridge');
 
 const REPO_ROOT = getRepoRoot();
 
@@ -358,7 +377,37 @@ function performMaintenance() {
   }
 }
 
+function sleepMs(ms) {
+  const t = Number(ms);
+  const n = Number.isFinite(t) ? Math.max(0, t) : 0;
+  return new Promise(resolve => setTimeout(resolve, n));
+}
+
 async function run() {
+  const bridgeEnabled = String(process.env.EVOLVE_BRIDGE || '').toLowerCase() !== 'false';
+  const loopMode = ARGS.includes('--loop') || ARGS.includes('--mad-dog') || String(process.env.EVOLVE_LOOP || '').toLowerCase() === 'true';
+
+  // Loop gating: do not start a new cycle until the previous one is solidified.
+  // This prevents wrappers from "fast-cycling" the Brain without waiting for the Hand to finish.
+  if (bridgeEnabled && loopMode) {
+    try {
+      const st = readStateForSolidify();
+      const lastRun = st && st.last_run ? st.last_run : null;
+      const lastSolid = st && st.last_solidify ? st.last_solidify : null;
+      if (lastRun && lastRun.run_id) {
+        const pending = !lastSolid || !lastSolid.run_id || String(lastSolid.run_id) !== String(lastRun.run_id);
+        if (pending) {
+          console.log(`[BRIDGE WAIT] Previous run pending solidify: ${String(lastRun.run_id)}. Waiting...`);
+          // Backoff to avoid tight loops and disk churn.
+          await sleepMs(3000);
+          return;
+        }
+      }
+    } catch (e) {
+      // If we cannot read state, proceed (fail open) to avoid deadlock.
+    }
+  }
+
   const startTime = Date.now();
   console.log('Scanning session logs...');
 
@@ -479,7 +528,7 @@ async function run() {
     fileList = `Error listing skills: ${e.message}`;
   }
 
-  const mutation = getMutationDirective(recentMasterLog);
+  const mutationDirective = getMutationDirective(recentMasterLog);
   const healthReport = checkSystemHealth();
 
   // Feature: Mood Awareness (Mode E - Personalization)
@@ -505,6 +554,14 @@ async function run() {
 
   const genes = loadGenes();
   const capsules = loadCapsules();
+  const recentEvents = (() => {
+    try {
+      const all = readAllEvents();
+      return Array.isArray(all) ? all.filter(e => e && e.type === 'EvolutionEvent').slice(-80) : [];
+    } catch (e) {
+      return [];
+    }
+  })();
   const signals = extractSignals({
     recentSessionTranscript: recentMasterLog,
     todayLog,
@@ -512,12 +569,46 @@ async function run() {
     userSnippet,
   });
 
+  const recentErrorMatches = recentMasterLog.match(/\[ERROR|Error:|Exception:|FAIL|Failed|"isError":true/gi) || [];
+  const recentErrorCount = recentErrorMatches.length;
+
+  const evidence = {
+    // Keep short; do not store full transcripts in the graph.
+    recent_session_tail: String(recentMasterLog || '').slice(-6000),
+    today_log_tail: String(todayLog || '').slice(-2500),
+  };
+
+  const observations = {
+    agent: AGENT_NAME,
+    drift_enabled: IS_RANDOM_DRIFT,
+    review_mode: IS_REVIEW_MODE,
+    dry_run: IS_DRY_RUN,
+    system_health: healthReport,
+    mood: moodStatus,
+    scan_ms: scanTime,
+    memory_size_bytes: memorySize,
+    recent_error_count: recentErrorCount,
+    node: process.version,
+    platform: process.platform,
+    cwd: process.cwd(),
+    evidence,
+  };
+
   // Memory Graph: close last action with an inferred outcome (append-only graph, mutable state).
   try {
-    recordOutcomeFromState({ signals });
+    recordOutcomeFromState({ signals, observations });
   } catch (e) {
     // If we can't read/write memory graph, refuse to evolve (no "memoryless evolution").
     console.error(`[MemoryGraph] Outcome write failed: ${e.message}`);
+    console.error(`[MemoryGraph] Refusing to evolve without causal memory. Target: ${memoryGraphPath()}`);
+    process.exit(2);
+  }
+
+  // Memory Graph: record current signals as a first-class node. If this fails, refuse to evolve.
+  try {
+    recordSignalSnapshot({ signals, observations });
+  } catch (e) {
+    console.error(`[MemoryGraph] Signal snapshot write failed: ${e.message}`);
     console.error(`[MemoryGraph] Refusing to evolve without causal memory. Target: ${memoryGraphPath()}`);
     process.exit(2);
   }
@@ -534,6 +625,66 @@ async function run() {
   }
   const recentCandidates = readRecentCandidates(20);
   const capabilityCandidatesPreview = renderCandidatesPreview(recentCandidates.slice(-8), 1600);
+
+  // External candidate zone (A2A receive): only surface candidates when local signals trigger them.
+  // External candidates are NEVER executed directly; they must be validated and promoted first.
+  let externalCandidatesPreview = '(none)';
+  try {
+    const external = readRecentExternalCandidates(50);
+    const list = Array.isArray(external) ? external : [];
+    const capsulesOnly = list.filter(x => x && x.type === 'Capsule');
+    const genesOnly = list.filter(x => x && x.type === 'Gene');
+
+    const matchedExternalGenes = genesOnly
+      .map(g => {
+        const pats = Array.isArray(g.signals_match) ? g.signals_match : [];
+        const hit = pats.reduce((acc, p) => (matchPatternToSignals(p, signals) ? acc + 1 : acc), 0);
+        return { gene: g, hit };
+      })
+      .filter(x => x.hit > 0)
+      .sort((a, b) => b.hit - a.hit)
+      .slice(0, 3)
+      .map(x => x.gene);
+
+    const matchedExternalCapsules = capsulesOnly
+      .map(c => {
+        const triggers = Array.isArray(c.trigger) ? c.trigger : [];
+        const score = triggers.reduce((acc, t) => (matchPatternToSignals(t, signals) ? acc + 1 : acc), 0);
+        return { capsule: c, score };
+      })
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(x => x.capsule);
+
+    if (matchedExternalGenes.length || matchedExternalCapsules.length) {
+      externalCandidatesPreview = `\`\`\`json\n${JSON.stringify(
+        [
+          ...matchedExternalGenes.map(g => ({
+            type: g.type,
+            id: g.id,
+            category: g.category || null,
+            signals_match: g.signals_match || [],
+            a2a: g.a2a || null,
+          })),
+          ...matchedExternalCapsules.map(c => ({
+            type: c.type,
+            id: c.id,
+            trigger: c.trigger,
+            gene: c.gene,
+            summary: c.summary,
+            confidence: c.confidence,
+            blast_radius: c.blast_radius || null,
+            outcome: c.outcome || null,
+            success_streak: c.success_streak || null,
+            a2a: c.a2a || null,
+          })),
+        ],
+        null,
+        2
+      )}\n\`\`\``;
+    }
+  } catch (e) {}
 
   // Memory Graph reasoning: prefer high-confidence paths, suppress known low-success paths (unless drift is explicit).
   let memoryAdvice = null;
@@ -553,19 +704,170 @@ async function run() {
     driftEnabled: IS_RANDOM_DRIFT,
   });
 
+  const selectedBy = memoryAdvice && memoryAdvice.preferredGeneId ? 'memory_graph+selector' : 'selector';
+  const capsulesUsed = Array.isArray(capsuleCandidates)
+    ? capsuleCandidates.map(c => (c && c.id ? String(c.id) : null)).filter(Boolean)
+    : [];
+  const selectedCapsuleId = capsulesUsed.length ? capsulesUsed[0] : null;
+
+  // Personality selection (natural selection + small mutation when triggered).
+  // This state is persisted in MEMORY_DIR and is treated as an evolution control surface (not role-play).
+  const personalitySelection = selectPersonalityForRun({
+    driftEnabled: IS_RANDOM_DRIFT,
+    signals,
+    recentEvents,
+  });
+  const personalityState = personalitySelection && personalitySelection.personality_state ? personalitySelection.personality_state : null;
+
+  // Mutation object is mandatory for every evolution run.
+  const tail = Array.isArray(recentEvents) ? recentEvents.slice(-6) : [];
+  const tailOutcomes = tail
+    .map(e => (e && e.outcome && e.outcome.status ? String(e.outcome.status) : null))
+    .filter(Boolean);
+  const stableSuccess = tailOutcomes.length >= 6 && tailOutcomes.every(s => s === 'success');
+  const tailAvgScore =
+    tail.length > 0
+      ? tail.reduce((acc, e) => acc + (e && e.outcome && Number.isFinite(Number(e.outcome.score)) ? Number(e.outcome.score) : 0), 0) /
+        tail.length
+      : 0;
+  const innovationPressure =
+    !IS_RANDOM_DRIFT &&
+    personalityState &&
+    Number.isFinite(Number(personalityState.creativity)) &&
+    Number(personalityState.creativity) >= 0.75 &&
+    stableSuccess &&
+    tailAvgScore >= 0.7;
+  const mutationInnovateMode = !!IS_RANDOM_DRIFT || !!innovationPressure;
+  const mutationSignals = innovationPressure ? [...(Array.isArray(signals) ? signals : []), 'stable_success_plateau'] : signals;
+
+  const allowHighRisk =
+    !!IS_RANDOM_DRIFT &&
+    !!personalitySelection &&
+    !!personalitySelection.personality_known &&
+    personalityState &&
+    isHighRiskMutationAllowed(personalityState) &&
+    Number(personalityState.rigor) >= 0.8 &&
+    Number(personalityState.risk_tolerance) <= 0.3 &&
+    !(Array.isArray(signals) && signals.includes('log_error'));
+  const mutation = buildMutation({
+    signals: mutationSignals,
+    selectedGene,
+    driftEnabled: mutationInnovateMode,
+    personalityState,
+    allowHighRisk,
+  });
+
+  // Memory Graph: record hypothesis bridging Signal -> Action. If this fails, refuse to evolve.
+  let hypothesisId = null;
+  try {
+    const hyp = recordHypothesis({
+      signals,
+      mutation,
+      personality_state: personalityState,
+      selectedGene,
+      selector,
+      driftEnabled: IS_RANDOM_DRIFT,
+      selectedBy,
+      capsulesUsed,
+      observations,
+    });
+    hypothesisId = hyp && hyp.hypothesisId ? hyp.hypothesisId : null;
+  } catch (e) {
+    console.error(`[MemoryGraph] Hypothesis write failed: ${e.message}`);
+    console.error(`[MemoryGraph] Refusing to evolve without causal memory. Target: ${memoryGraphPath()}`);
+    process.exit(2);
+  }
+
   // Memory Graph: record the chosen causal path for this run. If this fails, refuse to output a mutation prompt.
   try {
     recordAttempt({
       signals,
+      mutation,
+      personality_state: personalityState,
       selectedGene,
       selector,
       driftEnabled: IS_RANDOM_DRIFT,
-      selectedBy: memoryAdvice && memoryAdvice.preferredGeneId ? 'memory_graph+selector' : 'selector',
+      selectedBy,
+      hypothesisId,
+      capsulesUsed,
+      observations,
     });
   } catch (e) {
     console.error(`[MemoryGraph] Attempt write failed: ${e.message}`);
     console.error(`[MemoryGraph] Refusing to evolve without causal memory. Target: ${memoryGraphPath()}`);
     process.exit(2);
+  }
+
+  // Solidify state: capture minimal, auditable context for post-patch validation + asset write.
+  // This enforces strict protocol closure after patch application.
+  try {
+    const runId = `run_${Date.now()}`;
+    const parentEventId = getLastEventId();
+    const selectedBy = memoryAdvice && memoryAdvice.preferredGeneId ? 'memory_graph+selector' : 'selector';
+
+    // Baseline snapshot (before any edits).
+    let baselineUntracked = [];
+    let baselineHead = null;
+    try {
+      const out = execSync('git ls-files --others --exclude-standard', {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 4000,
+      });
+      baselineUntracked = String(out)
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
+    } catch (e) {}
+
+    try {
+      const out = execSync('git rev-parse HEAD', {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 4000,
+      });
+      baselineHead = String(out || '').trim() || null;
+    } catch (e) {}
+
+    const maxFiles =
+      selectedGene && selectedGene.constraints && Number.isFinite(Number(selectedGene.constraints.max_files))
+        ? Number(selectedGene.constraints.max_files)
+        : 12;
+    const blastRadiusEstimate = {
+      files: Number.isFinite(maxFiles) && maxFiles > 0 ? maxFiles : 0,
+      lines: Number.isFinite(maxFiles) && maxFiles > 0 ? Math.round(maxFiles * 80) : 0,
+    };
+
+    // Merge into existing state to preserve last_solidify (do not wipe it).
+    const prevState = readStateForSolidify();
+    prevState.last_run = {
+        run_id: runId,
+        created_at: new Date().toISOString(),
+        parent_event_id: parentEventId || null,
+        selected_gene_id: selectedGene && selectedGene.id ? selectedGene.id : null,
+        selected_capsule_id: selectedCapsuleId,
+        selector: selector || null,
+        signals: Array.isArray(signals) ? signals : [],
+        mutation: mutation || null,
+        mutation_id: mutation && mutation.id ? mutation.id : null,
+        personality_state: personalityState || null,
+        personality_key: personalitySelection && personalitySelection.personality_key ? personalitySelection.personality_key : null,
+        personality_known: !!(personalitySelection && personalitySelection.personality_known),
+        personality_mutations:
+          personalitySelection && Array.isArray(personalitySelection.personality_mutations)
+            ? personalitySelection.personality_mutations
+            : [],
+        drift: !!IS_RANDOM_DRIFT,
+        selected_by: selectedBy,
+        baseline_untracked: baselineUntracked,
+        baseline_git_head: baselineHead,
+        blast_radius_estimate: blastRadiusEstimate,
+      };
+    writeStateForSolidify(prevState);
+  } catch (e) {
+    console.error(`[SolidifyState] Write failed: ${e.message}`);
   }
 
   const genesPreview = `\`\`\`json\n${JSON.stringify(genes.slice(0, 6), null, 2)}\n\`\`\``;
@@ -589,6 +891,9 @@ Notes:
 - ${reportingDirective}
 - ${syncDirective}
 
+External candidates (A2A receive zone; staged only, never execute directly):
+${externalCandidatesPreview}
+
 Global memory (MEMORY.md):
 \`\`\`
 ${memorySnippet}
@@ -610,7 +915,7 @@ ${recentMasterLog}
 \`\`\`
 
 Mutation directive:
-${mutation}
+${mutationDirective}
 `.trim();
 
   const prompt = buildGepPrompt({
@@ -624,9 +929,73 @@ ${mutation}
     genesPreview,
     capsulesPreview,
     capabilityCandidatesPreview,
+    externalCandidatesPreview,
   });
 
-  console.log(prompt);
+  const printPrompt = String(process.env.EVOLVE_PRINT_PROMPT || '').toLowerCase() === 'true';
+
+  // Default behavior (v1.4.1+): "execute-by-default" by bridging prompt -> sub-agent via sessions_spawn.
+  // This project is the Brain; the Hand is a spawned executor agent. Wrappers can disable bridging with EVOLVE_BRIDGE=false.
+  if (bridgeEnabled) {
+    // Reuse the run_id stored in the solidify state when possible.
+    let runId = `run_${Date.now()}`;
+    try {
+      const st = readStateForSolidify();
+      if (st && st.last_run && st.last_run.run_id) runId = String(st.last_run.run_id);
+    } catch (e) {}
+    let artifact = null;
+    try {
+      artifact = writePromptArtifact({
+        memoryDir: MEMORY_DIR,
+        cycleId,
+        runId,
+        prompt,
+        meta: {
+          agent: AGENT_NAME,
+          drift_enabled: IS_RANDOM_DRIFT,
+          review_mode: IS_REVIEW_MODE,
+          dry_run: IS_DRY_RUN,
+          mutation_id: mutation && mutation.id ? mutation.id : null,
+          personality_key: personalitySelection && personalitySelection.personality_key ? personalitySelection.personality_key : null,
+        },
+      });
+    } catch (e) {
+      artifact = null;
+    }
+
+    const executorTask = [
+      'You are the executor (the Hand).',
+      'Your job is to apply a safe, minimal patch in this repo following the attached GEP protocol prompt.',
+      artifact && artifact.promptPath ? `Prompt file: ${artifact.promptPath}` : 'Prompt file: (unavailable)',
+      '',
+      'After applying changes and validations, you MUST run:',
+      '  node index.js solidify',
+      '',
+      'Loop chaining (only if you are running in loop mode): after solidify succeeds, print a sessions_spawn call to start the next loop run with a short delay.',
+      'Example:',
+      'sessions_spawn({ task: "exec: sleep 3 && node index.js --loop", agentId: "main", cleanup: "delete", label: "gep_loop_next" })',
+      '',
+      'GEP protocol prompt (may be truncated here; prefer the prompt file if provided):',
+      clip(prompt, 24000),
+    ].join('\n');
+
+    const spawn = renderSessionsSpawnCall({
+      task: executorTask,
+      agentId: AGENT_NAME,
+      cleanup: 'delete',
+      label: `gep_bridge_${cycleNum}`,
+    });
+
+    console.log('\n[BRIDGE ENABLED] Spawning executor agent via sessions_spawn.');
+    console.log(spawn);
+    if (printPrompt) {
+      console.log('\n[PROMPT OUTPUT] (EVOLVE_PRINT_PROMPT=true)');
+      console.log(prompt);
+    }
+  } else {
+    console.log(prompt);
+    console.log('\n[SOLIDIFY REQUIRED] After applying the patch and validations, run: node index.js solidify');
+  }
 }
 
 module.exports = { run };

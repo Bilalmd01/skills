@@ -47,7 +47,10 @@ function getDefaultGenes() {
           max_files: 12,
           forbidden_paths: ['.git', 'node_modules'],
         },
-        validation: ['node index.js run', 'node -e "require(\\"./src/evolve\\")"'],
+        validation: [
+          'node -e "require(\'./src/evolve\'); require(\'./src/gep/solidify\'); console.log(\'ok\')"',
+          'node -e "require(\'./src/gep/selector\'); require(\'./src/gep/memoryGraph\'); console.log(\'ok\')"',
+        ],
       },
       {
         type: 'Gene',
@@ -67,7 +70,7 @@ function getDefaultGenes() {
           max_files: 20,
           forbidden_paths: ['.git', 'node_modules'],
         },
-        validation: ['node index.js run'],
+        validation: ['node -e "require(\'./src/evolve\'); require(\'./src/gep/prompt\'); console.log(\'ok\')"'],
       },
     ],
   };
@@ -91,6 +94,10 @@ function eventsPath() {
 
 function candidatesPath() {
   return path.join(getGepAssetsDir(), 'candidates.jsonl');
+}
+
+function externalCandidatesPath() {
+  return path.join(getGepAssetsDir(), 'external_candidates.jsonl');
 }
 
 function loadGenes() {
@@ -149,9 +156,36 @@ function appendCandidateJsonl(candidateObj) {
   fs.appendFileSync(candidatesPath(), JSON.stringify(candidateObj) + '\n', 'utf8');
 }
 
+function appendExternalCandidateJsonl(obj) {
+  const dir = getGepAssetsDir();
+  ensureDir(dir);
+  fs.appendFileSync(externalCandidatesPath(), JSON.stringify(obj) + '\n', 'utf8');
+}
+
 function readRecentCandidates(limit = 20) {
   try {
     const p = candidatesPath();
+    if (!fs.existsSync(p)) return [];
+    const raw = fs.readFileSync(p, 'utf8');
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    const recent = lines.slice(Math.max(0, lines.length - limit));
+    return recent
+      .map(l => {
+        try {
+          return JSON.parse(l);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function readRecentExternalCandidates(limit = 50) {
+  try {
+    const p = externalCandidatesPath();
     if (!fs.existsSync(p)) return [];
     const raw = fs.readFileSync(p, 'utf8');
     const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
@@ -186,6 +220,16 @@ function appendCapsule(capsuleObj) {
   writeJsonAtomic(capsulesPath(), { version: current.version || 1, capsules });
 }
 
+function upsertCapsule(capsuleObj) {
+  if (!capsuleObj || capsuleObj.type !== 'Capsule' || !capsuleObj.id) return;
+  const current = readJsonIfExists(capsulesPath(), getDefaultCapsules());
+  const capsules = Array.isArray(current.capsules) ? current.capsules : [];
+  const idx = capsules.findIndex(c => c && c.type === 'Capsule' && String(c.id) === String(capsuleObj.id));
+  if (idx >= 0) capsules[idx] = capsuleObj;
+  else capsules.push(capsuleObj);
+  writeJsonAtomic(capsulesPath(), { version: current.version || 1, capsules });
+}
+
 module.exports = {
   loadGenes,
   loadCapsules,
@@ -193,12 +237,16 @@ module.exports = {
   getLastEventId,
   appendEventJsonl,
   appendCandidateJsonl,
+  appendExternalCandidateJsonl,
   readRecentCandidates,
+  readRecentExternalCandidates,
   upsertGene,
   appendCapsule,
+  upsertCapsule,
   genesPath,
   capsulesPath,
   eventsPath,
   candidatesPath,
+  externalCandidatesPath,
 };
 
