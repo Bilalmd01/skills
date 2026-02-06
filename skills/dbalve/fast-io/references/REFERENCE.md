@@ -1,9 +1,8 @@
 # Fast.io for AI Agents
 
-> **Version:** 1.12.0 | **Last updated:** 2026-02-04
+> **Version:** 1.13.0 | **Last updated:** 2026-02-05
 >
-> This guide is updated frequently. Agents should re-fetch it from `GET /current/agents/` at least once per day to
-> ensure they are working with the latest capabilities, endpoints, and limits.
+> This guide is available at the `/current/agents/` endpoint on the connected API server.
 
 **Store files. Share with humans. Query with AI. All through one API — free.**
 
@@ -12,11 +11,11 @@ rooms, ask questions about documents using built-in AI, and hand everything off 
 infrastructure to manage, no subscriptions to set up, no credit card required.
 
 **MCP-enabled agents** should connect via the Model Context Protocol for the simplest integration — no raw HTTP calls
-needed. Connect to `https://mcp.fast.io/sse` and fetch the full skill guide at `https://mcp.fast.io/SKILLS.md` for
-available tools, parameters, and version-specific implementation details. This guide is a general reference for
-Fast.io's capabilities and concepts; the MCP skill guide contains more detailed, actionable instructions for the current
-version of the MCP server. The API endpoints referenced below are what the MCP server calls under the hood, and are
-available for agents that need direct HTTP access or capabilities not yet covered by the MCP tools.
+needed. MCP-connected agents receive the full tool documentation, parameters, and guided prompts automatically through
+the MCP protocol (`resources/read`, `prompts/list`, `prompts/get`) for common multi-step operations — see the "MCP
+Prompts" section below. This guide covers platform concepts and capabilities; the MCP server provides tool-level
+details through its standard protocol interface. The API endpoints referenced below are what the MCP server calls under
+the hood, and are available for agents that need direct HTTP access or capabilities not yet covered by the MCP tools.
 
 ---
 
@@ -44,7 +43,7 @@ simple question: "What does this document say?"
 | Finding the right file in a large collection | Semantic search finds files by meaning, not just filename                                         |
 | Handing a project off to a human             | One-click ownership transfer — human gets the org, agent keeps admin access                       |
 | Tracking what happened                       | Full audit trail with AI-powered activity summaries                                               |
-| Cost                                         | Free. 100 GB storage, 5,000 monthly credits, no credit card                                       |
+| Cost                                         | Free. 50 GB storage, 5,000 monthly credits, no credit card                                        |
 
 ---
 
@@ -60,10 +59,33 @@ agent account:
 
 1. `POST /current/user/` with `email_address`, `password`, `tos_agree=true`, `agent=true`
 2. Authenticate with Basic Auth → get JWT
-3. Create an org and start working
+3. Verify your email address (required before using most endpoints):
+   - `POST /current/user/email/validate/` with `email` — sends a verification code to your email
+   - `POST /current/user/email/validate/` with `email` and `email_token` — validates the code and marks your account as verified
+4. `POST /current/org/create/` with `domain` (required, 2-80 chars lowercase alphanumeric + hyphens)
+5. `POST /current/org/{org_id}/create/workspace/` with `folder_name`, `name`, `perm_join`, `perm_member_manage` (all required — see Permission Values below)
 
-Agent accounts get the free agent plan (100 GB, 5,000 monthly credits) and can transfer orgs to humans when ready. This
+Agent accounts get the free agent plan (50 GB, 5,000 monthly credits) and can transfer orgs to humans when ready. This
 is the recommended path for autonomous agents.
+
+#### Permission Values
+
+Workspace and share creation require human-readable permission strings:
+
+**Workspace `perm_join`** (who can auto-join from the org):
+- `'Member or above'` (default) — any org member can join
+- `'Admin or above'` — only org admins and owners
+- `'Only Org Owners'` — only org owners
+
+**Workspace `perm_member_manage`** (who can manage workspace members):
+- `'Member or above'` (default) — any workspace member can manage
+- `'Admin or above'` — only workspace admins and owners
+
+**Share `access_options`** (who can access the share):
+- `'Only members of the Share or Workspace'` (default)
+- `'Members of the Share, Workspace or Org'`
+- `'Anyone with a registered account'`
+- `'Anyone with the link'` (allows password protection)
 
 ### Option 2: Assisting a Human — Use Their API Key
 
@@ -161,6 +183,63 @@ other workspaces. The org shows up in `/orgs/list/external/` — not `/orgs/list
 If the human later invites you to the org itself (via org member invitation), the org moves from external to internal and
 you gain org-level access based on your permission level.
 
+### Pagination
+
+All list endpoints support offset-based pagination via query parameters. Use pagination to keep responses within token
+limits and iterate through large collections.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Max | Description                |
+|-----------|------|---------|-----|----------------------------|
+| `limit`   | int  | 100     | 500 | Number of items to return  |
+| `offset`  | int  | 0       | —   | Number of items to skip    |
+
+**Response metadata:** Every paginated response includes a `pagination` object:
+
+```json
+{
+  "pagination": {
+    "total": 42,
+    "limit": 100,
+    "offset": 0,
+    "has_more": false
+  }
+}
+```
+
+**Paginating through results:**
+
+```
+# First page
+GET /current/orgs/list/?limit=10&offset=0
+# → pagination.has_more = true, pagination.total = 42
+
+# Second page
+GET /current/orgs/list/?limit=10&offset=10
+# → pagination.has_more = true
+
+# Continue until has_more = false
+```
+
+**Endpoints supporting pagination:**
+
+| Endpoint                                             | Collection Key     |
+|------------------------------------------------------|--------------------|
+| `GET /current/orgs/all/`                             | `orgs`             |
+| `GET /current/orgs/list/`                            | `orgs`             |
+| `GET /current/orgs/list/external/`                   | `orgs`             |
+| `GET /current/shares/all/`                           | `shares`           |
+| `GET /current/workspace/{id}/members/list/`          | `users`            |
+| `GET /current/org/{id}/billing/usage/members/list/`  | `billable_members` |
+| `GET /current/workspace/{id}/list/shares/`           | `shares`           |
+| `GET /current/user/me/list/shares/`                  | `shares`           |
+| `GET /current/org/{id}/list/workspaces/`             | `workspaces`       |
+| `GET /current/org/{id}/members/list/`                | `users`            |
+| `GET /current/workspace/{id}/storage/search/`        | `files`            |
+| `GET /current/share/{id}/storage/search/`            | `files`            |
+| `GET /current/share/{id}/members/list/`              | `users`            |
+
 ---
 
 ## Core Capabilities
@@ -170,7 +249,7 @@ you gain org-level access based on your permission level.
 Workspaces are collaborative containers for files. Each workspace has its own storage, member list, AI chat, and
 activity feed. Think of them as project folders with superpowers.
 
-- **100 GB included storage** on the free agent plan
+- **50 GB included storage** on the free agent plan
 - **Files up to 1 GB** per upload
 - **File versioning** — every edit creates a new version, old versions are recoverable
 - **Folder hierarchy** — organize files however you want
@@ -219,7 +298,7 @@ exchange pattern:
 - **Password protection** — require a password for link access
 - **Expiration dates** — shares auto-expire after a set period
 - **Download controls** — enable or disable file downloads
-- **Access levels** — Members Only, Org Members, Registered Users, or Public (anyone with the link)
+- **Access levels** — `'Only members of the Share or Workspace'`, `'Members of the Share, Workspace or Org'`, `'Anyone with a registered account'`, or `'Anyone with the link'`
 - **Custom branding** — background images, gradient colors, accent colors, logos
 - **Post-download messaging** — show custom messages and links after download
 - **Up to 3 custom links** per share for context or calls-to-action
@@ -647,6 +726,17 @@ Body: from={"type":"upload","upload":{"id":"{session_id}"}}
 
 This is useful when you need to upload first and decide where to place the file later.
 
+#### MCP Binary Upload (Blob Sidecar)
+
+MCP-connected agents can avoid base64 encoding overhead (~33% size savings) by staging raw binary data through a
+sidecar endpoint:
+
+1. `POST /blob` with your `Mcp-Session-Id` header and the raw bytes as the request body
+2. The server returns a `blob_id`
+3. Pass `blob_ref` (the `blob_id`) instead of the base64-encoded `chunk` field when calling `upload-chunk`
+
+This is MCP-specific — the REST API continues to use `multipart/form-data` as described above.
+
 **Agent use case:** You're generating a 200 MB report. Create an upload session targeting the client's workspace, split
 the file into 5 MB chunks, upload 3 at a time, trigger assembly, and poll until `stored`. The file appears in the
 workspace with previews generated automatically. Use the activity polling endpoint (section 13) to know when AI indexing
@@ -667,6 +757,12 @@ bytes.
 which may be blocked or rate-limited by the source. The import can fail silently if the source rejects the request, times
 out, or returns an error. Monitor the upload status to confirm the file was actually retrieved and stored before
 reporting success to the user.
+
+**Security note:** The `web_upload` endpoint instructs the Fast.io cloud server to fetch the URL — not the agent's
+local environment. The Fast.io server is a public cloud service with no access to the agent's local network, internal
+systems, or private infrastructure. It can only reach publicly accessible URLs and supported OAuth-authenticated cloud
+storage providers. No internal or private data is exposed beyond what the agent could already access through its own
+network requests.
 
 **Agent use case:** A user says "Add this Google Doc to the project." You call `POST /current/web_upload/` with the URL.
 Fast.io downloads it server-side, generates previews, indexes it for AI, and it appears in the workspace. No local I/O —
@@ -701,7 +797,7 @@ user to upgrade the org themselves.
 
 - Human becomes the owner of the org and all workspaces
 - Agent is demoted to admin (can still manage files and shares)
-- Human gets a fresh 14-day free trial starting from the transfer date
+- Human gets the free plan (credit-based, no trial period)
 - Human can upgrade to Pro or Business at any time for unlimited credits and expanded limits
 
 **Agent use case:** A user says "Set up a project workspace for my team." You create the org, build out workspace
@@ -806,7 +902,7 @@ demonstrate value, with room to grow when the org transfers to a human on a paid
 | Resource                  | Included                                            |
 |---------------------------|-----------------------------------------------------|
 | **Price**                 | $0 — no credit card, no trial period, no expiration |
-| **Storage**               | 100 GB                                              |
+| **Storage**               | 50 GB                                               |
 | **Max file size**         | 1 GB                                                |
 | **Monthly credits**       | 5,000 (resets every 30 days)                        |
 | **Workspaces**            | 5                                                   |
@@ -840,15 +936,15 @@ paid plan with unlimited credits. See "Ownership Transfer" above. If the agent a
 
 ### After Transfer — Human Plan Options
 
-Once an agent transfers an org to a human, they get a 14-day free trial and can upgrade:
+Once an agent transfers an org to a human, they get the free plan (credit-based, no trial period) and can upgrade:
 
-| Feature         | Agent (Free) | Pro       | Business  |
-|-----------------|--------------|-----------|-----------|
-| Monthly credits | 5,000        | Unlimited | Unlimited |
-| Storage         | 100 GB       | 1 TB      | 5 TB      |
-| Max file size   | 1 GB         | 25 GB     | 50 GB     |
-| Workspaces      | 5            | 10        | 1,000     |
-| Shares          | 50           | 1,000     | 50,000    |
+| Feature         | Agent (Free) | Free (Human) | Pro       | Business  |
+|-----------------|--------------|--------------|-----------|-----------|
+| Monthly credits | 5,000        | 5,000        | Unlimited | Unlimited |
+| Storage         | 50 GB        | 50 GB        | 1 TB      | 5 TB      |
+| Max file size   | 1 GB         | 1 GB         | 25 GB     | 50 GB     |
+| Workspaces      | 5            | 5            | 10        | 1,000     |
+| Shares          | 50           | 50           | 1,000     | 50,000    |
 
 The transfer flow is the primary way agents deliver value — and the only way to upgrade beyond the agent plan. Set
 everything up on the free agent plan, transfer ownership when the work is complete or when credits are exhausted, and
@@ -933,6 +1029,37 @@ the human upgrades when they're ready. The agent retains admin access to keep ma
 
 ---
 
+## MCP Prompts — Guided Workflows
+
+MCP-connected agents can use **guided prompts** to get step-by-step instructions for common operations. These are
+especially useful for agents unfamiliar with Fast.io workflows, complex multi-step operations, or operations with
+non-obvious parameter requirements.
+
+Retrieve the full list with `prompts/list` and get detailed guidance for a specific prompt with `prompts/get`.
+
+| Prompt                 | Name                          | When to Use                                                                                          |
+|------------------------|-------------------------------|------------------------------------------------------------------------------------------------------|
+| `get-started`          | Getting Started Guide         | First-time onboarding: create account, org, and workspace. Covers autonomous agents, API key users, and agents invited to existing orgs. |
+| `create-share`         | Share Creation Guide          | Creating shares (Send/Receive/Exchange). Explains share types, access control, passwords, expiration, custom URLs, and feature toggles. |
+| `ask-ai`               | AI Chat Guide                 | Querying files with AI. Covers RAG-indexed vs file attachment modes, intelligence state checks, scoping, polling, and response structure. |
+| `upload-file`          | File Upload Guide             | Uploading files. Helps choose between single-step text upload and chunked binary upload, with parameter and encoding details. |
+| `transfer-to-human`    | Ownership Transfer Guide      | Transferring org ownership to a human. Explains the claim URL workflow, token expiration, and pre-transfer checklist. |
+| `discover-content`     | Content Discovery Guide       | Finding all accessible orgs and workspaces. Explains the critical distinction between internal and external orgs and the full discovery flow. |
+| `invite-collaborator`  | Collaboration Invitation Guide| Inviting people to orgs, workspaces, or shares. Covers the three invitation levels, permissions, and message requirements. |
+| `setup-branding`       | Branding Setup Guide          | Customizing branding across orgs, workspaces, and shares. Explains the asset hierarchy, asset types, upload methods, and best practices. |
+
+**When to use prompts instead of this guide:**
+
+- **Starting a new workflow** — prompts provide concise, actionable steps tailored to the specific operation
+- **Choosing between approaches** — prompts explain trade-offs (e.g., which share type, which upload method)
+- **Parameter-heavy operations** — prompts list exact parameters, required values, and common pitfalls
+- **First-time operations** — prompts walk through prerequisites and setup in order
+
+Prompts complement the reference material in this guide and in `skill.md`. Use this guide for concepts and
+capabilities, `skill.md` for tool-level details, and prompts for guided walkthroughs of specific workflows.
+
+---
+
 ## URL Structure & Link Construction
 
 Fast.io uses subdomain-based routing. Organization domains become subdomains, and every resource (workspace, folder,
@@ -940,7 +1067,7 @@ file, share) has a URL-safe identifier from API responses that you use to build 
 
 ### How Org Domains Become Subdomains
 
-When you create an organization, you choose a `domain` (3+ characters, lowercase alphanumeric and hyphens). This
+When you create an organization, you choose a `domain` (2-80 characters, lowercase alphanumeric and hyphens). This
 becomes the subdomain for all org URLs:
 
 Organization domain: `"acme"` → All org URLs live at: `https://acme.fast.io/...`
