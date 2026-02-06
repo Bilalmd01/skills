@@ -1,0 +1,11 @@
+{
+  "owner": "raff-lima",
+  "slug": "browserless-agent",
+  "displayName": "Browserless Agent",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770344445490,
+    "commit": null
+  },
+  "history": []
+}
