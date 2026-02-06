@@ -3,9 +3,15 @@
   "slug": "asana-api",
   "displayName": "Asana",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770117277964,
-    "commit": "https://github.com/clawdbot/skills/commit/408e0dd4c0bdea9b2ed3e3508e9deb0f923f657c"
+    "version": "1.0.1",
+    "publishedAt": 1770343295378,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770117277964,
+      "commit": "https://github.com/clawdbot/skills/commit/408e0dd4c0bdea9b2ed3e3508e9deb0f923f657c"
+    }
+  ]
 }
