@@ -1,7 +1,7 @@
 ---
 name: calendly
 description: |
-  Calendly API integration with managed OAuth. Access event types, scheduled events, invitees, availability, and manage webhooks. Use this skill when users want to view scheduling data, check availability, book meetings, or integrate with Calendly workflows.
+  Calendly API integration with managed OAuth. Access event types, scheduled events, invitees, availability, and manage webhooks. Use this skill when users want to view scheduling data, check availability, book meetings, or integrate with Calendly workflows. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
 compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
@@ -16,8 +16,12 @@ Access the Calendly API with managed OAuth authentication. Retrieve event types,
 
 ```bash
 # Get current user
-curl -s -X GET 'https://gateway.maton.ai/calendly/users/me' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/users/me')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ## Base URL
@@ -33,7 +37,7 @@ Replace `{native-api-path}` with the actual Calendly API endpoint path. The gate
 All requests require the Maton API key in the Authorization header:
 
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer $MATON_API_KEY
 ```
 
 **Environment Variable:** Set your API key as `MATON_API_KEY`:
@@ -55,24 +59,36 @@ Manage your Calendly OAuth connections at `https://ctrl.maton.ai`.
 ### List Connections
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections?app=calendly&status=ACTIVE' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=calendly&status=ACTIVE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Create Connection
 
 ```bash
-curl -s -X POST 'https://ctrl.maton.ai/connections' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{"app": "calendly"}'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'app': 'calendly'}).encode()
+req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Get Connection
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -95,8 +111,12 @@ Open the returned `url` in a browser to complete OAuth authorization.
 ### Delete Connection
 
 ```bash
-curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}', method='DELETE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Specifying Connection
@@ -104,9 +124,13 @@ curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
 If you have multiple Calendly connections, specify which one to use with the `Maton-Connection` header:
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/users/me' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -H 'Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/users/me')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Maton-Connection', '21fd90f9-5935-43cd-b6c8-bde9d915ca80')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -124,8 +148,12 @@ GET /calendly/users/me
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/users/me' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/users/me')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -171,8 +199,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/event_types?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA&active=true' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/event_types?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA&active=true')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -235,8 +267,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/scheduled_events?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA&status=active&min_start_time=2025-03-01T00:00:00Z' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/scheduled_events?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA&status=active&min_start_time=2025-03-01T00:00:00Z')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -295,12 +331,14 @@ Content-Type: application/json
 **Example:**
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/calendly/scheduled_events/DDDDDDDDDDDDDDDD/cancellation' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "reason": "Meeting rescheduled"
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'reason': 'Meeting rescheduled'}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/calendly/scheduled_events/DDDDDDDDDDDDDDDD/cancellation', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Invitees
@@ -321,8 +359,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/scheduled_events/DDDDDDDDDDDDDDDD/invitees' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/scheduled_events/DDDDDDDDDDDDDDDD/invitees')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -395,14 +437,14 @@ Content-Type: application/json
 **Example:**
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/calendly/event_types/CCCCCCCCCCCCCCCC/invitees' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "start_time": "2025-03-20T15:00:00Z",
-    "email": "bob.smith@example.com",
-    "name": "Bob Smith"
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'start_time': '2025-03-20T15:00:00Z', 'email': 'bob.smith@example.com', 'name': 'Bob Smith'}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/calendly/event_types/CCCCCCCCCCCCCCCC/invitees', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Note:** The `start_time` must correspond to a valid available slot. Use the `/event_type_available_times` endpoint to find available times.
@@ -423,8 +465,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/event_type_available_times?event_type=https://api.calendly.com/event_types/CCCCCCCCCCCCCCCC&start_time=2025-03-15T00:00:00Z&end_time=2025-03-22T00:00:00Z' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/event_type_available_times?event_type=https://api.calendly.com/event_types/CCCCCCCCCCCCCCCC&start_time=2025-03-15T00:00:00Z&end_time=2025-03-22T00:00:00Z')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -461,8 +507,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/user_busy_times?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA&start_time=2025-03-15T00:00:00Z&end_time=2025-03-22T00:00:00Z' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/user_busy_times?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA&start_time=2025-03-15T00:00:00Z&end_time=2025-03-22T00:00:00Z')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -495,8 +545,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/user_availability_schedules?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/user_availability_schedules?user=https://api.calendly.com/users/AAAAAAAAAAAAAAAA')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Organization
@@ -517,8 +571,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/organization_memberships?organization=https://api.calendly.com/organizations/BBBBBBBBBBBBBBBB' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/organization_memberships?organization=https://api.calendly.com/organizations/BBBBBBBBBBBBBBBB')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -565,8 +623,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/webhook_subscriptions?organization=https://api.calendly.com/organizations/BBBBBBBBBBBBBBBB&scope=organization' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/webhook_subscriptions?organization=https://api.calendly.com/organizations/BBBBBBBBBBBBBBBB&scope=organization')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 #### Create Webhook Subscription
@@ -592,15 +654,14 @@ Available events:
 **Example:**
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/calendly/webhook_subscriptions' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "url": "https://example.com/webhook",
-    "events": ["invitee.created", "invitee.canceled"],
-    "organization": "https://api.calendly.com/organizations/BBBBBBBBBBBBBBBB",
-    "scope": "organization"
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'url': 'https://example.com/webhook', 'events': ['invitee.created', 'invitee.canceled'], 'organization': 'https://api.calendly.com/organizations/BBBBBBBBBBBBBBBB', 'scope': 'organization'}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/calendly/webhook_subscriptions', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -637,8 +698,12 @@ DELETE /calendly/webhook_subscriptions/{uuid}
 **Example:**
 
 ```bash
-curl -s -X DELETE 'https://gateway.maton.ai/calendly/webhook_subscriptions/GGGGGGGGGGGGGGGG' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/webhook_subscriptions/GGGGGGGGGGGGGGGG', method='DELETE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 Returns `204 No Content` on success.
@@ -648,8 +713,12 @@ Returns `204 No Content` on success.
 Use `page_token` for pagination. Response includes `pagination.next_page_token` when more results exist:
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/calendly/scheduled_events?user=USER_URI&page_token=NEXT_PAGE_TOKEN' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/calendly/scheduled_events?user=USER_URI&page_token=NEXT_PAGE_TOKEN')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ## Code Examples
@@ -693,6 +762,7 @@ data = response.json()
 - Webhooks are not available on Calendly's free plan
 - Availability endpoints have a 7-day maximum range per request and `start_time` must be in the future
 - The API does not support creating or managing event types programmatically
+- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
 
 ## Error Handling
 
@@ -705,6 +775,27 @@ data = response.json()
 | 424 | External calendar error (calendar integration issue on Calendly side) |
 | 429 | Rate limited |
 | 4xx/5xx | Passthrough error from Calendly API |
+
+### Troubleshooting: Invalid API Key
+
+**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
+
+1. Check that the `MATON_API_KEY` environment variable is set:
+
+```bash
+echo $MATON_API_KEY
+```
+
+2. Verify the API key is valid by listing connections:
+
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
+```
 
 ## Resources
 
