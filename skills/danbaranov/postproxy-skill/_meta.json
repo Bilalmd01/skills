@@ -1,0 +1,11 @@
+{
+  "owner": "danbaranov",
+  "slug": "postproxy-skill",
+  "displayName": "Postproxy",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770334128492,
+    "commit": null
+  },
+  "history": []
+}
