@@ -1,0 +1,11 @@
+{
+  "owner": "okaris",
+  "slug": "ai-rag-pipeline",
+  "displayName": "Ai Rag Pipeline",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770363105070,
+    "commit": null
+  },
+  "history": []
+}
