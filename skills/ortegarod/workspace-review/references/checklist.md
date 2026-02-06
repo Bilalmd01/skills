@@ -15,9 +15,9 @@ Quick-reference for periodic audits.
 
 - [ ] `HEARTBEAT.md` — if using heartbeats
 - [ ] `MEMORY.md` — if maintaining long-term memory
-- [ ] `BOOT.md` — if using boot hooks
+- [ ] `BOOT.md` — if using boot-md hook (runs every gateway restart)
+- [ ] `BOOTSTRAP.md` — one-time first run (delete after)
 - [ ] `skills/` — if using workspace skills
-- [ ] `docs/` — if maintaining documentation
 
 ## File Purpose (No Scope Creep)
 
@@ -45,10 +45,17 @@ Quick-reference for periodic audits.
 - [ ] Recent daily files reviewed and distilled
 - [ ] No API keys or passwords in memory files
 
+## Automatic Features (Awareness)
+
+- [ ] **Pre-compaction flush:** OpenClaw auto-triggers memory save before compaction
+- [ ] **Heartbeat response:** `HEARTBEAT_OK` stripped when nothing needs attention
+- [ ] **Empty HEARTBEAT.md:** Skipped entirely to save API calls
+
 ## Vector Search Alignment
 
-- [ ] Reference docs are in `memory/`, not `docs/`
-- [ ] No important material stranded in `docs/`
+- [ ] Only `MEMORY.md` and `memory/**/*.md` are indexed by default
+- [ ] `memorySearch.extraPaths` adds other paths if needed
+- [ ] `memorySearch.experimental.sessionMemory` indexes session transcripts if enabled
 
 ## Git Status
 

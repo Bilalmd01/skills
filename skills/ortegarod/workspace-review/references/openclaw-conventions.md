@@ -29,9 +29,8 @@ Source: OpenClaw docs (`/docs/concepts/agent-workspace.md`, `/docs/concepts/memo
 | `memory/*.md` | Reference docs (deep dives, projects) | On demand |
 | `skills/` | Workspace-specific skills | On demand |
 | `canvas/` | Canvas UI files | On demand |
-| `docs/` | Documentation (optional, NOT indexed) | On demand |
 
-**Note:** Only `MEMORY.md` and `memory/**/*.md` are vector-indexed. Put reference docs in `memory/`.
+**Note:** Only `MEMORY.md` and `memory/**/*.md` are vector-indexed.
 
 ### NOT in Workspace (lives in `~/.openclaw/`)
 
@@ -96,6 +95,12 @@ Source: OpenClaw docs (`/docs/concepts/agent-workspace.md`, `/docs/concepts/memo
   - Full procedures (just reference them)
   - Documentation
 
+**Heartbeat Response Contract:**
+- Reply `HEARTBEAT_OK` when nothing needs attention
+- `HEARTBEAT_OK` at start/end of reply is stripped; if remaining content ≤ 300 chars, reply is dropped
+- For alerts, do NOT include `HEARTBEAT_OK` — just return the alert text
+- If HEARTBEAT.md is empty (only headers/blank lines), heartbeat is skipped to save API calls
+
 ### MEMORY.md
 - **Purpose:** Curated long-term memory
 - **Contains:** Distilled lessons, key people, important projects, lasting context
@@ -155,9 +160,41 @@ The workspace contains personal memory, identity, and potentially sensitive cont
 4. **In main session:** Also read MEMORY.md
 5. **In group chats:** Do NOT read MEMORY.md (security)
 
+### Automatic Memory Flush (Pre-Compaction)
+
+OpenClaw automatically triggers a **silent agent turn** before context compaction:
+
+- Fires when session approaches ~180k tokens (configurable via `compaction.reserveTokensFloor` + `softThresholdTokens`)
+- Agent receives system prompt: "Session nearing compaction. Store durable memories now."
+- Agent should write lasting notes to `memory/YYYY-MM-DD.md`, then reply `NO_REPLY`
+- One flush per compaction cycle (tracked in sessions.json)
+
+Config (`agents.defaults.compaction.memoryFlush`):
+```json5
+{
+  enabled: true,
+  softThresholdTokens: 4000,
+  systemPrompt: "Session nearing compaction. Store durable memories now.",
+  prompt: "Write any lasting notes to memory/YYYY-MM-DD.md; reply with NO_REPLY if nothing to store."
+}
+```
+
 ### Vector Search
 
-Only `MEMORY.md` and `memory/**/*.md` are indexed. Put reference docs in `memory/`, not `docs/`.
+Only `MEMORY.md` and `memory/**/*.md` are indexed by default.
+
+**Extra paths:** To index files outside `memory/`, add them to config:
+```json5
+agents: {
+  defaults: {
+    memorySearch: {
+      extraPaths: ["../team-docs", "/srv/shared-notes"]
+    }
+  }
+}
+```
+
+**Session memory (experimental):** Enable `memorySearch.experimental.sessionMemory = true` to also index session transcripts. This allows `memory_search` to recall conversations.
 
 See [Memory docs](/concepts/memory) for full details on vector search, hybrid search, and session memory.
 

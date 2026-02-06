@@ -29,12 +29,16 @@ Verify expected files exist in correct locations:
 ├── TOOLS.md         ← Local tool notes (REQUIRED)
 ├── HEARTBEAT.md     ← Heartbeat checklist (optional)
 ├── MEMORY.md        ← Curated long-term memory (optional)
-├── BOOT.md          ← Startup checklist (optional)
-├── memory/          ← Daily logs
+├── BOOT.md          ← Runs on gateway restart (optional, boot-md hook)
+├── BOOTSTRAP.md     ← One-time first-run ritual (delete after use)
+├── memory/          ← Daily logs + reference docs (vector-indexed)
 │   └── YYYY-MM-DD.md
-├── skills/          ← Workspace-specific skills (optional)
-└── docs/            ← Documentation (optional)
+└── skills/          ← Workspace-specific skills (optional)
 ```
+
+**Note on BOOT.md vs BOOTSTRAP.md:**
+- `BOOT.md` — Persistent; runs every gateway restart (if `boot-md` hook enabled)
+- `BOOTSTRAP.md` — One-time; agent follows it on first run, then deletes it
 
 **Check:** Run `ls -la` on workspace root. Flag missing required files.
 
@@ -65,10 +69,15 @@ Each file has ONE job. Check for scope creep:
 - [ ] Old daily files reviewed and distilled to MEMORY.md periodically
 - [ ] No sensitive data (API keys, passwords) in memory files
 
+**Automatic Memory Flush:** OpenClaw triggers a silent agent turn before session compaction to write durable memories. The agent receives a prompt to flush important context to `memory/YYYY-MM-DD.md`. This is automatic — no action needed, but be aware your context WILL be compacted after ~180k tokens.
+
 ### 4. Vector Search Alignment
 
-- [ ] Reference docs are in `memory/`, not `docs/` (only `memory/` is indexed)
+- [ ] Only `MEMORY.md` and `memory/**/*.md` are indexed by default
 - [ ] Daily logs use `YYYY-MM-DD.md`; reference docs use descriptive names
+- [ ] Files outside `memory/` can be indexed via `memorySearch.extraPaths` in config
+
+**Session Memory (Experimental):** If `memorySearch.experimental.sessionMemory = true`, session transcripts are also indexed and searchable via `memory_search`.
 
 ### 5. Git Status
 
@@ -97,7 +106,7 @@ Flag anything that:
 - Stores credentials in workspace (should be in ~/.openclaw/credentials/)
 - Creates non-standard directories without clear purpose
 
-**Note:** Reference docs (deep dives, project docs) belong in `memory/` — NOT `docs/`. The `memory/` folder is vector-indexed for semantic search. Files outside `memory/` are not searchable unless added to `memorySearch.extraPaths` in config.
+**Note:** Only `MEMORY.md` and `memory/**/*.md` are vector-indexed. Files outside `memory/` can be added via `memorySearch.extraPaths` in config.
 
 ### 7. Size Check
 
