@@ -3,9 +3,15 @@
   "slug": "jasper-recall",
   "displayName": "Jasper Recall",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1770248863911,
-    "commit": "https://github.com/clawdbot/skills/commit/f0979fb3248894576b30901d329d0501bb01249f"
+    "version": "0.3.1",
+    "publishedAt": 1770371151018,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1770248863911,
+      "commit": "https://github.com/clawdbot/skills/commit/f0979fb3248894576b30901d329d0501bb01249f"
+    }
+  ]
 }

@@ -15,7 +15,13 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.1.0';
+// Read version from package.json
+const packageJson = require('../package.json');
+const VERSION = packageJson.version;
+
+// Check for updates in background (non-blocking)
+const { checkInBackground } = require('./update-check');
+checkInBackground();
 const VENV_PATH = path.join(os.homedir(), '.openclaw', 'rag-env');
 const CHROMA_PATH = path.join(os.homedir(), '.openclaw', 'chroma-db');
 const BIN_PATH = path.join(os.homedir(), '.local', 'bin');
@@ -81,7 +87,8 @@ function setup() {
   const scripts = [
     { src: 'recall.py', dest: 'recall', shebang: `#!${path.join(VENV_PATH, 'bin', 'python3')}` },
     { src: 'index-digests.py', dest: 'index-digests', shebang: `#!${path.join(VENV_PATH, 'bin', 'python3')}` },
-    { src: 'digest-sessions.sh', dest: 'digest-sessions', shebang: '#!/bin/bash' }
+    { src: 'digest-sessions.sh', dest: 'digest-sessions', shebang: '#!/bin/bash' },
+    { src: 'summarize-old.py', dest: 'summarize-old', shebang: `#!${path.join(VENV_PATH, 'bin', 'python3')}` }
   ];
   
   for (const script of scripts) {
@@ -131,16 +138,32 @@ USAGE:
 
 COMMANDS:
   setup       Install dependencies and CLI scripts
+  doctor      Run system health check
   recall      Search your memory (alias for the recall command)
   index       Index memory files (alias for index-digests)
   digest      Process session logs (alias for digest-sessions)
+  summarize   Compress old entries to save tokens (alias for summarize-old)
+  serve       Start HTTP API server (for sandboxed agents)
+  config      Show or set configuration
+  update      Check for updates
   help        Show this help message
+
+CONFIGURATION:
+  Config file: ~/.jasper-recall/config.json
+  
+  Environment variables (override config file):
+    RECALL_WORKSPACE   Memory workspace path
+    RECALL_CHROMA_DB   ChromaDB storage path
+    RECALL_VENV        Python venv path
+    RECALL_PORT        Server port (default: 3458)
+    RECALL_HOST        Server host (default: 127.0.0.1)
 
 EXAMPLES:
   npx jasper-recall setup
   recall "what did we discuss yesterday"
   index-digests
   digest-sessions --dry-run
+  npx jasper-recall serve --port 3458
 `);
 }
 
@@ -176,6 +199,50 @@ switch (command) {
       spawn(digestScript, args, { stdio: 'inherit' });
     } else {
       error('Run "npx jasper-recall setup" first');
+    }
+    break;
+  case 'summarize':
+    const summarizeScript = path.join(BIN_PATH, 'summarize-old');
+    if (fs.existsSync(summarizeScript)) {
+      const args = process.argv.slice(3);
+      spawn(summarizeScript, args, { stdio: 'inherit' });
+    } else {
+      error('Run "npx jasper-recall setup" first');
+    }
+    break;
+  case 'serve':
+  case 'server':
+    // Start the HTTP server for sandboxed agents
+    const { runCLI } = require('./server');
+    runCLI(process.argv.slice(3));
+    break;
+  case 'update':
+  case 'check-update':
+    // Check for updates explicitly
+    const { checkForUpdates } = require('./update-check');
+    checkForUpdates().then(result => {
+      if (result && !result.updateAvailable) {
+        console.log(`✓ You're on the latest version (${result.current})`);
+      } else if (!result) {
+        console.log('Could not check for updates');
+      }
+    });
+    break;
+  case 'doctor':
+    // Run system health check
+    const { runDoctor } = require('./doctor');
+    process.exit(runDoctor());
+    break;
+  case 'config':
+    // Configuration management
+    const config = require('./config');
+    const configArg = process.argv[3];
+    if (configArg === 'init') {
+      config.init();
+    } else if (configArg === 'path') {
+      console.log(config.CONFIG_FILE);
+    } else {
+      config.show();
     }
     break;
   case '--version':

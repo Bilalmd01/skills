@@ -1,11 +1,18 @@
 ---
 name: jasper-recall
-description: Local RAG system for agent memory using ChromaDB and sentence-transformers. Provides semantic search over session logs, daily notes, and memory files. Use when you need persistent memory across sessions, want to search past conversations, or build agents that remember context. Commands: recall "query", index-digests, digest-sessions.
+version: 0.3.1
+description: Local RAG system for agent memory using ChromaDB and sentence-transformers. v0.3.0 adds multi-agent mesh (N agents sharing memory), OpenClaw plugin with autoRecall, and agent-specific collections. Commands: recall, index-digests, digest-sessions, privacy-check, sync-shared, serve, recall-mesh.
 ---
 
-# Jasper Recall
+# Jasper Recall v0.2.3
 
 Local RAG (Retrieval-Augmented Generation) system for AI agent memory. Gives your agent the ability to remember and search past conversations.
+
+**New in v0.2.2:** Shared ChromaDB Collections — separate collections for private, shared, and learnings content. Better isolation for multi-agent setups.
+
+**New in v0.2.1:** Recall Server — HTTP API for Docker-isolated agents that can't run CLI directly.
+
+**New in v0.2.0:** Shared Agent Memory — bidirectional learning between main and sandboxed agents with privacy controls.
 
 ## When to Use
 
@@ -106,6 +113,79 @@ Schedule regular indexing:
 }
 ```
 
+## Shared Agent Memory (v0.2.0+)
+
+For multi-agent setups where sandboxed agents need access to some memories:
+
+### Memory Tagging
+
+Tag entries in daily notes:
+
+```markdown
+## 2026-02-05 [public] - Feature shipped
+This is visible to all agents.
+
+## 2026-02-05 [private] - Personal note
+This is main agent only (default if untagged).
+
+## 2026-02-05 [learning] - Pattern discovered
+Learnings shared bidirectionally between agents.
+```
+
+### ChromaDB Collections (v0.2.2+)
+
+Memory is stored in separate collections for isolation:
+
+| Collection | Purpose | Who accesses |
+|------------|---------|--------------|
+| `private_memories` | Main agent's private content | Main agent only |
+| `shared_memories` | [public] tagged content | Sandboxed agents |
+| `agent_learnings` | Learnings from any agent | All agents |
+| `jasper_memory` | Legacy unified (backward compat) | Fallback |
+
+**Collection selection:**
+```bash
+# Main agent (default) - searches private_memories
+recall "api design"
+
+# Sandboxed agents - searches shared_memories only
+recall "product info" --public-only
+
+# Search learnings only
+recall "patterns" --learnings
+
+# Search all collections (merged results)
+recall "everything" --all
+
+# Specific collection
+recall "something" --collection private_memories
+
+# Legacy mode (single collection)
+recall "old way" --legacy
+```
+
+### Sandboxed Agent Access
+
+```bash
+# Sandboxed agents use --public-only
+recall "product info" --public-only
+
+# Main agent can see everything
+recall "product info"
+```
+
+### Privacy Workflow
+
+```bash
+# Check for sensitive data before sharing
+privacy-check "text to scan"
+privacy-check --file notes.md
+
+# Extract [public] entries to shared directory
+sync-shared
+sync-shared --dry-run  # Preview first
+```
+
 ## CLI Reference
 
 ### recall
@@ -116,7 +196,58 @@ recall "query" [OPTIONS]
 Options:
   -n, --limit N     Number of results (default: 5)
   --json            Output as JSON
-  -v, --verbose     Show similarity scores
+  -v, --verbose     Show similarity scores and collection source
+  --public-only     Search shared_memories only (sandboxed agents)
+  --learnings       Search agent_learnings only
+  --all             Search all collections (merged results)
+  --collection X    Search specific collection by name
+  --legacy          Use legacy jasper_memory collection
+```
+
+### serve (v0.2.1+)
+
+```
+npx jasper-recall serve [OPTIONS]
+
+Options:
+  --port, -p N    Port to listen on (default: 3458)
+  --host, -h H    Host to bind (default: 127.0.0.1)
+
+Starts HTTP API server for Docker-isolated agents.
+
+Endpoints:
+  GET /recall?q=query&limit=5    Search memories
+  GET /health                    Health check
+
+Security: public_only=true enforced by default.
+Set RECALL_ALLOW_PRIVATE=true to allow private queries.
+```
+
+**Example (from Docker container):**
+```bash
+curl "http://host.docker.internal:3458/recall?q=product+info"
+```
+
+### privacy-check (v0.2.0+)
+
+```
+privacy-check "text"     # Scan inline text
+privacy-check --file X   # Scan a file
+
+Detects: emails, API keys, internal IPs, home paths, credentials.
+Returns: CLEAN or list of violations.
+```
+
+### sync-shared (v0.2.0+)
+
+```
+sync-shared [OPTIONS]
+
+Options:
+  --dry-run    Preview without writing
+  --all        Process all daily notes
+
+Extracts [public] tagged entries to memory/shared/.
 ```
 
 ### index-digests
