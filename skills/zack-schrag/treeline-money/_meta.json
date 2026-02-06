@@ -3,11 +3,16 @@
   "slug": "treeline-money",
   "displayName": "Treeline Money",
   "latest": {
-    "version": "26.2.403",
-    "publishedAt": 1770230922082,
-    "commit": "https://github.com/clawdbot/skills/commit/e53ca6a2fb4155013a6014cb1ca924e0fac40298"
+    "version": "26.2.601",
+    "publishedAt": 1770380218065,
+    "commit": null
   },
   "history": [
+    {
+      "version": "26.2.403",
+      "publishedAt": 1770230922082,
+      "commit": "https://github.com/clawdbot/skills/commit/e53ca6a2fb4155013a6014cb1ca924e0fac40298"
+    },
     {
       "version": "0.0.4",
       "publishedAt": 1769731535025,
