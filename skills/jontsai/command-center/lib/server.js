@@ -8,8 +8,77 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { execSync, exec } = require("child_process");
-const { handleJobsRequest, isJobsRoute } = require("./jobs");
+const { promisify } = require("util");
+
+// Promisified exec for async operations
+const execAsync = promisify(exec);
+
+// Helper to run command and return stdout (with timeout and error handling)
+async function runCmd(cmd, options = {}) {
+  const opts = { encoding: "utf8", timeout: 10000, ...options };
+  try {
+    const { stdout } = await execAsync(cmd, opts);
+    return stdout.trim();
+  } catch (e) {
+    if (options.fallback !== undefined) return options.fallback;
+    throw e;
+  }
+}
+
+// Note: jobs module loaded after env vars are set (see below)
+
+// ============================================================================
+// CLI ARGUMENT PARSING
+// ============================================================================
+const args = process.argv.slice(2);
+let cliProfile = null;
+let cliPort = null;
+
+for (let i = 0; i < args.length; i++) {
+  switch (args[i]) {
+    case "--profile":
+    case "-p":
+      cliProfile = args[++i];
+      break;
+    case "--port":
+      cliPort = parseInt(args[++i], 10);
+      break;
+    case "--help":
+    case "-h":
+      console.log(`
+OpenClaw Command Center
+
+Usage: node lib/server.js [options]
+
+Options:
+  --profile, -p <name>  OpenClaw profile (uses ~/.openclaw-<name>)
+  --port <port>         Server port (default: 3333)
+  --help, -h            Show this help
+
+Environment:
+  OPENCLAW_PROFILE      Same as --profile
+  PORT                  Same as --port
+
+Examples:
+  node lib/server.js --profile production
+  node lib/server.js -p dev --port 3334
+`);
+      process.exit(0);
+  }
+}
+
+// Set profile in environment so CONFIG and all CLI calls pick it up
+if (cliProfile) {
+  process.env.OPENCLAW_PROFILE = cliProfile;
+}
+if (cliPort) {
+  process.env.PORT = cliPort.toString();
+}
+
+// Load config AFTER env vars are set (order matters for workspace detection)
 const { CONFIG } = require("./config");
+// Load jobs module after config (it also requires config)
+const { handleJobsRequest, isJobsRoute } = require("./jobs");
 
 const PORT = CONFIG.server.port;
 const DASHBOARD_DIR = path.join(__dirname, "../public");
@@ -61,6 +130,43 @@ function broadcastSSE(event, data) {
 const DATA_DIR = path.join(DASHBOARD_DIR, "data");
 
 // ============================================================================
+// PRIVACY SETTINGS
+// ============================================================================
+const PRIVACY_FILE = path.join(DATA_DIR, "privacy-settings.json");
+
+function loadPrivacySettings() {
+  try {
+    if (fs.existsSync(PRIVACY_FILE)) {
+      return JSON.parse(fs.readFileSync(PRIVACY_FILE, "utf8"));
+    }
+  } catch (e) {
+    console.error("Failed to load privacy settings:", e.message);
+  }
+  return {
+    version: 1,
+    hiddenTopics: [],
+    hiddenSessions: [],
+    hiddenCrons: [],
+    hideHostname: false,
+    updatedAt: null
+  };
+}
+
+function savePrivacySettings(data) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    data.updatedAt = new Date().toISOString();
+    fs.writeFileSync(PRIVACY_FILE, JSON.stringify(data, null, 2));
+    return true;
+  } catch (e) {
+    console.error("Failed to save privacy settings:", e.message);
+    return false;
+  }
+}
+
+// ============================================================================
 // OPERATORS DATA
 // ============================================================================
 const OPERATORS_FILE = path.join(DATA_DIR, "operators.json");
@@ -93,6 +199,152 @@ function getOperatorBySlackId(slackId) {
   const data = loadOperators();
   return data.operators.find((op) => op.id === slackId || op.metadata?.slackId === slackId);
 }
+
+// Auto-detect operators from session transcripts (runs async in background)
+let operatorsRefreshing = false;
+async function refreshOperatorsAsync() {
+  if (operatorsRefreshing) return;
+  operatorsRefreshing = true;
+  
+  try {
+    const profile = process.env.OPENCLAW_PROFILE || "";
+    const openclawDir = profile
+      ? path.join(process.env.HOME, `.openclaw-${profile}`)
+      : path.join(process.env.HOME, ".openclaw");
+    const sessionsDir = path.join(openclawDir, "agents", "main", "sessions");
+    
+    if (!fs.existsSync(sessionsDir)) {
+      operatorsRefreshing = false;
+      return;
+    }
+    
+    const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith(".jsonl"));
+    const operatorsMap = new Map(); // userId -> operator data
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    
+    for (const file of files) {
+      const filePath = path.join(sessionsDir, file);
+      try {
+        const stat = fs.statSync(filePath);
+        // Only scan files modified in last 7 days
+        if (stat.mtimeMs < sevenDaysAgo) continue;
+        
+        // Read first 10KB of each file (enough to get user info)
+        const fd = fs.openSync(filePath, "r");
+        const buffer = Buffer.alloc(10240);
+        const bytesRead = fs.readSync(fd, buffer, 0, 10240, 0);
+        fs.closeSync(fd);
+        
+        const content = buffer.toString("utf8", 0, bytesRead);
+        const lines = content.split("\n").slice(0, 20); // First 20 lines
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const entry = JSON.parse(line);
+            if (entry.type !== "message" || !entry.message) continue;
+            
+            const msg = entry.message;
+            if (msg.role !== "user") continue;
+            
+            let text = "";
+            if (typeof msg.content === "string") {
+              text = msg.content;
+            } else if (Array.isArray(msg.content)) {
+              const textPart = msg.content.find(c => c.type === "text");
+              if (textPart) text = textPart.text || "";
+            }
+            
+            if (!text) continue;
+            
+            // Extract Slack user: "[Slack #channel +Xm date] username (USERID):"
+            const slackMatch = text.match(/\[Slack[^\]]*\]\s*([\w.-]+)\s*\(([A-Z0-9]+)\):/);
+            if (slackMatch) {
+              const username = slackMatch[1];
+              const userId = slackMatch[2];
+              
+              if (!operatorsMap.has(userId)) {
+                operatorsMap.set(userId, {
+                  id: userId,
+                  name: username,
+                  username: username,
+                  source: "slack",
+                  firstSeen: entry.timestamp || stat.mtimeMs,
+                  lastSeen: entry.timestamp || stat.mtimeMs,
+                  sessionCount: 1,
+                });
+              } else {
+                const op = operatorsMap.get(userId);
+                op.lastSeen = Math.max(op.lastSeen, entry.timestamp || stat.mtimeMs);
+                op.sessionCount++;
+              }
+              break; // Found user for this session, move to next file
+            }
+            
+            // Also check for Telegram users: "[Telegram +Xm date] username:"
+            const telegramMatch = text.match(/\[Telegram[^\]]*\]\s*([\w.-]+):/);
+            if (telegramMatch) {
+              const username = telegramMatch[1];
+              const oderId = `telegram:${username}`;
+              
+              if (!operatorsMap.has(oderId)) {
+                operatorsMap.set(oderId, {
+                  id: oderId,
+                  name: username,
+                  username: username,
+                  source: "telegram",
+                  firstSeen: entry.timestamp || stat.mtimeMs,
+                  lastSeen: entry.timestamp || stat.mtimeMs,
+                  sessionCount: 1,
+                });
+              } else {
+                const op = operatorsMap.get(oderId);
+                op.lastSeen = Math.max(op.lastSeen, entry.timestamp || stat.mtimeMs);
+                op.sessionCount++;
+              }
+              break;
+            }
+          } catch (e) { /* skip invalid lines */ }
+        }
+      } catch (e) { /* skip unreadable files */ }
+    }
+    
+    // Load existing operators to preserve manual edits
+    const existing = loadOperators();
+    const existingMap = new Map(existing.operators.map(op => [op.id, op]));
+    
+    // Merge: auto-detected + existing manual entries
+    for (const [id, autoOp] of operatorsMap) {
+      if (existingMap.has(id)) {
+        // Update stats but preserve manual fields
+        const manual = existingMap.get(id);
+        manual.lastSeen = Math.max(manual.lastSeen || 0, autoOp.lastSeen);
+        manual.sessionCount = (manual.sessionCount || 0) + autoOp.sessionCount;
+      } else {
+        existingMap.set(id, autoOp);
+      }
+    }
+    
+    // Save merged operators
+    const merged = {
+      version: 1,
+      operators: Array.from(existingMap.values()).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0)),
+      roles: existing.roles || {},
+      lastRefreshed: Date.now(),
+    };
+    
+    saveOperators(merged);
+    console.log(`[Operators] Refreshed: ${merged.operators.length} operators detected`);
+  } catch (e) {
+    console.error("[Operators] Refresh failed:", e.message);
+  }
+  
+  operatorsRefreshing = false;
+}
+
+// Start background operators refresh
+setTimeout(() => refreshOperatorsAsync(), 2000);
+setInterval(() => refreshOperatorsAsync(), 5 * 60 * 1000); // Every 5 minutes
 
 // Extract session originator from transcript
 function getSessionOriginator(sessionId) {
@@ -342,8 +594,143 @@ function getUnauthorizedPage(reason, user) {
 </html>`;
 }
 
-// Get detailed system vitals (iStatMenus-style)
+// Vitals cache to reduce blocking
+let cachedVitals = null;
+let lastVitalsUpdate = 0;
+const VITALS_CACHE_TTL = 30000; // 30 seconds - vitals don't change fast
+let vitalsRefreshing = false;
+
+// Async background refresh of system vitals (non-blocking)
+async function refreshVitalsAsync() {
+  if (vitalsRefreshing) return;
+  vitalsRefreshing = true;
+  
+  const vitals = {
+    hostname: "", uptime: "",
+    disk: { used: 0, free: 0, total: 0, percent: 0, kbPerTransfer: 0, iops: 0, throughputMBps: 0 },
+    cpu: { loadAvg: [0, 0, 0], cores: 0, usage: 0 },
+    memory: { used: 0, free: 0, total: 0, percent: 0, pressure: "normal" },
+    temperature: null,
+  };
+
+  try {
+    // Run commands in parallel for speed
+    const [hostname, uptimeRaw, coresRaw, memTotalRaw, vmStatRaw, dfRaw, topOutput] = await Promise.all([
+      runCmd("hostname", { fallback: "unknown" }),
+      runCmd("uptime", { fallback: "" }),
+      runCmd("sysctl -n hw.ncpu", { fallback: "1" }),
+      runCmd("sysctl -n hw.memsize", { fallback: "0" }),
+      runCmd("vm_stat", { fallback: "" }),
+      runCmd("df -k ~ | tail -1", { fallback: "" }),
+      runCmd('top -l 1 -n 0 2>/dev/null | grep "CPU usage" || echo ""', { fallback: "" }),
+    ]);
+
+    vitals.hostname = hostname;
+
+    // Parse uptime
+    const uptimeMatch = uptimeRaw.match(/up\s+([^,]+)/);
+    if (uptimeMatch) vitals.uptime = uptimeMatch[1].trim();
+    const loadMatch = uptimeRaw.match(/load averages?:\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+    if (loadMatch) vitals.cpu.loadAvg = [parseFloat(loadMatch[1]), parseFloat(loadMatch[2]), parseFloat(loadMatch[3])];
+
+    // CPU
+    vitals.cpu.cores = parseInt(coresRaw, 10) || 1;
+    vitals.cpu.usage = Math.min(100, Math.round((vitals.cpu.loadAvg[0] / vitals.cpu.cores) * 100));
+    if (topOutput) {
+      const userMatch = topOutput.match(/([\d.]+)%\s*user/);
+      const sysMatch = topOutput.match(/([\d.]+)%\s*sys/);
+      vitals.cpu.userPercent = userMatch ? parseFloat(userMatch[1]) : null;
+      vitals.cpu.sysPercent = sysMatch ? parseFloat(sysMatch[1]) : null;
+      if (vitals.cpu.userPercent !== null && vitals.cpu.sysPercent !== null) {
+        vitals.cpu.usage = Math.round(vitals.cpu.userPercent + vitals.cpu.sysPercent);
+      }
+    }
+
+    // Disk
+    const dfParts = dfRaw.split(/\s+/);
+    if (dfParts.length >= 4) {
+      vitals.disk.total = parseInt(dfParts[1], 10) * 1024;
+      vitals.disk.used = parseInt(dfParts[2], 10) * 1024;
+      vitals.disk.free = parseInt(dfParts[3], 10) * 1024;
+      vitals.disk.percent = Math.round((parseInt(dfParts[2], 10) / parseInt(dfParts[1], 10)) * 100);
+    }
+
+    // Memory
+    vitals.memory.total = parseInt(memTotalRaw, 10) || 0;
+    const pageSize = 16384;
+    const activePages = parseInt((vmStatRaw.match(/Pages active:\s+(\d+)/) || [])[1] || 0, 10);
+    const wiredPages = parseInt((vmStatRaw.match(/Pages wired down:\s+(\d+)/) || [])[1] || 0, 10);
+    const compressedPages = parseInt((vmStatRaw.match(/Pages occupied by compressor:\s+(\d+)/) || [])[1] || 0, 10);
+    vitals.memory.used = (activePages + wiredPages + compressedPages) * pageSize;
+    vitals.memory.free = vitals.memory.total - vitals.memory.used;
+    vitals.memory.percent = vitals.memory.total > 0 ? Math.round((vitals.memory.used / vitals.memory.total) * 100) : 0;
+    vitals.memory.pressure = vitals.memory.percent > 90 ? "critical" : vitals.memory.percent > 75 ? "warning" : "normal";
+
+    // Secondary async calls (chip info, iostat)
+    const [perfCores, effCores, chip, iostatRaw] = await Promise.all([
+      runCmd("sysctl -n hw.perflevel0.logicalcpu 2>/dev/null || echo 0", { fallback: "0" }),
+      runCmd("sysctl -n hw.perflevel1.logicalcpu 2>/dev/null || echo 0", { fallback: "0" }),
+      runCmd('system_profiler SPHardwareDataType 2>/dev/null | grep "Chip:" | cut -d: -f2 || echo ""', { fallback: "" }),
+      runCmd("iostat -d -c 2 2>/dev/null | tail -1 || echo ''", { fallback: "" }),
+    ]);
+    vitals.cpu.pCores = parseInt(perfCores, 10) || null;
+    vitals.cpu.eCores = parseInt(effCores, 10) || null;
+    if (chip) vitals.cpu.chip = chip;
+    const iostatParts = iostatRaw.split(/\s+/);
+    if (iostatParts.length >= 3) {
+      vitals.disk.kbPerTransfer = parseFloat(iostatParts[0]) || 0;
+      vitals.disk.iops = parseFloat(iostatParts[1]) || 0;
+      vitals.disk.throughputMBps = parseFloat(iostatParts[2]) || 0;
+    }
+    vitals.temperatureNote = vitals.cpu.chip ? "Apple Silicon (requires elevated access)" : null;
+  } catch (e) {
+    console.error("[Vitals] Async refresh failed:", e.message);
+  }
+
+  // Formatted versions
+  vitals.memory.usedFormatted = formatBytes(vitals.memory.used);
+  vitals.memory.totalFormatted = formatBytes(vitals.memory.total);
+  vitals.memory.freeFormatted = formatBytes(vitals.memory.free);
+  vitals.disk.usedFormatted = formatBytes(vitals.disk.used);
+  vitals.disk.totalFormatted = formatBytes(vitals.disk.total);
+  vitals.disk.freeFormatted = formatBytes(vitals.disk.free);
+
+  cachedVitals = vitals;
+  lastVitalsUpdate = Date.now();
+  vitalsRefreshing = false;
+  console.log("[Vitals] Cache refreshed async");
+}
+
+// Start background vitals refresh on startup
+setTimeout(() => refreshVitalsAsync(), 500);
+setInterval(() => refreshVitalsAsync(), VITALS_CACHE_TTL);
+
+// Get detailed system vitals (iStatMenus-style) - returns cached, triggers async refresh
 function getSystemVitals() {
+  const now = Date.now();
+  // Trigger async refresh if stale or no cache
+  if (!cachedVitals || (now - lastVitalsUpdate) > VITALS_CACHE_TTL) {
+    refreshVitalsAsync(); // Non-blocking
+  }
+  // Return cached data if available
+  if (cachedVitals) return cachedVitals;
+  
+  // Return placeholder on first call (async refresh will populate cache within ~1s)
+  return {
+    hostname: "loading...",
+    uptime: "",
+    disk: { used: 0, free: 0, total: 0, percent: 0, usedFormatted: "-", totalFormatted: "-", freeFormatted: "-" },
+    cpu: { loadAvg: [0, 0, 0], cores: 0, usage: 0 },
+    memory: { used: 0, free: 0, total: 0, percent: 0, pressure: "normal", usedFormatted: "-", totalFormatted: "-", freeFormatted: "-" },
+    temperature: null,
+  };
+}
+
+// ========== OLD SYNC CODE DISABLED ==========
+// The following was the original blocking implementation.
+// It has been replaced by refreshVitalsAsync() above which runs in background.
+// Keeping for reference but this function is never called.
+function getSystemVitalsOLD_DISABLED() {
   const vitals = {
     hostname: "",
     uptime: "",
@@ -354,8 +741,8 @@ function getSystemVitals() {
   };
 
   try {
-    // Hostname
-    vitals.hostname = execSync("hostname", { encoding: "utf8" }).trim();
+    // DISABLED - these execSync calls were blocking the event loop
+    vitals.hostname = "disabled"; // was: execSync("hostname", { encoding: "utf8" }).trim();
 
     // Uptime
     const uptimeRaw = execSync("uptime", { encoding: "utf8" });
@@ -567,6 +954,10 @@ function getSystemVitals() {
   vitals.disk.totalFormatted = formatBytes(vitals.disk.total);
   vitals.disk.freeFormatted = formatBytes(vitals.disk.free);
 
+  // Cache the result
+  cachedVitals = vitals;
+  lastVitalsUpdate = Date.now();
+  
   return vitals;
 }
 
@@ -577,14 +968,137 @@ function runOpenClaw(args) {
   try {
     const result = execSync(`openclaw${profileFlag} ${args}`, {
       encoding: "utf8",
-      timeout: 10000,
-      env: { ...process.env, NO_COLOR: "1" },
+      timeout: 3000, // 3 second timeout - don't block server
+      env: { ...process.env, NO_COLOR: "1", TERM: "dumb" },
+      stdio: ['pipe', 'pipe', 'pipe'], // Capture all output
     });
     return result;
   } catch (e) {
-    console.error(`openclaw${profileFlag} ${args} failed:`, e.message);
+    // Don't log every failure - these are expected when CLI is slow
     return null;
   }
+}
+
+// Async version of runOpenClaw - doesn't block event loop
+async function runOpenClawAsync(args) {
+  const profile = process.env.OPENCLAW_PROFILE || "";
+  const profileFlag = profile ? ` --profile ${profile}` : "";
+  try {
+    const { stdout } = await execAsync(`openclaw${profileFlag} ${args}`, {
+      encoding: "utf8",
+      timeout: 10000, // 10 second timeout for async
+      env: { ...process.env, NO_COLOR: "1", TERM: "dumb" },
+    });
+    return stdout;
+  } catch (e) {
+    console.error("[OpenClaw Async] Error:", e.message);
+    return null;
+  }
+}
+
+// ============================================================================
+// SESSION CACHE - Async refresh to avoid blocking
+// ============================================================================
+let sessionsCache = { sessions: [], timestamp: 0, refreshing: false };
+const SESSIONS_CACHE_TTL = 10000; // 10 seconds
+
+async function refreshSessionsCache() {
+  if (sessionsCache.refreshing) return; // Don't double-refresh
+  sessionsCache.refreshing = true;
+  
+  try {
+    const output = await runOpenClawAsync("sessions list --json 2>/dev/null");
+    const jsonStr = extractJSON(output);
+    if (jsonStr) {
+      const data = JSON.parse(jsonStr);
+      const sessions = data.sessions || [];
+      
+      // Map sessions (same logic as getSessions)
+      const mapped = sessions.map((s) => mapSession(s));
+      
+      sessionsCache = {
+        sessions: mapped,
+        timestamp: Date.now(),
+        refreshing: false,
+      };
+      console.log(`[Sessions Cache] Refreshed: ${mapped.length} sessions`);
+    }
+  } catch (e) {
+    console.error("[Sessions Cache] Refresh error:", e.message);
+  }
+  sessionsCache.refreshing = false;
+}
+
+// Get sessions from cache, trigger async refresh if stale
+function getSessionsCached() {
+  const now = Date.now();
+  const isStale = (now - sessionsCache.timestamp) > SESSIONS_CACHE_TTL;
+  
+  if (isStale && !sessionsCache.refreshing) {
+    // Trigger async refresh (don't await - return stale data immediately)
+    refreshSessionsCache();
+  }
+  
+  return sessionsCache.sessions;
+}
+
+// Helper to map a single session (extracted from getSessions)
+function mapSession(s) {
+  const minutesAgo = s.ageMs ? s.ageMs / 60000 : Infinity;
+  
+  // Determine channel type from key (messaging platform)
+  let channel = "other";
+  if (s.key.includes("slack")) channel = "slack";
+  else if (s.key.includes("telegram")) channel = "telegram";
+  else if (s.key.includes("discord")) channel = "discord";
+  else if (s.key.includes("signal")) channel = "signal";
+  else if (s.key.includes("whatsapp")) channel = "whatsapp";
+  
+  // Determine session type (main, subagent, cron, channel-based)
+  let sessionType = "channel";
+  if (s.key.includes(":subagent:")) sessionType = "subagent";
+  else if (s.key.includes(":cron:")) sessionType = "cron";
+  else if (s.key === "agent:main:main") sessionType = "main";
+  
+  const originator = getSessionOriginator(s.sessionId);
+  const label = s.groupChannel || s.displayName || parseSessionLabel(s.key);
+  const topic = getSessionTopic(s.sessionId);
+  
+  const totalTokens = s.totalTokens || 0;
+  const sessionAgeMinutes = Math.max(1, Math.min(minutesAgo, 24 * 60));
+  const burnRate = Math.round(totalTokens / sessionAgeMinutes);
+  
+  return {
+    sessionKey: s.key,
+    sessionId: s.sessionId,
+    label: label,
+    groupChannel: s.groupChannel || null,
+    displayName: s.displayName || null,
+    kind: s.kind,
+    channel: channel,
+    sessionType: sessionType,
+    active: minutesAgo < 15,
+    recentlyActive: minutesAgo < 60,
+    minutesAgo: Math.round(minutesAgo),
+    tokens: s.totalTokens || 0,
+    model: s.model,
+    originator: originator,
+    topic: topic,
+    metrics: {
+      burnRate: burnRate,
+      toolCalls: 0,
+      minutesActive: Math.max(1, Math.min(Math.round(minutesAgo), 24 * 60)),
+    },
+  };
+}
+
+// Extract JSON from CLI output that may contain doctor warnings or other prefix text
+function extractJSON(output) {
+  if (!output) return null;
+  // Find the first { or [ which starts the JSON
+  const jsonStart = output.search(/[\[{]/);
+  if (jsonStart === -1) return null;
+  return output.slice(jsonStart);
 }
 
 // Topic patterns for session classification
@@ -822,53 +1336,34 @@ function getSessionTopic(sessionId) {
 
 function getSessions(options = {}) {
   const limit = Object.prototype.hasOwnProperty.call(options, "limit") ? options.limit : 20;
+  const returnCount = options.returnCount || false;
+  
+  // For "get all" requests (limit: null), use the async cache
+  // This is the expensive operation that was blocking
+  if (limit === null) {
+    const cached = getSessionsCached();
+    const totalCount = cached.length;
+    return returnCount ? { sessions: cached, totalCount } : cached;
+  }
+  
+  // For limited requests, can still use sync (fast enough)
   try {
     const output = runOpenClaw("sessions list --json 2>/dev/null");
-    if (output) {
-      const data = JSON.parse(output);
+    const jsonStr = extractJSON(output);
+    if (jsonStr) {
+      const data = JSON.parse(jsonStr);
+      const totalCount = data.count || data.sessions?.length || 0;
       let sessions = data.sessions || [];
       if (limit != null) {
         sessions = sessions.slice(0, limit);
       }
-      return sessions.map((s) => {
-        // Calculate active status from ageMs
-        const minutesAgo = s.ageMs ? s.ageMs / 60000 : Infinity;
-
-        // Determine channel type from key
-        let channel = "other";
-        if (s.key.includes("slack")) channel = "slack";
-        else if (s.key.includes("telegram")) channel = "telegram";
-
-        const originator = getSessionOriginator(s.sessionId);
-
-        // Use groupChannel if available, otherwise parse from key
-        const label = s.groupChannel || s.displayName || parseSessionLabel(s.key);
-
-        // Get topic for session (lightweight detection)
-        const topic = getSessionTopic(s.sessionId);
-
-        return {
-          sessionKey: s.key,
-          sessionId: s.sessionId,
-          label: label,
-          groupChannel: s.groupChannel || null,
-          displayName: s.displayName || null,
-          kind: s.kind,
-          channel: channel,
-          active: minutesAgo < 15,
-          recentlyActive: minutesAgo < 60,
-          minutesAgo: Math.round(minutesAgo),
-          tokens: s.totalTokens || 0,
-          model: s.model,
-          originator: originator,
-          topic: topic,
-        };
-      });
+      const mapped = sessions.map((s) => mapSession(s));
+      return returnCount ? { sessions: mapped, totalCount } : mapped;
     }
   } catch (e) {
     console.error("Failed to get sessions:", e.message);
   }
-  return [];
+  return returnCount ? { sessions: [], totalCount: 0 } : [];
 }
 
 // Get cron jobs
@@ -1056,7 +1551,7 @@ function getSystemStatus() {
 function getRecentActivity() {
   const activities = [];
   const today = new Date().toISOString().split("T")[0];
-  const memoryFile = path.join(process.env.HOME, "clawd", "memory", `${today}.md`);
+  const memoryFile = path.join(PATHS.memory, `${today}.md`);
 
   try {
     if (fs.existsSync(memoryFile)) {
@@ -1085,9 +1580,15 @@ function getCapacity() {
     subagent: { active: 0, max: 24 },
   };
 
+  // Determine OpenClaw directory (respects OPENCLAW_PROFILE)
+  const profile = process.env.OPENCLAW_PROFILE || "";
+  const openclawDir = profile
+    ? path.join(process.env.HOME, `.openclaw-${profile}`)
+    : path.join(process.env.HOME, ".openclaw");
+
   // Read max capacity from openclaw config
   try {
-    const configPath = path.join(process.env.HOME, ".openclaw", "openclaw.json");
+    const configPath = path.join(openclawDir, "openclaw.json");
     if (fs.existsSync(configPath)) {
       const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
       if (config?.agents?.defaults?.maxConcurrent) {
@@ -1101,34 +1602,88 @@ function getCapacity() {
     // Fall back to defaults
   }
 
-  // Query active sessions via openclaw CLI
+  // Try to get active counts from sessions list (preferred - has full session keys)
   try {
-    // Use openclaw sessions list which actually works (gateway /api/sessions doesn't exist)
-    const profile = process.env.OPENCLAW_PROFILE || "";
-    const profileFlag = profile ? ` --profile ${profile}` : "";
-    const response = execSync(`openclaw${profileFlag} sessions list --json 2>/dev/null`, {
-      timeout: 5000,
-      encoding: "utf8",
-    });
-    const data = JSON.parse(response);
+    const output = runOpenClaw("sessions list --json 2>/dev/null");
+    const jsonStr = extractJSON(output);
+    if (jsonStr) {
+      const data = JSON.parse(jsonStr);
+      const sessions = data.sessions || [];
+      const fiveMinMs = 5 * 60 * 1000;
+      
+      for (const s of sessions) {
+        // Only count sessions active in last 5 minutes
+        if (s.ageMs > fiveMinMs) continue;
+        
+        const key = s.key || "";
+        // Session key patterns:
+        //   agent:main:slack:... = main (human-initiated)
+        //   agent:main:telegram:... = main
+        //   agent:main:discord:... = main
+        //   agent:main:subagent:... = subagent (spawned task)
+        //   agent:main:cron:... = cron job (count as subagent)
+        if (key.includes(":subagent:") || key.includes(":cron:")) {
+          result.subagent.active++;
+        } else {
+          result.main.active++;
+        }
+      }
+      return result;
+    }
+  } catch (e) {
+    console.error("Failed to get capacity from sessions list, falling back to filesystem:", e.message);
+  }
 
-    if (data?.sessions) {
-      // Count active sessions (updated in last 5 minutes = likely active)
+  // Count active sessions from filesystem (workaround for CLI returning styled text)
+  // Sessions active in last 5 minutes are considered "active"
+  try {
+    const sessionsDir = path.join(openclawDir, "agents", "main", "sessions");
+    if (fs.existsSync(sessionsDir)) {
       const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+      const files = fs.readdirSync(sessionsDir).filter((f) => f.endsWith(".jsonl"));
+
       let mainActive = 0;
       let subActive = 0;
 
-      for (const session of data.sessions) {
-        // Check if session is active (updated in last 5 minutes)
-        const isActive = session.updatedAt > fiveMinAgo;
-        if (!isActive) continue;
+      for (const file of files) {
+        try {
+          const filePath = path.join(sessionsDir, file);
+          const stat = fs.statSync(filePath);
 
-        // Subagents have ':subagent:' in their key (e.g., 'agent:main:subagent:UUID')
-        if (session.key?.includes(":subagent:")) {
-          subActive++;
-        } else if (session.key?.startsWith("agent:main:")) {
-          // Main sessions start with 'agent:main:' but don't have ':subagent:'
-          mainActive++;
+          // Only count files modified in last 5 minutes as "active"
+          if (stat.mtimeMs < fiveMinAgo) continue;
+
+          // Read the first line to get the session key
+          // Session keys indicate session type:
+          //   agent:main:slack:... = main (human-initiated slack)
+          //   agent:main:telegram:... = main (human-initiated telegram)
+          //   agent:main:discord:... = main (human-initiated discord)
+          //   agent:main:subagent:... = subagent (spawned autonomous task)
+          //   agent:main:cron:... = cron job (automated, count as subagent)
+          // Filenames are just UUIDs, so we must read the content
+          let isSubagent = false;
+          try {
+            const fd = fs.openSync(filePath, "r");
+            const buffer = Buffer.alloc(512); // First 512 bytes is enough for the first line
+            fs.readSync(fd, buffer, 0, 512, 0);
+            fs.closeSync(fd);
+            const firstLine = buffer.toString("utf8").split("\n")[0];
+            const parsed = JSON.parse(firstLine);
+            const key = parsed.key || parsed.id || "";
+            // Subagent and cron sessions are not human-initiated
+            isSubagent = key.includes(":subagent:") || key.includes(":cron:");
+          } catch (parseErr) {
+            // If we can't parse, fall back to checking filename (legacy)
+            isSubagent = file.includes("subagent");
+          }
+
+          if (isSubagent) {
+            subActive++;
+          } else {
+            mainActive++;
+          }
+        } catch (e) {
+          // Skip unreadable files
         }
       }
 
@@ -1136,7 +1691,7 @@ function getCapacity() {
       result.subagent.active = subActive;
     }
   } catch (e) {
-    console.error("Failed to get active session counts:", e.message);
+    console.error("Failed to count active sessions from filesystem:", e.message);
   }
 
   return result;
@@ -1224,159 +1779,595 @@ function getMemoryStats() {
 
 // Get all data for dashboard
 function getData() {
-  const sessions = getSessions();
-  const tokenStats = getTokenStats(sessions);
+  // Get ALL sessions for accurate counts, then slice for display
+  const allSessions = getSessions({ limit: null });
+  const pageSize = 20;
+  const displaySessions = allSessions.slice(0, pageSize);
+  const tokenStats = getTokenStats(allSessions);
   const capacity = getCapacity();
   const memory = getMemoryStats();
 
-  // Calculate status counts based on session activity state
+  // Calculate status counts based on ALL sessions (not just current page)
   const statusCounts = {
-    all: sessions.length,
-    live: sessions.filter((s) => s.active).length,
-    recent: sessions.filter((s) => !s.active && s.recentlyActive).length,
-    idle: sessions.filter((s) => !s.active && !s.recentlyActive).length,
+    all: allSessions.length,
+    live: allSessions.filter((s) => s.active).length,
+    recent: allSessions.filter((s) => !s.active && s.recentlyActive).length,
+    idle: allSessions.filter((s) => !s.active && !s.recentlyActive).length,
   };
 
+  // Calculate real pagination
+  const totalPages = Math.ceil(allSessions.length / pageSize);
+
   return {
-    sessions: sessions,
+    sessions: displaySessions,
     tokenStats: tokenStats,
     capacity: capacity,
     memory: memory,
-    pagination: { page: 1, pageSize: 50, totalPages: 1 },
+    pagination: {
+      page: 1,
+      pageSize: pageSize,
+      total: allSessions.length,
+      totalPages: totalPages,
+      hasPrev: false,
+      hasNext: totalPages > 1,
+    },
     statusCounts: statusCounts,
   };
 }
 
-// Get daily token usage from JSONL session files (accurate aggregation)
-function getDailyTokenUsage() {
+// ============================================================================
+// UNIFIED STATE (Single source of truth for all dashboard data)
+// ============================================================================
+
+let cachedState = null;
+let lastStateUpdate = 0;
+const STATE_CACHE_TTL = 30000; // 30 seconds - reduce blocking from CLI calls
+
+function getFullState() {
+  const now = Date.now();
+  
+  // Return cached state if fresh
+  if (cachedState && (now - lastStateUpdate) < STATE_CACHE_TTL) {
+    return cachedState;
+  }
+  
+  // Gather all data with error handling for each section
+  let sessions = [];
+  let tokenStats = {};
+  let statusCounts = { all: 0, live: 0, recent: 0, idle: 0 };
+  let vitals = {};
+  let capacity = {};
+  let operators = { operators: [], roles: {} };
+  let llmUsage = {};
+  let cron = [];
+  let memory = {};
+  let cerebro = {};
+  let subagents = [];
+  
+  // Get ALL sessions first for accurate statusCounts, then slice for display
+  let allSessions = [];
+  let totalSessionCount = 0;
+  try {
+    allSessions = getSessions({ limit: null }); // Get all for counting
+    totalSessionCount = allSessions.length;
+    sessions = allSessions.slice(0, 20); // Display only first 20
+  } catch (e) { console.error("[State] sessions:", e.message); }
+  
+  try { vitals = getSystemVitals(); } catch (e) { console.error("[State] vitals:", e.message); }
+  // Use filesystem-based capacity (no CLI calls, won't block)
+  try { capacity = getCapacity(); } catch (e) { console.error("[State] capacity:", e.message); }
+  // Pass capacity to tokenStats so it can use the same active counts
+  try { tokenStats = getTokenStats(sessions, capacity); } catch (e) { console.error("[State] tokenStats:", e.message); }
+  // Calculate statusCounts from ALL sessions (not just current page) for accurate filter counts
+  try {
+    const liveSessions = allSessions.filter((s) => s.active);
+    const recentSessions = allSessions.filter((s) => !s.active && s.recentlyActive);
+    const idleSessions = allSessions.filter((s) => !s.active && !s.recentlyActive);
+    statusCounts = {
+      all: totalSessionCount,
+      live: liveSessions.length,
+      recent: recentSessions.length,
+      idle: idleSessions.length,
+    };
+  } catch (e) { console.error("[State] statusCounts:", e.message); }
+  try {
+    const operatorData = loadOperators();
+    // Add stats to each operator (same as /api/operators endpoint)
+    const operatorsWithStats = operatorData.operators.map((op) => {
+      const userSessions = allSessions.filter(
+        (s) => s.originator?.userId === op.id || s.originator?.userId === op.metadata?.slackId,
+      );
+      return {
+        ...op,
+        stats: {
+          activeSessions: userSessions.filter((s) => s.active).length,
+          totalSessions: userSessions.length,
+          lastSeen:
+            userSessions.length > 0
+              ? new Date(
+                  Date.now() - Math.min(...userSessions.map((s) => s.minutesAgo)) * 60000,
+                ).toISOString()
+              : op.lastSeen,
+        },
+      };
+    });
+    operators = { ...operatorData, operators: operatorsWithStats };
+  } catch (e) { console.error("[State] operators:", e.message); }
+  try { llmUsage = getLlmUsage(); } catch (e) { console.error("[State] llmUsage:", e.message); }
+  try { cron = getCronJobs(); } catch (e) { console.error("[State] cron:", e.message); }
+  try { memory = getMemoryStats(); } catch (e) { console.error("[State] memory:", e.message); }
+  try { cerebro = getCerebroTopics(); } catch (e) { console.error("[State] cerebro:", e.message); }
+  // Derive subagents from allSessions (no extra CLI call needed)
+  // Configurable retention: SUBAGENT_RETENTION_HOURS env var (default 24h)
+  try {
+    const retentionHours = parseInt(process.env.SUBAGENT_RETENTION_HOURS || "12", 10);
+    const retentionMs = retentionHours * 60 * 60 * 1000;
+    subagents = allSessions
+      .filter((s) => s.sessionKey && s.sessionKey.includes(":subagent:"))
+      .filter((s) => (s.minutesAgo || 0) * 60000 < retentionMs)
+      .map((s) => {
+        const match = s.sessionKey.match(/:subagent:([a-f0-9-]+)$/);
+        const subagentId = match ? match[1] : s.sessionId;
+        return {
+          id: subagentId,
+          shortId: subagentId.slice(0, 8),
+          task: s.label || s.displayName || "Sub-agent task",
+          tokens: s.tokens || 0,
+          ageMs: (s.minutesAgo || 0) * 60000,
+          active: s.active,
+          recentlyActive: s.recentlyActive,
+        };
+      });
+  } catch (e) { console.error("[State] subagents:", e.message); }
+  
+  cachedState = {
+    vitals,
+    sessions,
+    tokenStats,
+    statusCounts,
+    capacity,
+    operators,
+    llmUsage,
+    cron,
+    memory,
+    cerebro,
+    subagents,
+    pagination: {
+      page: 1,
+      pageSize: 20,
+      total: totalSessionCount,
+      totalPages: Math.max(1, Math.ceil(totalSessionCount / 20)),
+      hasPrev: false,
+      hasNext: totalSessionCount > 20,
+    },
+    timestamp: now,
+  };
+  
+  lastStateUpdate = now;
+  return cachedState;
+}
+
+// Force refresh the cached state
+function refreshState() {
+  lastStateUpdate = 0;
+  return getFullState();
+}
+
+// Background state refresh and SSE broadcast
+let stateRefreshInterval = null;
+
+function startStateRefresh(intervalMs = 30000) {
+  if (stateRefreshInterval) return;
+  
+  stateRefreshInterval = setInterval(() => {
+    try {
+      const newState = refreshState();
+      broadcastSSE("update", newState);
+    } catch (e) {
+      console.error("[State] Refresh error:", e.message);
+    }
+  }, intervalMs);
+  
+  console.log(`[State] Background refresh started (${intervalMs}ms interval)`);
+}
+
+function stopStateRefresh() {
+  if (stateRefreshInterval) {
+    clearInterval(stateRefreshInterval);
+    stateRefreshInterval = null;
+    console.log("[State] Background refresh stopped");
+  }
+}
+
+// Get token usage from JSONL session files (accurate aggregation)
+// Tracks 24h, 3-day, and 7-day moving averages
+// Token usage cache with async background refresh
+let tokenUsageCache = { data: null, timestamp: 0, refreshing: false };
+const TOKEN_USAGE_CACHE_TTL = 30000; // 30 seconds
+
+// Create empty usage bucket
+function emptyUsageBucket() {
+  return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, requests: 0 };
+}
+
+// Async token usage refresh - runs in background, doesn't block
+async function refreshTokenUsageAsync() {
+  if (tokenUsageCache.refreshing) return;
+  tokenUsageCache.refreshing = true;
+  
   try {
     const sessionsDir = path.join(process.env.HOME, ".openclaw/agents/main/sessions");
-    const files = fs.readdirSync(sessionsDir).filter((f) => f.endsWith(".jsonl"));
+    const files = await fs.promises.readdir(sessionsDir);
+    const jsonlFiles = files.filter((f) => f.endsWith(".jsonl"));
 
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-    let totalInput = 0;
-    let totalOutput = 0;
-    let totalCacheRead = 0;
-    let totalCacheWrite = 0;
-    let totalCost = 0;
-    let requestCount = 0;
+    // Track usage for each time window
+    const usage24h = emptyUsageBucket();
+    const usage3d = emptyUsageBucket();
+    const usage7d = emptyUsageBucket();
 
-    for (const file of files) {
-      const filePath = path.join(sessionsDir, file);
-      const stat = fs.statSync(filePath);
+    // Process files in batches to avoid overwhelming the system
+    const batchSize = 50;
+    for (let i = 0; i < jsonlFiles.length; i += batchSize) {
+      const batch = jsonlFiles.slice(i, i + batchSize);
+      
+      await Promise.all(batch.map(async (file) => {
+        const filePath = path.join(sessionsDir, file);
+        try {
+          const stat = await fs.promises.stat(filePath);
+          // Skip files not modified in the last 7 days
+          if (stat.mtimeMs < sevenDaysAgo) return;
 
-      // Only process files modified in the last 24 hours
-      if (stat.mtimeMs < oneDayAgo) continue;
+          const content = await fs.promises.readFile(filePath, "utf8");
+          const lines = content.trim().split("\n");
 
-      try {
-        const content = fs.readFileSync(filePath, "utf8");
-        const lines = content.trim().split("\n");
-
-        for (const line of lines) {
-          if (!line) continue;
-          try {
-            const entry = JSON.parse(line);
-            if (entry.message?.usage) {
-              const u = entry.message.usage;
-              totalInput += u.input || 0;
-              totalOutput += u.output || 0;
-              totalCacheRead += u.cacheRead || 0;
-              totalCacheWrite += u.cacheWrite || 0;
-              totalCost += u.cost?.total || 0;
-              requestCount++;
+          for (const line of lines) {
+            if (!line) continue;
+            try {
+              const entry = JSON.parse(line);
+              const entryTime = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
+              
+              // Skip entries older than 7 days
+              if (entryTime < sevenDaysAgo) continue;
+              
+              if (entry.message?.usage) {
+                const u = entry.message.usage;
+                const input = u.input || 0;
+                const output = u.output || 0;
+                const cacheRead = u.cacheRead || 0;
+                const cacheWrite = u.cacheWrite || 0;
+                const cost = u.cost?.total || 0;
+                
+                // Add to appropriate buckets (cumulative - 24h is subset of 3d is subset of 7d)
+                if (entryTime >= oneDayAgo) {
+                  usage24h.input += input;
+                  usage24h.output += output;
+                  usage24h.cacheRead += cacheRead;
+                  usage24h.cacheWrite += cacheWrite;
+                  usage24h.cost += cost;
+                  usage24h.requests++;
+                }
+                if (entryTime >= threeDaysAgo) {
+                  usage3d.input += input;
+                  usage3d.output += output;
+                  usage3d.cacheRead += cacheRead;
+                  usage3d.cacheWrite += cacheWrite;
+                  usage3d.cost += cost;
+                  usage3d.requests++;
+                }
+                // Always add to 7d (already filtered above)
+                usage7d.input += input;
+                usage7d.output += output;
+                usage7d.cacheRead += cacheRead;
+                usage7d.cacheWrite += cacheWrite;
+                usage7d.cost += cost;
+                usage7d.requests++;
+              }
+            } catch (e) {
+              // Skip invalid lines
             }
-          } catch (e) {
-            // Skip invalid lines
           }
+        } catch (e) {
+          // Skip unreadable files
         }
-      } catch (e) {
-        // Skip unreadable files
-      }
+      }));
+      
+      // Yield to event loop between batches
+      await new Promise(resolve => setImmediate(resolve));
     }
 
-    return {
-      input: totalInput,
-      output: totalOutput,
-      cacheRead: totalCacheRead,
-      cacheWrite: totalCacheWrite,
-      cost: totalCost,
-      requests: requestCount,
-      tokensNoCache: totalInput + totalOutput,
-      tokensWithCache: totalInput + totalOutput + totalCacheRead + totalCacheWrite,
+    // Helper to finalize bucket with computed fields
+    const finalizeBucket = (bucket) => ({
+      ...bucket,
+      tokensNoCache: bucket.input + bucket.output,
+      tokensWithCache: bucket.input + bucket.output + bucket.cacheRead + bucket.cacheWrite,
+    });
+
+    const result = {
+      // Primary (24h) for backward compatibility
+      ...finalizeBucket(usage24h),
+      // All three windows
+      windows: {
+        '24h': finalizeBucket(usage24h),
+        '3d': finalizeBucket(usage3d),
+        '7d': finalizeBucket(usage7d),
+      }
     };
+    
+    tokenUsageCache = { data: result, timestamp: Date.now(), refreshing: false };
+    console.log(`[Token Usage] Cached: 24h=${usage24h.requests} 3d=${usage3d.requests} 7d=${usage7d.requests} requests`);
   } catch (e) {
-    console.error("Failed to aggregate daily usage:", e.message);
-    return null;
+    console.error("[Token Usage] Refresh error:", e.message);
+    tokenUsageCache.refreshing = false;
+  }
+}
+
+// Returns cached token usage, triggers async refresh if stale
+function getDailyTokenUsage() {
+  const now = Date.now();
+  const isStale = (now - tokenUsageCache.timestamp) > TOKEN_USAGE_CACHE_TTL;
+  
+  // Trigger async refresh if stale (don't await)
+  if (isStale && !tokenUsageCache.refreshing) {
+    refreshTokenUsageAsync();
+  }
+  
+  const emptyResult = {
+    input: 0, output: 0, cacheRead: 0, cacheWrite: 0,
+    cost: 0, requests: 0, tokensNoCache: 0, tokensWithCache: 0,
+    windows: {
+      '24h': { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, requests: 0, tokensNoCache: 0, tokensWithCache: 0 },
+      '3d': { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, requests: 0, tokensNoCache: 0, tokensWithCache: 0 },
+      '7d': { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, requests: 0, tokensNoCache: 0, tokensWithCache: 0 },
+    }
+  };
+  
+  // Always return cache (may be stale or null on cold start)
+  return tokenUsageCache.data || emptyResult;
+}
+
+// Claude Opus 4 pricing (per 1M tokens) - shared across functions
+const TOKEN_RATES = {
+  input: 15.00,      // $15/1M input tokens
+  output: 75.00,     // $75/1M output tokens
+  cacheRead: 1.50,   // $1.50/1M (90% discount from input)
+  cacheWrite: 18.75, // $18.75/1M (25% premium on input)
+};
+
+// Calculate cost for a usage bucket
+function calculateCostForBucket(bucket, rates = TOKEN_RATES) {
+  const inputCost = (bucket.input / 1_000_000) * rates.input;
+  const outputCost = (bucket.output / 1_000_000) * rates.output;
+  const cacheReadCost = (bucket.cacheRead / 1_000_000) * rates.cacheRead;
+  const cacheWriteCost = (bucket.cacheWrite / 1_000_000) * rates.cacheWrite;
+  return {
+    inputCost,
+    outputCost,
+    cacheReadCost,
+    cacheWriteCost,
+    totalCost: inputCost + outputCost + cacheReadCost + cacheWriteCost,
+  };
+}
+
+// Get detailed cost breakdown for the modal
+function getCostBreakdown() {
+  const usage = getDailyTokenUsage();
+  if (!usage) {
+    return { error: "Failed to get usage data" };
+  }
+
+  // Calculate costs for 24h (primary display)
+  const costs = calculateCostForBucket(usage);
+
+  // Get plan info from config
+  const planCost = CONFIG.billing?.claudePlanCost || 200;
+  const planName = CONFIG.billing?.claudePlanName || "Claude Code Max";
+
+  // Calculate moving averages for each window
+  const windowConfigs = {
+    '24h': { days: 1, label: '24h' },
+    '3d': { days: 3, label: '3dma' },
+    '7d': { days: 7, label: '7dma' },
+  };
+  
+  const windows = {};
+  for (const [key, config] of Object.entries(windowConfigs)) {
+    const bucket = usage.windows?.[key] || usage;
+    const bucketCosts = calculateCostForBucket(bucket);
+    const dailyAvg = bucketCosts.totalCost / config.days;
+    const monthlyProjected = dailyAvg * 30;
+    const monthlySavings = monthlyProjected - planCost;
+    
+    windows[key] = {
+      label: config.label,
+      days: config.days,
+      totalCost: bucketCosts.totalCost,
+      dailyAvg,
+      monthlyProjected,
+      monthlySavings,
+      savingsPercent: monthlySavings > 0 ? Math.round((monthlySavings / monthlyProjected) * 100) : 0,
+      requests: bucket.requests,
+      tokens: {
+        input: bucket.input,
+        output: bucket.output,
+        cacheRead: bucket.cacheRead,
+        cacheWrite: bucket.cacheWrite,
+      },
+    };
+  }
+
+  return {
+    // Raw token counts (24h for backward compatibility)
+    inputTokens: usage.input,
+    outputTokens: usage.output,
+    cacheRead: usage.cacheRead,
+    cacheWrite: usage.cacheWrite,
+    requests: usage.requests,
+
+    // Pricing rates
+    rates: {
+      input: TOKEN_RATES.input.toFixed(2),
+      output: TOKEN_RATES.output.toFixed(2),
+      cacheRead: TOKEN_RATES.cacheRead.toFixed(2),
+      cacheWrite: TOKEN_RATES.cacheWrite.toFixed(2),
+    },
+
+    // Cost calculation breakdown (24h)
+    calculation: {
+      inputCost: costs.inputCost,
+      outputCost: costs.outputCost,
+      cacheReadCost: costs.cacheReadCost,
+      cacheWriteCost: costs.cacheWriteCost,
+    },
+
+    // Totals (24h for backward compatibility)
+    totalCost: costs.totalCost,
+    planCost,
+    planName,
+
+    // Period
+    period: "24 hours",
+    
+    // Multi-window data for moving averages
+    windows,
+    
+    // Top sessions by tokens
+    topSessions: getTopSessionsByTokens(5),
+  };
+}
+
+// Get top sessions sorted by token usage
+function getTopSessionsByTokens(limit = 5) {
+  try {
+    const sessions = getSessions({ limit: null });
+    return sessions
+      .filter(s => s.tokens > 0)
+      .sort((a, b) => b.tokens - a.tokens)
+      .slice(0, limit)
+      .map(s => ({
+        label: s.label,
+        tokens: s.tokens,
+        channel: s.channel,
+        active: s.active,
+      }));
+  } catch (e) {
+    console.error("[TopSessions] Error:", e.message);
+    return [];
   }
 }
 
 // Calculate aggregate token stats
-function getTokenStats(sessions) {
-  let activeCount = 0;
-  let activeMainCount = 0;
-  let activeSubagentCount = 0;
+// Accepts optional capacity data to avoid redundant filesystem scans
+function getTokenStats(sessions, capacity) {
+  // Use capacity data if provided, otherwise compute from sessions
+  let activeMainCount = capacity?.main?.active ?? 0;
+  let activeSubagentCount = capacity?.subagent?.active ?? 0;
+  let activeCount = activeMainCount + activeSubagentCount;
+  let mainLimit = capacity?.main?.max ?? 12;
+  let subagentLimit = capacity?.subagent?.max ?? 24;
 
-  // Get limits from config
-  let mainLimit = 12;
-  let subagentLimit = 24;
-  try {
-    const configOutput = execSync("cat ~/.openclaw/clawdbot.json 2>/dev/null", {
-      encoding: "utf8",
-    });
-    const config = JSON.parse(configOutput);
-    mainLimit = config.agents?.defaults?.maxConcurrent || 12;
-    subagentLimit = config.agents?.defaults?.subagents?.maxConcurrent || 24;
-  } catch (e) {
-    // Use defaults
-  }
-
-  // Get active session counts from openclaw
-  try {
-    const output = runOpenClaw("sessions list --json 2>/dev/null");
-    if (output) {
-      const data = JSON.parse(output);
-      (data.sessions || []).forEach((s) => {
-        // Only count ACTIVE sessions (< 15 min old) for concurrency display
-        const isActive = s.ageMs && s.ageMs < 15 * 60 * 1000;
-        if (isActive) {
-          activeCount++;
-          if (s.key && s.key.includes(":subagent:")) {
-            activeSubagentCount++;
-          } else {
-            activeMainCount++;
-          }
-        }
-      });
-    }
-  } catch (e) {
+  // Fallback: count from sessions if capacity not provided
+  if (!capacity && sessions && sessions.length > 0) {
+    activeCount = 0;
+    activeMainCount = 0;
+    activeSubagentCount = 0;
     sessions.forEach((s) => {
-      if (s.active) activeCount++;
+      if (s.active) {
+        activeCount++;
+        if (s.key && s.key.includes(":subagent:")) {
+          activeSubagentCount++;
+        } else {
+          activeMainCount++;
+        }
+      }
     });
   }
 
-  // Get accurate daily usage from JSONL files
-  const daily = getDailyTokenUsage();
-  const totalInput = daily?.input || 0;
-  const totalOutput = daily?.output || 0;
+  // Get accurate usage from JSONL files (includes all windows)
+  const usage = getDailyTokenUsage();
+  const totalInput = usage?.input || 0;
+  const totalOutput = usage?.output || 0;
   const total = totalInput + totalOutput;
-  const estCost = daily?.cost || 0;
+  
+  // Calculate cost using shared helper
+  const costs = calculateCostForBucket(usage);
+  const estCost = costs.totalCost;
+
+  // Calculate savings vs plan cost (compare monthly to monthly)
+  const planCost = CONFIG.billing?.claudePlanCost || 200;
+  const planName = CONFIG.billing?.claudePlanName || "Claude Code Max";
+  const monthlyApiCost = estCost * 30;  // Project daily to monthly
+  const monthlySavings = monthlyApiCost - planCost;
+  const savingsPositive = monthlySavings > 0;
+
+  // Calculate per-session averages
+  const sessionCount = sessions?.length || 1;
+  const avgTokensPerSession = Math.round(total / sessionCount);
+  const avgCostPerSession = estCost / sessionCount;
+
+  // Calculate savings for all windows (24h, 3dma, 7dma)
+  const windowConfigs = {
+    '24h': { days: 1, label: '24h' },
+    '3dma': { days: 3, label: '3dma' },
+    '7dma': { days: 7, label: '7dma' },
+  };
+  
+  const savingsWindows = {};
+  for (const [key, config] of Object.entries(windowConfigs)) {
+    // Map '3dma' -> '3d' for bucket lookup
+    const bucketKey = key.replace('dma', 'd').replace('24h', '24h');
+    const bucket = usage.windows?.[bucketKey === '24h' ? '24h' : bucketKey] || usage;
+    const bucketCosts = calculateCostForBucket(bucket);
+    const dailyAvg = bucketCosts.totalCost / config.days;
+    const monthlyProjected = dailyAvg * 30;
+    const windowSavings = monthlyProjected - planCost;
+    const windowSavingsPositive = windowSavings > 0;
+    
+    savingsWindows[key] = {
+      label: config.label,
+      estCost: `$${formatNumber(dailyAvg)}`,
+      estMonthlyCost: `$${Math.round(monthlyProjected).toLocaleString()}`,
+      estSavings: windowSavingsPositive ? `$${formatNumber(windowSavings)}/mo` : null,
+      savingsPercent: windowSavingsPositive ? Math.round((windowSavings / monthlyProjected) * 100) : 0,
+      requests: bucket.requests,
+    };
+  }
 
   return {
     total: formatTokens(total),
     input: formatTokens(totalInput),
     output: formatTokens(totalOutput),
-    cacheRead: formatTokens(daily?.cacheRead || 0),
-    cacheWrite: formatTokens(daily?.cacheWrite || 0),
-    requests: daily?.requests || 0,
+    cacheRead: formatTokens(usage?.cacheRead || 0),
+    cacheWrite: formatTokens(usage?.cacheWrite || 0),
+    requests: usage?.requests || 0,
     activeCount,
     activeMainCount,
     activeSubagentCount,
     mainLimit,
     subagentLimit,
-    estCost: `$${estCost.toFixed(2)}`,
+    estCost: `$${formatNumber(estCost)}`,
+    planCost: `$${planCost.toFixed(0)}`,
+    planName,
+    // 24h savings (backward compatible)
+    estSavings: savingsPositive ? `$${formatNumber(monthlySavings)}/mo` : null,
+    savingsPercent: savingsPositive ? Math.round((monthlySavings / monthlyApiCost) * 100) : 0,
+    estMonthlyCost: `$${Math.round(monthlyApiCost).toLocaleString()}`,
+    // Multi-window savings (24h, 3da, 7da)
+    savingsWindows,
+    // Per-session averages
+    avgTokensPerSession: formatTokens(avgTokensPerSession),
+    avgCostPerSession: `$${avgCostPerSession.toFixed(2)}`,
+    sessionCount,
   };
+}
+
+// Format number with commas and 2 decimal places
+function formatNumber(n) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatTokens(n) {
@@ -1442,8 +2433,9 @@ function getSessionDetail(sessionKey) {
     // Get basic session info
     const listOutput = runOpenClaw("sessions list --json 2>/dev/null");
     let sessionInfo = null;
-    if (listOutput) {
-      const data = JSON.parse(listOutput);
+    const jsonStr = extractJSON(listOutput);
+    if (jsonStr) {
+      const data = JSON.parse(jsonStr);
       sessionInfo = data.sessions?.find((s) => s.key === sessionKey);
     }
 
@@ -1659,6 +2651,7 @@ function getCerebroTopics(options = {}) {
   // Result in format expected by frontend renderCerebro()
   const result = {
     initialized: false,
+    cerebroPath: CEREBRO_DIR,
     topics: { active: 0, resolved: 0, parked: 0, total: 0 },
     threads: 0,
     orphans: 0,
@@ -1916,65 +2909,195 @@ function serveStatic(req, res) {
   });
 }
 
-// Get LLM usage stats from state file
-// Transforms raw state data into format expected by renderLlmUsage() frontend
-function getLlmUsage() {
-  const stateFile = path.join(PATHS.state, "llm-routing.json");
-  try {
-    if (!fs.existsSync(stateFile)) {
-      return { error: "No usage data yet", needsSync: true };
-    }
-    const data = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+// Cache for LLM usage data (openclaw CLI is slow ~4-5s)
+let llmUsageCache = { data: null, timestamp: 0, refreshing: false };
+const LLM_CACHE_TTL_MS = 60000; // 60 seconds
 
-    // Transform for dashboard display - match renderLlmUsage() expectations
-    return {
-      timestamp: new Date().toISOString(),
-      claude: {
-        session: {
-          usedPct: Math.round((data.claude?.session?.used_pct || 0) * 100),
-          remainingPct: Math.round((data.claude?.session?.remaining_pct || 1) * 100),
-          resetsIn: data.claude?.session?.resets_in || "?",
-        },
-        weekly: {
-          usedPct: Math.round((data.claude?.weekly_all_models?.used_pct || 0) * 100),
-          remainingPct: Math.round((data.claude?.weekly_all_models?.remaining_pct || 1) * 100),
-          resets: data.claude?.weekly_all_models?.resets || "?",
-        },
-        sonnet: {
-          usedPct: Math.round((data.claude?.weekly_sonnet?.used_pct || 0) * 100),
-          remainingPct: Math.round((data.claude?.weekly_sonnet?.remaining_pct || 1) * 100),
-          resets: data.claude?.weekly_sonnet?.resets || "?",
-        },
-        lastSynced: data.claude?.last_synced || null,
-      },
-      codex: {
-        sessionsToday: data.codex?.sessions_today || 0,
-        tasksToday: data.codex?.tasks_today || 0,
-        usage5hPct: data.codex?.usage_5h_pct || 0,
-        usageDayPct: data.codex?.usage_day_pct || 0,
-      },
-      routing: {
-        total: data.routing?.total_tasks || 0,
-        claudeTasks: data.routing?.claude_tasks || 0,
-        codexTasks: data.routing?.codex_tasks || 0,
-        claudePct:
-          data.routing?.total_tasks > 0
-            ? Math.round((data.routing.claude_tasks / data.routing.total_tasks) * 100)
-            : 0,
-        codexPct:
-          data.routing?.total_tasks > 0
-            ? Math.round((data.routing.codex_tasks / data.routing.total_tasks) * 100)
-            : 0,
-        codexFloor: Math.round((data.routing?.codex_floor_pct || 0.2) * 100),
-      },
-    };
-  } catch (e) {
-    console.error("Failed to read LLM usage:", e.message);
-    return { error: e.message };
-  }
+// Background async refresh of LLM usage data
+function refreshLlmUsageAsync() {
+  if (llmUsageCache.refreshing) return; // Already refreshing
+  llmUsageCache.refreshing = true;
+  
+  exec("openclaw status --usage --json", { encoding: "utf8", timeout: 20000 }, (err, stdout) => {
+    llmUsageCache.refreshing = false;
+    if (err) {
+      console.error("[LLM Usage] Async refresh failed:", err.message);
+      return;
+    }
+    try {
+      // Extract JSON portion - openclaw may output doctor warnings before JSON
+      const jsonStart = stdout.indexOf('{');
+      const jsonStr = jsonStart >= 0 ? stdout.slice(jsonStart) : stdout;
+      const parsed = JSON.parse(jsonStr);
+      if (parsed.usage) {
+        const result = transformLiveUsageData(parsed.usage);
+        llmUsageCache.data = result;
+        llmUsageCache.timestamp = Date.now();
+        console.log("[LLM Usage] Cache refreshed");
+      }
+    } catch (e) {
+      console.error("[LLM Usage] Parse error:", e.message);
+    }
+  });
 }
 
-// Get routing stats from the llm_routing skill's JSONL log
+// Transform live usage data from OpenClaw CLI
+function transformLiveUsageData(usage) {
+  const anthropic = usage.providers?.find(p => p.provider === "anthropic");
+  const codexProvider = usage.providers?.find(p => p.provider === "openai-codex");
+  
+  // Check for auth errors
+  if (anthropic?.error) {
+    return {
+      timestamp: new Date().toISOString(),
+      source: "error",
+      error: anthropic.error,
+      errorType: anthropic.error.includes("403") ? "auth" : "unknown",
+      claude: {
+        session: { usedPct: null, remainingPct: null, resetsIn: null, error: anthropic.error },
+        weekly: { usedPct: null, remainingPct: null, resets: null, error: anthropic.error },
+        sonnet: { usedPct: null, remainingPct: null, resets: null, error: anthropic.error },
+        lastSynced: null,
+      },
+      codex: { sessionsToday: 0, tasksToday: 0, usage5hPct: 0, usageDayPct: 0 },
+      routing: { total: 0, claudeTasks: 0, codexTasks: 0, claudePct: 0, codexPct: 0, codexFloor: 20 },
+    };
+  }
+
+  const session5h = anthropic?.windows?.find(w => w.label === "5h");
+  const weekAll = anthropic?.windows?.find(w => w.label === "Week");
+  const sonnetWeek = anthropic?.windows?.find(w => w.label === "Sonnet");
+  const codex5h = codexProvider?.windows?.find(w => w.label === "5h");
+  const codexDay = codexProvider?.windows?.find(w => w.label === "Day");
+  
+  const formatReset = (resetAt) => {
+    if (!resetAt) return "?";
+    const diff = resetAt - Date.now();
+    if (diff < 0) return "now";
+    if (diff < 3600000) return Math.round(diff / 60000) + "m";
+    if (diff < 86400000) return Math.round(diff / 3600000) + "h";
+    return Math.round(diff / 86400000) + "d";
+  };
+
+  return {
+    timestamp: new Date().toISOString(),
+    source: "live",
+    claude: {
+      session: {
+        usedPct: Math.round(session5h?.usedPercent || 0),
+        remainingPct: Math.round(100 - (session5h?.usedPercent || 0)),
+        resetsIn: formatReset(session5h?.resetAt),
+      },
+      weekly: {
+        usedPct: Math.round(weekAll?.usedPercent || 0),
+        remainingPct: Math.round(100 - (weekAll?.usedPercent || 0)),
+        resets: formatReset(weekAll?.resetAt),
+      },
+      sonnet: {
+        usedPct: Math.round(sonnetWeek?.usedPercent || 0),
+        remainingPct: Math.round(100 - (sonnetWeek?.usedPercent || 0)),
+        resets: formatReset(sonnetWeek?.resetAt),
+      },
+      lastSynced: new Date().toISOString(),
+    },
+    codex: {
+      sessionsToday: 0,
+      tasksToday: 0,
+      usage5hPct: Math.round(codex5h?.usedPercent || 0),
+      usageDayPct: Math.round(codexDay?.usedPercent || 0),
+    },
+    routing: { total: 0, claudeTasks: 0, codexTasks: 0, claudePct: 0, codexPct: 0, codexFloor: 20 },
+  };
+}
+
+// Start background refresh on startup
+setTimeout(() => refreshLlmUsageAsync(), 1000);
+setInterval(() => refreshLlmUsageAsync(), LLM_CACHE_TTL_MS);
+
+// Get LLM usage stats - returns cached data immediately, refreshes in background
+function getLlmUsage() {
+  const now = Date.now();
+  
+  // If cache is stale or empty, trigger background refresh
+  if (!llmUsageCache.data || (now - llmUsageCache.timestamp) > LLM_CACHE_TTL_MS) {
+    refreshLlmUsageAsync();
+  }
+  
+  // Return cached data if available AND not an error
+  // If cache has error, try file fallback first
+  if (llmUsageCache.data && llmUsageCache.data.source !== "error") {
+    return llmUsageCache.data;
+  }
+  
+  // Cache empty or has error - check if we can read from state file
+  // But don't return misleading 0% values - return error/loading state instead
+  const stateFile = path.join(PATHS.state, "llm-routing.json");
+  try {
+    if (fs.existsSync(stateFile)) {
+      const data = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+      // Only use file data if it has valid (non-placeholder) usage values
+      // Check for "unknown" resets which indicates placeholder data from failed sync
+      const sessionValid = data.claude?.session?.resets_in && data.claude.session.resets_in !== "unknown";
+      const weeklyValid = data.claude?.weekly_all_models?.resets && data.claude.weekly_all_models.resets !== "unknown";
+      if (sessionValid || weeklyValid) {
+        return {
+          timestamp: new Date().toISOString(),
+          source: "file",
+          claude: {
+            session: {
+              usedPct: Math.round((data.claude?.session?.used_pct || 0) * 100),
+              remainingPct: Math.round((data.claude?.session?.remaining_pct || 1) * 100),
+              resetsIn: data.claude?.session?.resets_in || "?",
+            },
+            weekly: {
+              usedPct: Math.round((data.claude?.weekly_all_models?.used_pct || 0) * 100),
+              remainingPct: Math.round((data.claude?.weekly_all_models?.remaining_pct || 1) * 100),
+              resets: data.claude?.weekly_all_models?.resets || "?",
+            },
+            sonnet: {
+              usedPct: Math.round((data.claude?.weekly_sonnet?.used_pct || 0) * 100),
+              remainingPct: Math.round((data.claude?.weekly_sonnet?.remaining_pct || 1) * 100),
+              resets: data.claude?.weekly_sonnet?.resets || "?",
+            },
+            lastSynced: data.claude?.last_synced || null,
+          },
+          codex: {
+            sessionsToday: data.codex?.sessions_today || 0,
+            tasksToday: data.codex?.tasks_today || 0,
+            usage5hPct: data.codex?.usage_5h_pct || 0,
+            usageDayPct: data.codex?.usage_day_pct || 0,
+          },
+          routing: {
+            total: data.routing?.total_tasks || 0,
+            claudeTasks: data.routing?.claude_tasks || 0,
+            codexTasks: data.routing?.codex_tasks || 0,
+            claudePct: data.routing?.total_tasks > 0 ? Math.round((data.routing.claude_tasks / data.routing.total_tasks) * 100) : 0,
+            codexPct: data.routing?.total_tasks > 0 ? Math.round((data.routing.codex_tasks / data.routing.total_tasks) * 100) : 0,
+            codexFloor: Math.round((data.routing?.codex_floor_pct || 0.2) * 100),
+          },
+        };
+      }
+    }
+  } catch (e) {
+    console.error("[LLM Usage] File fallback failed:", e.message);
+  }
+  
+  // No valid data - return auth error state (we know API returns 403)
+  return {
+    timestamp: new Date().toISOString(),
+    source: "error",
+    error: "API key lacks user:profile OAuth scope",
+    errorType: "auth",
+    claude: {
+      session: { usedPct: null, remainingPct: null, resetsIn: null, error: "Auth required" },
+      weekly: { usedPct: null, remainingPct: null, resets: null, error: "Auth required" },
+      sonnet: { usedPct: null, remainingPct: null, resets: null, error: "Auth required" },
+      lastSynced: null,
+    },
+    codex: { sessionsToday: 0, tasksToday: 0, usage5hPct: 0, usageDayPct: 0 },
+    routing: { total: 0, claudeTasks: 0, codexTasks: 0, claudePct: 0, codexPct: 0, codexFloor: 20 },
+  };
+}
 function getRoutingStats(hours = 24) {
   try {
     const skillDir = path.join(PATHS.skills, "llm_routing");
@@ -2051,8 +3174,9 @@ function getSubagentStatus() {
   const subagents = [];
   try {
     const output = runOpenClaw("sessions list --json 2>/dev/null");
-    if (output) {
-      const data = JSON.parse(output);
+    const jsonStr = extractJSON(output);
+    if (jsonStr) {
+      const data = JSON.parse(jsonStr);
       const subagentSessions = (data.sessions || []).filter(
         (s) => s.key && s.key.includes(":subagent:"),
       );
@@ -2199,11 +3323,14 @@ function executeAction(action) {
 
       case "clear-stale-sessions":
         // List stale sessions (> 24h old)
-        const output = runOpenClaw("sessions list --json 2>&1");
+        const staleOutput = runOpenClaw("sessions list --json 2>&1");
         let staleCount = 0;
         try {
-          const data = JSON.parse(output);
-          staleCount = (data.sessions || []).filter((s) => s.ageMs > 24 * 60 * 60 * 1000).length;
+          const staleJson = extractJSON(staleOutput);
+          if (staleJson) {
+            const data = JSON.parse(staleJson);
+            staleCount = (data.sessions || []).filter((s) => s.ageMs > 24 * 60 * 60 * 1000).length;
+          }
         } catch (e) {}
         results.output = `Found ${staleCount} stale sessions (>24h old).\nTo clean: openclaw sessions prune`;
         results.success = true;
@@ -2227,6 +3354,13 @@ const server = http.createServer((req, res) => {
   const urlParts = req.url.split("?");
   const pathname = urlParts[0];
   const query = new URLSearchParams(urlParts[1] || "");
+  
+  // Fast path for health check - bypasses all processing
+  if (pathname === "/api/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", port: PORT, timestamp: new Date().toISOString() }));
+    return;
+  }
 
   // Auth check (unless public path)
   const isPublicPath = AUTH_CONFIG.publicPaths.some(
@@ -2323,6 +3457,10 @@ const server = http.createServer((req, res) => {
     const data = getLlmUsage();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(data, null, 2));
+  } else if (pathname === "/api/cost-breakdown") {
+    const data = getCostBreakdown();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(data, null, 2));
   } else if (pathname === "/api/subagents") {
     const data = getSubagentStatus();
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -2352,15 +3490,12 @@ const server = http.createServer((req, res) => {
     // Send initial connection message
     sendSSE(res, "connected", { message: "Connected to Command Center", timestamp: Date.now() });
 
-    // Send initial data
-    try {
-      const data = getData();
-      const memory = getMemoryStats();
-      const cron = getCronJobs();
-      const cerebro = getCerebroTopics();
-      sendSSE(res, "update", { ...data, memory, cron, cerebro });
-    } catch (e) {
-      console.error("[SSE] Initial data error:", e.message);
+    // Send cached state immediately (non-blocking)
+    // If no cache, send empty state - next refresh will populate
+    if (cachedState) {
+      sendSSE(res, "update", cachedState);
+    } else {
+      sendSSE(res, "update", { sessions: [], loading: true });
     }
 
     // Handle disconnect
@@ -2404,6 +3539,11 @@ const server = http.createServer((req, res) => {
   } else if (pathname === "/api/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok", port: PORT, timestamp: new Date().toISOString() }));
+  } else if (pathname === "/api/state") {
+    // Unified state endpoint - single source of truth for all dashboard data
+    const state = getFullState();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(state, null, 2));
   } else if (pathname === "/api/vitals") {
     const vitals = getSystemVitals();
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -2413,15 +3553,56 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(capacity, null, 2));
   } else if (pathname === "/api/sessions") {
-    const data = getData();
+    const page = parseInt(query.get("page")) || 1;
+    const pageSize = parseInt(query.get("pageSize")) || 20;
+    const statusFilter = query.get("status"); // live, recent, idle, or null for all
+    
+    // Get ALL sessions for accurate counts
+    const allSessions = getSessions({ limit: null });
+    
+    // Calculate status counts (always from all sessions)
+    const statusCounts = {
+      all: allSessions.length,
+      live: allSessions.filter((s) => s.active).length,
+      recent: allSessions.filter((s) => !s.active && s.recentlyActive).length,
+      idle: allSessions.filter((s) => !s.active && !s.recentlyActive).length,
+    };
+    
+    // Apply status filter
+    let filteredSessions = allSessions;
+    if (statusFilter === "live") {
+      filteredSessions = allSessions.filter((s) => s.active);
+    } else if (statusFilter === "recent") {
+      filteredSessions = allSessions.filter((s) => !s.active && s.recentlyActive);
+    } else if (statusFilter === "idle") {
+      filteredSessions = allSessions.filter((s) => !s.active && !s.recentlyActive);
+    }
+    
+    // Paginate
+    const total = filteredSessions.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const offset = (page - 1) * pageSize;
+    const displaySessions = filteredSessions.slice(offset, offset + pageSize);
+    
+    const tokenStats = getTokenStats(allSessions);
+    const capacity = getCapacity();
+    
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify(
         {
-          sessions: data.sessions,
-          pagination: data.pagination,
-          statusCounts: data.statusCounts,
-          tokenStats: data.tokenStats,
+          sessions: displaySessions,
+          pagination: {
+            page,
+            pageSize,
+            total,
+            totalPages,
+            hasPrev: page > 1,
+            hasNext: page < totalPages,
+          },
+          statusCounts,
+          tokenStats,
+          capacity,
         },
         null,
         2,
@@ -2516,6 +3697,47 @@ const server = http.createServer((req, res) => {
     const memory = getMemoryStats();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ memory }, null, 2));
+  } else if (pathname === "/api/privacy") {
+    // Privacy Settings API - GET/POST/PUT
+    if (req.method === "GET") {
+      const settings = loadPrivacySettings();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(settings, null, 2));
+    } else if (req.method === "POST" || req.method === "PUT") {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => {
+        try {
+          const updates = JSON.parse(body);
+          const current = loadPrivacySettings();
+          
+          // Merge updates into current settings
+          const merged = {
+            version: current.version || 1,
+            hiddenTopics: updates.hiddenTopics ?? current.hiddenTopics ?? [],
+            hiddenSessions: updates.hiddenSessions ?? current.hiddenSessions ?? [],
+            hiddenCrons: updates.hiddenCrons ?? current.hiddenCrons ?? [],
+            hideHostname: updates.hideHostname ?? current.hideHostname ?? false,
+          };
+          
+          if (savePrivacySettings(merged)) {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: true, settings: merged }));
+          } else {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Failed to save privacy settings" }));
+          }
+        } catch (e) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid JSON: " + e.message }));
+        }
+      });
+      return;
+    } else {
+      res.writeHead(405, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Method not allowed" }));
+    }
+    return;
   } else if (isJobsRoute(pathname)) {
     // Jobs Framework API - handles /api/jobs/*
     handleJobsRequest(req, res, pathname, query, req.method);
@@ -2525,21 +3747,46 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
+  const profile = process.env.OPENCLAW_PROFILE;
   console.log(`🦞 OpenClaw Command Center running at http://localhost:${PORT}`);
+  if (profile) {
+    console.log(`   Profile: ${profile} (~/.openclaw-${profile})`);
+  }
   console.log(`   Press Ctrl+C to stop`);
+  
+  // Pre-warm caches in background after server starts (non-blocking)
+  setTimeout(async () => {
+    console.log("[Startup] Pre-warming caches in background...");
+    try {
+      // Prime caches async - these don't block
+      await Promise.all([
+        refreshSessionsCache(),
+        refreshTokenUsageAsync(),
+      ]);
+      getSystemVitals(); // This uses its own async cache
+      console.log("[Startup] Caches warmed.");
+    } catch (e) {
+      console.log("[Startup] Cache warming error:", e.message);
+    }
+  }, 100);
+  
+  // Background cache refresh (async, non-blocking)
+  setInterval(() => refreshSessionsCache(), SESSIONS_CACHE_TTL);
+  setInterval(() => refreshTokenUsageAsync(), TOKEN_USAGE_CACHE_TTL);
 });
 
-// SSE heartbeat - broadcast updates every 30 seconds
+// SSE heartbeat - broadcast full state periodically
+let sseRefreshing = false;
 setInterval(() => {
-  if (sseClients.size > 0) {
+  if (sseClients.size > 0 && !sseRefreshing) {
+    sseRefreshing = true;
     try {
-      const data = getData();
-      const memory = getMemoryStats();
-      const cron = getCronJobs();
-      broadcastSSE("update", { ...data, memory, cron });
+      const state = refreshState();
+      broadcastSSE("update", state);
       broadcastSSE("heartbeat", { clients: sseClients.size, timestamp: Date.now() });
     } catch (e) {
       console.error("[SSE] Broadcast error:", e.message);
     }
+    sseRefreshing = false;
   }
-}, 30000);
+}, 15000); // 15-second updates (reduced from 5s to avoid blocking)
