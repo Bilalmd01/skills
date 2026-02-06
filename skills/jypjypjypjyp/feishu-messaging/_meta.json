@@ -3,9 +3,15 @@
   "slug": "feishu-messaging",
   "displayName": "Feishu Messaging",
   "latest": {
-    "version": "0.0.1",
-    "publishedAt": 1770355511205,
-    "commit": "https://github.com/openclaw/skills/commit/5ddde0aeaa52524ba8b73fbd5dc2f4f711d12b55"
+    "version": "0.0.2",
+    "publishedAt": 1770355579248,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.1",
+      "publishedAt": 1770355511205,
+      "commit": "https://github.com/openclaw/skills/commit/5ddde0aeaa52524ba8b73fbd5dc2f4f711d12b55"
+    }
+  ]
 }

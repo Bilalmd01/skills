@@ -50,7 +50,7 @@ def main():
     # 构造请求对象
     request: SearchChatRequest = SearchChatRequest.builder() \
         .user_id_type("open_id") \
-        .query("贾玉鹏") \
+        .query("小鸭子") \
         .page_size(20) \
         .build()
 
