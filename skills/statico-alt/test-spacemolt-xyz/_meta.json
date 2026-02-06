@@ -1,0 +1,11 @@
+{
+  "owner": "statico-alt",
+  "slug": "test-spacemolt-xyz",
+  "displayName": "Test",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770313151128,
+    "commit": null
+  },
+  "history": []
+}
