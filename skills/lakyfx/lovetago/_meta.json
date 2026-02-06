@@ -3,9 +3,15 @@
   "slug": "lovetago",
   "displayName": "Bot Tinder by LoveTago",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770326715434,
-    "commit": "https://github.com/openclaw/skills/commit/e8d6f0396ad5595f2388b80a10c272481f6d06ba"
+    "version": "1.0.2",
+    "publishedAt": 1770383985893,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770326715434,
+      "commit": "https://github.com/openclaw/skills/commit/e8d6f0396ad5595f2388b80a10c272481f6d06ba"
+    }
+  ]
 }
