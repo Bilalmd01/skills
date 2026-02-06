@@ -1,0 +1,11 @@
+{
+  "owner": "afeef23",
+  "slug": "send-usd",
+  "displayName": "Send USD Skill",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770317564087,
+    "commit": null
+  },
+  "history": []
+}
