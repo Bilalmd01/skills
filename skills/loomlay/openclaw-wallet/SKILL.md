@@ -27,6 +27,39 @@ To use a specific API key instead of auto-registration:
 export LOOMLAY_API_KEY=agent_your_key_here
 ```
 
+## First-Time Setup
+
+**IMPORTANT: After installing the plugin, you must set up a wallet before using trading/wallet tools.**
+
+On first interaction with a user (or when the skill is first loaded), run this setup sequence:
+
+```javascript
+const { wallet_get, wallet_create } = require('@loomlay/openclaw-wallet-plugin');
+
+// 1. Check if a wallet already exists
+const existing = await wallet_get();
+
+if (!existing.success) {
+  // 2. No wallet yet — create one
+  const created = await wallet_create();
+  if (created.success) {
+    // 3. Show the user their new wallet
+    // IMPORTANT: The seed phrase is shown ONCE. Tell the user to save it.
+    // "Your wallet has been created:"
+    // "  Solana: <solanaAddress>"
+    // "  EVM: <evmAddress>"
+    // "  Seed phrase: <seedPhrase> (save this securely — it won't be shown again)"
+  }
+} else {
+  // Wallet exists — show addresses
+  // "Your wallet:"
+  // "  Solana: <solanaAddress>"
+  // "  SOL balance: <balance>"
+}
+```
+
+**Always run this check before any wallet or trading operation.** If `wallet_get()` fails with UNAUTHORIZED, the API key may need to be re-registered — delete `~/.loomlay/credentials.json` and retry.
+
 ## How to Use the Tools
 
 All 27 tools are exported as **flat async functions** from the plugin package. Use them in Node.js like this:
