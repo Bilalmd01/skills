@@ -1,0 +1,11 @@
+{
+  "owner": "d1m7asis",
+  "slug": "aimlapi-media-gen",
+  "displayName": "Generate images and videos via the AI/ML API",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770280017315,
+    "commit": null
+  },
+  "history": []
+}
