@@ -3,9 +3,15 @@
   "slug": "guardian-angel",
   "displayName": "Guardian Angel",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770166540650,
-    "commit": "https://github.com/clawdbot/skills/commit/e2b5037755e19874e2f60b83a22657208aa0e532"
+    "version": "3.0.0",
+    "publishedAt": 1770341007019,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770166540650,
+      "commit": "https://github.com/clawdbot/skills/commit/e2b5037755e19874e2f60b83a22657208aa0e532"
+    }
+  ]
 }
