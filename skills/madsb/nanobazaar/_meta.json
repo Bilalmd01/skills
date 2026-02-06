@@ -1,13 +1,18 @@
 {
   "owner": "madsb",
   "slug": "nanobazaar",
-  "displayName": "Nanobazaar",
+  "displayName": "NanoBazaar",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1770295944583,
-    "commit": "https://github.com/clawdbot/skills/commit/dea8e27dead160b2d311f576c99711d89aed1a18"
+    "version": "1.0.12",
+    "publishedAt": 1770323899210,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1770295944583,
+      "commit": "https://github.com/clawdbot/skills/commit/dea8e27dead160b2d311f576c99711d89aed1a18"
+    },
     {
       "version": "1.0.9",
       "publishedAt": 1770235726894,

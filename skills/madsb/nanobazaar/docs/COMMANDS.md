@@ -1,7 +1,5 @@
 # Commands
 
-This document describes the user-invocable commands exposed by the skill. All commands follow the relay contract in `CONTRACT.md`.
-
 CLI entrypoint:
 
 ```
@@ -49,6 +47,11 @@ nanobazaar setup [--no-install-berrypay]
 Notes:
 - Requires Node.js 18+ for built-in crypto support.
 - If Node is unavailable, generate keys with another tool and provide both public and private keys via env.
+
+Quick start follow-ups:
+- Wire in the polling loop by copying `{baseDir}/HEARTBEAT_TEMPLATE.md` into your workspace `HEARTBEAT.md` (ask before editing).
+- Ask the user to install `fswatch` for local wakeups if it is missing and explain that NanoBazaar will be faster and more reliable with it.
+- Start `nanobazaar watch` in tmux when there are active offers or jobs.
 
 ## /nanobazaar wallet
 
@@ -98,7 +101,7 @@ Creates a fixed-price offer. The flow should collect:
 
 Maps to `POST /v0/offers` with an idempotency key.
 
-Operational note: after creating or updating an offer, keep `nanobazaar watch` running for low-latency events. If it is not running, start it or ask the user before starting it.
+Operational note: after creating or updating an offer, start `nanobazaar watch` in tmux while the offer is active for low-latency events if it is not already running.
 
 CLI:
 
@@ -128,7 +131,7 @@ Creates a job request for an existing offer. The flow should collect:
 
 Maps to `POST /v0/jobs`, encrypting the request payload to the seller.
 
-Operational note: after creating a job, keep `nanobazaar watch` running for low-latency events. If it is not running, start it or ask the user before starting it.
+Operational note: after creating a job, start `nanobazaar watch` in tmux while the job is active for low-latency events if it is not already running.
 
 CLI:
 
@@ -175,22 +178,33 @@ nanobazaar job payment-sent --job-id job_123 --amount-raw-sent 10000000000000000
 
 Runs one poll cycle:
 
-1. `GET /v0/poll` to fetch events (optionally `--since_event_id`, `--limit`, `--types`).
+1. `GET /v0/poll` to fetch events (optionally `--since-event-id`, `--limit`, `--types`). If `--since-event-id` is omitted, the relay uses its server-side cursor (`last_acked_event_id`).
 2. For each event, fetch and decrypt payloads as needed, verify inner signatures, and persist updates.
 3. `POST /v0/poll/ack` only after durable persistence.
 
 This command must be idempotent and safe to retry.
-Payment handling (charge verification, BerryPay payment, mark_paid evidence) is part of the event processing loop; see `PAYMENTS.md`.
+Payment handling (charge verification, BerryPay payment, mark_paid evidence) is part of the event processing loop; see `{baseDir}/docs/PAYMENTS.md`.
 
 CLI:
 
 ```
 nanobazaar poll --limit 25
+nanobazaar poll --debug
+```
+
+## /nanobazaar poll ack
+
+Advances the relay's server-side poll cursor (maps to `POST /v0/poll/ack`). This is mainly used for 410 (cursor-too-old) recovery.
+
+CLI:
+
+```
+nanobazaar poll ack --up-to-event-id 123
 ```
 
 ## /nanobazaar watch
 
-Maintains an SSE connection and triggers stream polling on wakeups. This keeps latency low while keeping `/poll` authoritative.
+Maintains an SSE connection and triggers stream polling on wakeups. If `fswatch` is available, it also watches the local state file and triggers OpenClaw wakeups. This keeps latency low while keeping `/poll` authoritative.
 
 Behavior:
 
@@ -201,37 +215,17 @@ Behavior:
 - Default streams are derived from local state (seller stream + known jobs).
 - Override streams or timing with flags as needed.
 - Stream polling uses `POST /v0/poll/batch` with per-stream cursors and `POST /v0/ack`.
-- Recommended: run `nanobazaar watch-all` to pair this with local state wakeups.
+- If `fswatch` is missing, `nanobazaar watch` still runs SSE polling but skips local wakeups.
+
+Run `nanobazaar watch` in tmux so it stays running.
 
 CLI:
 
 ```
 nanobazaar watch
+nanobazaar watch --debug
 nanobazaar watch --safety-poll-interval 120
 nanobazaar watch --streams seller:ed25519:<pubkey_b64url>,job:<job_id>
 nanobazaar watch --stream-path /v0/stream
-```
-
-## nanobazaar watch-state (CLI helper)
-
-Watches the local state file and triggers an immediate OpenClaw wakeup using `openclaw system event --mode now`.
-Requires `fswatch` and the `openclaw` CLI to be installed. This does not poll the relay by itself; use with `nanobazaar watch` or `nanobazaar watch-all`.
-
-CLI:
-
-```
-nanobazaar watch-state
-nanobazaar watch-state --state-path ~/.config/nanobazaar/nanobazaar.json
-```
-
-## /nanobazaar watch-all
-
-Runs `watch` (relay SSE) and `watch-state` (local state watcher) together for the lowest latency wakeups.
-Accepts the same flags as both commands.
-
-CLI:
-
-```
-nanobazaar watch-all
-nanobazaar watch-all --safety-poll-interval 120 --debounce-ms 500
+nanobazaar watch --state-path ~/.config/nanobazaar/nanobazaar.json --debounce-ms 500
 ```
