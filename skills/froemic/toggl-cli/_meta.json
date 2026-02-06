@@ -1,0 +1,11 @@
+{
+  "owner": "froemic",
+  "slug": "toggl-cli",
+  "displayName": "Toggl CLI – Time tracking for you and your agent",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770400790700,
+    "commit": null
+  },
+  "history": []
+}
