@@ -1,7 +1,7 @@
 ---
 name: abstract-onboard
-version: 1.5.0
-description: Deploy smart contracts and bridge assets to Abstract (ZK Stack L2). Use when an agent needs to deploy contracts on Abstract, bridge ETH/tokens to Abstract, trade/swap tokens, check balances, transfer assets, or interact with Abstract mainnet. Covers zksolc compilation, Hardhat deployment, Relay bridging, DEX trading (Kona, Aborean), and key contract addresses.
+version: 1.6.0
+description: Deploy smart contracts and bridge assets to Abstract (ZK Stack L2). Use when an agent needs to deploy contracts on Abstract, bridge ETH/tokens to Abstract, trade/swap tokens, place predictions on Myriad Markets, check balances, transfer assets, or interact with Abstract mainnet. Covers zksolc compilation, Hardhat deployment, Relay bridging, DEX trading (Kona, Aborean), Myriad prediction markets, and key contract addresses.
 author: Big Hoss (@BigHossbot)
 ---
 
@@ -95,6 +95,27 @@ node scripts/swap-uniswap-v2.js
 
 See `references/dex.md` for contract addresses and supported pools.
 
+### Myriad Prediction Markets
+
+Trade on Myriad Markets — the largest prediction market on Abstract (415K+ users, $100M+ volume).
+
+```bash
+# List open markets
+node scripts/myriad-trade.js list
+
+# Get market details
+node scripts/myriad-trade.js info <marketId>
+
+# Buy shares (place a prediction)
+export WALLET_PRIVATE_KEY=0x...
+node scripts/myriad-buy-direct.js <marketId> <outcomeId> <amount>
+
+# Example: $1 USDC.e on "Yes" for market 765
+node scripts/myriad-buy-direct.js 765 0 1
+```
+
+See `references/myriad.md` for contract addresses, ABI details, and token info.
+
 ### Call Any Contract
 ```bash
 # Read
@@ -183,6 +204,9 @@ node scripts/testnet-setup.js verify <wallet>
 | WETH | `0x3439153EB7AF838Ad19d56E1571FBD09333C2809` |
 | Kona Router | `0x441E0627Db5173Da098De86b734d136b27925250` |
 | Uniswap V2 Router | `0xad1eCa41E6F772bE3cb5A48A6141f9bcc1AF9F7c` |
+| Myriad PM Contract | `0x3e0F5F8F5Fb043aBFA475C0308417Bf72c463289` |
+| Myriad PTS Token | `0x0b07cf011B6e2b7E0803b892d97f751659940F23` |
+| Myriad API | `https://api-v2.myriadprotocol.com` |
 
 ## Scripts
 
@@ -201,6 +225,8 @@ node scripts/testnet-setup.js verify <wallet>
 | `swap-kona.js` | Swap on Kona Finance (V2) ✅ |
 | `swap-aborean.js` | Swap on Aborean (Velodrome-style) |
 | `swap-uniswap-v2.js` | Swap on Uniswap V2 |
+| `myriad-trade.js` | List markets, get info (Myriad API) |
+| `myriad-buy-direct.js` | Place predictions on Myriad (on-chain) ✅ |
 | `call-contract.js` | Call any contract function |
 | `mint-nft.js` | Mint NFTs to existing contract |
 | `estimate-gas.js` | Estimate gas costs before transactions |
@@ -213,6 +239,7 @@ node scripts/testnet-setup.js verify <wallet>
 |------|----------|
 | `agw.md` | Abstract Global Wallet guide (XP, activation) |
 | `dex.md` | DEX contracts & swap patterns (Kona, Aborean) |
+| `myriad.md` | Myriad prediction market contracts, ABI & trading |
 | `hardhat.config.js` | Working Hardhat config for Abstract |
 | `addresses.md` | Key contract addresses |
 | `troubleshooting.md` | Common errors and fixes |

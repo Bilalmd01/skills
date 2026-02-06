@@ -3,11 +3,16 @@
   "slug": "abstract-onboard",
   "displayName": "Abstract Onboard",
   "latest": {
-    "version": "1.5.0",
-    "publishedAt": 1770314013834,
-    "commit": "https://github.com/clawdbot/skills/commit/ba0eae784bf119845e269ff0226ddf0b3456d052"
+    "version": "1.6.0",
+    "publishedAt": 1770349769670,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.0",
+      "publishedAt": 1770314013834,
+      "commit": "https://github.com/clawdbot/skills/commit/ba0eae784bf119845e269ff0226ddf0b3456d052"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770264654853,
