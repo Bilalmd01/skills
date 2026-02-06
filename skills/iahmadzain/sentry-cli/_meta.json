@@ -1,0 +1,11 @@
+{
+  "owner": "iahmadzain",
+  "slug": "sentry-cli",
+  "displayName": "Sentry Cli",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770277968798,
+    "commit": null
+  },
+  "history": []
+}
