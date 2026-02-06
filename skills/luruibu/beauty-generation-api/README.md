@@ -12,7 +12,7 @@ npx clawhub@latest update beauty-generation-api
 ```
 
 ### 📈 Recent Optimizations
-- **v1.2.6**: Enhanced update notifications and package metadata
+- **v1.2.7**: Enhanced update notifications and package metadata
 - **v1.2.5**: Ultra-fast 0.5s polling (4-5s total delivery)
 - **v1.2.4**: Simplified custom prompt generation
 - **v1.2.3**: Enhanced error handling and reliability
