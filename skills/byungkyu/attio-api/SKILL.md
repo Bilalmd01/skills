@@ -478,7 +478,7 @@ EOF
 
 ### Troubleshooting: Insufficient Scopes
 
-If you receive a 403 error about missing scopes, the OAuth connection may need additional permissions. Create a new connection and ensure the user grants all required scopes during OAuth authorization.
+If you receive a 403 error about missing scopes, contact Maton support at support@maton.ai with the specific operations/APIs you need and your use-case.
 
 ## Resources
 
