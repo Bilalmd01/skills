@@ -16,7 +16,12 @@ Access the Google Ads API with managed OAuth authentication. Query campaigns, ad
 
 ```bash
 # List accessible customers
-curl -s -X GET "https://gateway.maton.ai/google-ads/v23/customers:listAccessibleCustomers" -H "Authorization: Bearer $MATON_API_KEY"
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/google-ads/v23/customers:listAccessibleCustomers')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ## Base URL
@@ -54,19 +59,36 @@ Manage your Google Ads OAuth connections at `https://ctrl.maton.ai`.
 ### List Connections
 
 ```bash
-curl -s -X GET "https://ctrl.maton.ai/connections?app=google-ads&status=ACTIVE" -H "Authorization: Bearer $MATON_API_KEY"
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=google-ads&status=ACTIVE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Create Connection
 
 ```bash
-curl -s -X POST "https://ctrl.maton.ai/connections" -H "Content-Type: application/json" -H "Authorization: Bearer $MATON_API_KEY" -d '{"app": "google-ads"}'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'app': 'google-ads'}).encode()
+req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Get Connection
 
 ```bash
-curl -s -X GET "https://ctrl.maton.ai/connections/{connection_id}" -H "Authorization: Bearer $MATON_API_KEY"
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -89,7 +111,12 @@ Open the returned `url` in a browser to complete OAuth authorization.
 ### Delete Connection
 
 ```bash
-curl -s -X DELETE "https://ctrl.maton.ai/connections/{connection_id}" -H "Authorization: Bearer $MATON_API_KEY"
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}', method='DELETE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Specifying Connection
@@ -97,7 +124,15 @@ curl -s -X DELETE "https://ctrl.maton.ai/connections/{connection_id}" -H "Author
 If you have multiple Google Ads connections, specify which one to use with the `Maton-Connection` header:
 
 ```bash
-curl -s -X POST "https://gateway.maton.ai/google-ads/v23/customers/1234567890/googleAds:search" -H "Content-Type: application/json" -H "Authorization: Bearer $MATON_API_KEY" -H "Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80" -d '{"query": "SELECT campaign.id, campaign.name FROM campaign"}'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'query': 'SELECT campaign.id, campaign.name FROM campaign'}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/google-ads/v23/customers/1234567890/googleAds:search', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+req.add_header('Maton-Connection', '21fd90f9-5935-43cd-b6c8-bde9d915ca80')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -229,6 +264,27 @@ response = requests.post(
 | 401 | Invalid or missing Maton API key |
 | 429 | Rate limited (10 req/sec per account) |
 | 4xx/5xx | Passthrough error from Google Ads API |
+
+### Troubleshooting: Invalid API Key
+
+**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
+
+1. Check that the `MATON_API_KEY` environment variable is set:
+
+```bash
+echo $MATON_API_KEY
+```
+
+2. Verify the API key is valid by listing connections:
+
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
+```
 
 ## Resources
 
