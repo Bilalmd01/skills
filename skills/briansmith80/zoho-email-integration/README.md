@@ -3,9 +3,9 @@
 [![GitHub](https://img.shields.io/badge/GitHub-clawdbot--zoho--email-blue?logo=github)](https://github.com/briansmith80/clawdbot-zoho-email)
 [![ClawdHub](https://img.shields.io/badge/ClawdHub-Install-green)](https://clawdhub.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.0.2-blue)](https://github.com/briansmith80/clawdbot-zoho-email/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://github.com/briansmith80/clawdbot-zoho-email/releases)
 
-**v2.0.2** - Complete Zoho Mail integration with OAuth2, REST API backend (5-10x faster), and advanced email automation features. Perfect for email workflows, monitoring, and bulk operations in your Clawdbot projects.
+**v2.1.0** - Complete Zoho Mail integration with OAuth2, REST API backend (5-10x faster), **Clawdbot extension with /email commands**, and advanced email automation features. Perfect for email workflows, monitoring, and bulk operations in your Clawdbot projects.
 
 ## 🚀 Quick Start (recommended path)
 
@@ -31,7 +31,7 @@ python3 scripts/zoho-email.py unread
 ```
 
 ### Quick Start (app-password mode)
-If you don’t want OAuth2 yet:
+If you don't want OAuth2 yet:
 
 ```bash
 export ZOHO_EMAIL="your-email@domain.com"
@@ -46,20 +46,20 @@ python3 scripts/zoho-email.py unread --api-mode imap
 ## ✨ Features
 
 ### Core Features
-✅ **OAuth2 Authentication** - Secure authentication with automatic token refresh  
-✅ **REST API Backend** - 5-10x faster than IMAP/SMTP (auto-enabled with OAuth2)  
-✅ **Read & Search** - Search emails with advanced filters  
-✅ **Send Emails** - Plain text, HTML, CC/BCC support  
-✅ **Attachments** - Send and download attachments  
-✅ **HTML Emails** - Send rich-formatted emails with templates  
-✅ **Batch Operations** - Mark, delete, move multiple emails efficiently  
-✅ **Folder Management** - Access all folders (Inbox, Sent, Drafts, etc.)  
+✅ **OAuth2 Authentication** - Secure authentication with automatic token refresh
+✅ **REST API Backend** - 5-10x faster than IMAP/SMTP (auto-enabled with OAuth2)
+✅ **Read & Search** - Search emails with advanced filters
+✅ **Send Emails** - Plain text, HTML, CC/BCC support
+✅ **Attachments** - Send and download attachments
+✅ **HTML Emails** - Send rich-formatted emails with templates
+✅ **Batch Operations** - Mark, delete, move multiple emails efficiently
+✅ **Folder Management** - Access all folders (Inbox, Sent, Drafts, etc.)
 
 ### Performance
-⚡ **5-10x faster** operations with REST API mode  
-⚡ **Connection pooling** for persistent HTTP connections  
-⚡ **Server-side filtering** reduces data transfer  
-⚡ **Automatic fallback** to IMAP if REST API unavailable  
+⚡ **5-10x faster** operations with REST API mode
+⚡ **Connection pooling** for persistent HTTP connections
+⚡ **Server-side filtering** reduces data transfer
+⚡ **Automatic fallback** to IMAP if REST API unavailable
 
 ## 📚 Documentation
 
@@ -162,13 +162,59 @@ python3 scripts/zoho-email.py unread --api-mode rest --verbose
 python3 scripts/zoho-email.py unread --api-mode imap
 ```
 
-## 🧩 Clawdbot command wrapper (optional)
+## 🧩 Clawdbot Integration (NEW!)
 
-If you want a simple "command-style" wrapper script for Clawdbot (e.g., `/emails`), see:
+### /email Commands (Telegram, Discord, etc.)
 
-- `examples/clawdbot-commands/emails.sh`
+Use email directly in Clawdbot messaging platforms via `/email` commands:
 
-It’s intentionally minimal and safe (dry-run by default for destructive actions).
+```bash
+# Check unread count
+/email unread
+
+# Search your inbox
+/email search invoice
+
+# Send an email
+/email send john@example.com "Hello" "Hi John"
+
+# Brief summary (for briefings)
+/email summary
+
+# Diagnostics
+/email doctor
+
+# Get help
+/email help
+```
+
+**Setup:**
+1. Copy `examples/clawdbot-extension/clawdbot_extension.py` to your scripts directory
+2. Set `ZOHO_EMAIL` environment variable
+3. Run OAuth2 setup: `python3 scripts/oauth-setup.py`
+4. Test: `python3 scripts/clawdbot_extension.py unread`
+
+### Heartbeat/Cron Integration
+
+Add email summary to morning briefings or scheduled tasks:
+
+```bash
+# In your heartbeat/cron script
+python3 scripts/clawdbot_extension.py summary
+
+# Output: 📭 No unread emails
+#     OR: 📧 3 unread emails
+```
+
+**Examples:**
+- `examples/clawdbot-extension/heartbeat-example.md` - Complete integration guide
+- `examples/clawdbot-commands/emails.sh` - Simple wrapper script
+
+### Use Cases
+✅ **Morning briefings** - Add email summary to daily briefing  
+✅ **Slack/Discord alerts** - Notify on unread emails  
+✅ **Interactive commands** - `/email search invoice` in chat  
+✅ **Automated workflows** - Cron + Clawdbot integration
 
 ## 💡 Use Cases
 
