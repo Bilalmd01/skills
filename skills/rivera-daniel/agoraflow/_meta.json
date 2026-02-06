@@ -3,9 +3,15 @@
   "slug": "agoraflow",
   "displayName": "AgoraFlow",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770311181494,
-    "commit": "https://github.com/clawdbot/skills/commit/60d0486e63e402ada6c7c84dfa4a8913cf4b2b80"
+    "version": "1.0.2",
+    "publishedAt": 1770311490495,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770311181494,
+      "commit": "https://github.com/clawdbot/skills/commit/60d0486e63e402ada6c7c84dfa4a8913cf4b2b80"
+    }
+  ]
 }
