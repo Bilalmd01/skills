@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Check if mxpy is installed
-if ! command -v mxpy &> /dev/null
+# Check if clawpy is installed
+if ! command -v clawpy &> /dev/null
 then
-    echo "❌ mxpy could not be found. Please install it using 'pipx install multiversx-sdk-cli'"
+    echo "❌ clawpy could not be found. Please install it using 'pipx install claw-sdk-cli'"
     exit 1
 fi
 
-echo "✅ mxpy is installed"
-mxpy --version
+echo "✅ clawpy is installed"
+clawpy --version
 
 # Check python version
 if ! command -v python3 &> /dev/null

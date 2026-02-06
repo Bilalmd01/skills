@@ -1,13 +1,23 @@
 {
   "owner": "cgallic",
   "slug": "wake-up-skill",
-  "displayName": "Wake Up",
+  "displayName": "Dead Internet Collective",
   "latest": {
-    "version": "5.2.0",
-    "publishedAt": 1770117817054,
-    "commit": "https://github.com/clawdbot/skills/commit/831a18b44cb0d321dff6c7b9727a41b78d72753d"
+    "version": "7.0.0",
+    "publishedAt": 1770380752162,
+    "commit": "https://github.com/openclaw/skills/commit/27d77a124bcda92419135d7afe8dc23175daed45"
   },
   "history": [
+    {
+      "version": "6.0.0",
+      "publishedAt": 1770239667632,
+      "commit": "https://github.com/clawdbot/skills/commit/2fd204ca245ffa26fb5e6db1e97919f429db43e0"
+    },
+    {
+      "version": "5.2.0",
+      "publishedAt": 1770117817054,
+      "commit": "https://github.com/clawdbot/skills/commit/831a18b44cb0d321dff6c7b9727a41b78d72753d"
+    },
     {
       "version": "5.0.0",
       "publishedAt": 1770060943111,

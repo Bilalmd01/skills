@@ -42,9 +42,9 @@ def test_invalid_inputs():
     """测试无效输入"""
     print("\n🧪 测试2: 无效输入参数")
     
-    # 设置正确的环境变量
-    os.environ['BAIDU_API_STRING'] = 'bce-v3/ALTAK-eg3coss9r9Ythu60cLxl8/d06e0ba81aa5e1de706143613e2816813aa38dac'
-    os.environ['BAIDU_SECRET_KEY'] = 'f2e1fee8a28f492dadc76fbe00375277'
+    # 设置正确的环境变量（测试用）
+    os.environ['BAIDU_API_STRING'] = '${BAIDU_API_STRING}'
+    os.environ['BAIDU_SECRET_KEY'] = '${BAIDU_SECRET_KEY}'
     
     # 使用临时数据库文件
     with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp_file:

@@ -1,24 +1,29 @@
 ---
 name: email-to-calendar
-version: 1.11.0
+version: 1.13.1
 description: Extract calendar events from emails and create calendar entries. Supports two modes: (1) Direct inbox monitoring - scans all emails for events, or (2) Forwarded emails - processes emails you forward to a dedicated address. Features smart onboarding, event tracking, pending invite reminders, undo support, silent activity logging, deadline detection with separate reminder events, email notifications for action-required items, and provider abstraction for future extensibility.
 ---
 
 > **CRITICAL RULES - READ BEFORE PROCESSING ANY EMAIL**
 >
-> 1. **ALWAYS ASK BEFORE CREATING** - Never create calendar events without explicit user confirmation in the current conversation
-> 2. **CHECK IF ALREADY PROCESSED** - Before processing any email, check `processed_emails` in index.json
-> 3. **READ CONFIG FIRST** - Load and apply `ignore_patterns` and `auto_create_patterns` before presenting events
-> 4. **READ MEMORY.MD** - Check for user preferences stored from previous sessions
-> 5. **INCLUDE ALL CONFIGURED ATTENDEES** - When creating/updating/deleting events, always include attendees from config with `--attendees` flag (and `--send-updates all` if supported)
-> 6. **CHECK TRACKED EVENTS FIRST** - Use `lookup_event.sh --email-id` to find existing events before calendar search (faster, more reliable)
-> 7. **TRACK ALL CREATED EVENTS** - The `create_event.sh` script automatically tracks events; use tracked IDs for updates/deletions
-> 8. **SHOW DAY-OF-WEEK** - Always include the day of week when presenting events for user verification
+> 1. **NEVER CALL `gog` DIRECTLY** - ALWAYS use wrapper scripts (`create_event.sh`, `email_read.sh`, etc.). Direct `gog` calls bypass tracking and cause duplicates. THIS IS NON-NEGOTIABLE.
+> 2. **IGNORE CALENDAR NOTIFICATIONS** - DO NOT process emails from `calendar-notification@google.com` (Accepted:, Declined:, Tentative:, etc.). These are responses to existing invites, NOT new events. Run `process_calendar_replies.sh` to archive them.
+> 3. **ALWAYS ASK BEFORE CREATING** - Never create calendar events without explicit user confirmation in the current conversation
+> 4. **CHECK IF ALREADY PROCESSED** - Before processing any email, check `processed_emails` in index.json
+> 5. **READ CONFIG FIRST** - Load and apply `ignore_patterns` and `auto_create_patterns` before presenting events
+> 6. **READ MEMORY.MD** - Check for user preferences stored from previous sessions
+> 7. **INCLUDE ALL CONFIGURED ATTENDEES** - When creating/updating/deleting events, always include attendees from config with `--attendees` flag (and `--send-updates all` if supported)
+> 8. **CHECK TRACKED EVENTS FIRST** - Use `lookup_event.sh --email-id` to find existing events before calendar search (faster, more reliable)
+> 9. **TRACK ALL CREATED EVENTS** - The `create_event.sh` script automatically tracks events; use tracked IDs for updates/deletions
+> 10. **SHOW DAY-OF-WEEK** - Always include the day of week when presenting events for user verification
 
-> **Tool Flexibility:** This skill uses a provider abstraction layer.
-> All email and calendar operations should go through the wrapper scripts in
-> `scripts/`. This ensures proper tracking and prevents duplicate events.
-> **NEVER call `gog` or other provider CLIs directly** - always use the scripts.
+> ⛔ **FORBIDDEN: DO NOT USE `gog` COMMANDS DIRECTLY** ⛔
+>
+> **WRONG:** `gog calendar create ...` or `gog gmail ...`
+> **RIGHT:** `"$SCRIPTS_DIR/create_event.sh" ...` or `"$SCRIPTS_DIR/email_read.sh" ...`
+>
+> Direct CLI calls bypass event tracking, break duplicate detection, and cause duplicate events.
+> ALL operations MUST go through the wrapper scripts in `scripts/`.
 
 # Email to Calendar Skill
 
@@ -128,10 +133,13 @@ Reply with numbers to create (e.g., '2, 3'), 'all', or 'none'.
 
 **STOP AND WAIT for user response.**
 
-After presenting, record pending invites:
+After presenting, record pending invites for follow-up reminders:
 ```bash
-# Record pending invites for follow-up reminders
-# (See pending_invites.json structure in File Locations)
+# Record pending invites using add_pending.sh
+"$SCRIPTS_DIR/add_pending.sh" \
+    --email-id "$EMAIL_ID" \
+    --email-subject "$EMAIL_SUBJECT" \
+    --events-json '[{"title":"Event Name","date":"2026-02-15","time":"14:00","status":"pending"}]'
 ```
 
 ### 4. Check for Duplicates (MANDATORY)
@@ -190,18 +198,22 @@ Use LLM semantic matching for fuzzy duplicates (e.g., "Team Offsite" vs "Team Of
 
 For direct gog commands and advanced options, see [references/gog-commands.md](references/gog-commands.md).
 
-### 6. Update Status and Handle Email
+### 6. Email Disposition (Automatic)
+
+Email disposition (mark as read and/or archive) is handled **automatically** by `create_event.sh` based on config settings. No manual step needed - emails are dispositioned after event creation.
+
+To manually disposition an email:
+```bash
+"$SCRIPTS_DIR/disposition_email.sh" --email-id "$EMAIL_ID"
+```
+
+To process calendar reply emails (accepts, declines, tentatives):
+```bash
+"$SCRIPTS_DIR/process_calendar_replies.sh"           # Process all
+"$SCRIPTS_DIR/process_calendar_replies.sh" --dry-run # Preview only
+```
 
 ```bash
-# Update invite status
-"$SCRIPTS_DIR/update_invite_status.sh" \
-    --email-id "$EMAIL_ID" \
-    --event-title "Event Title" \
-    --status created
-
-# Mark email as read (per config) using wrapper script
-"$SCRIPTS_DIR/email_modify.sh" --email-id "$EMAIL_ID" --remove-labels "UNREAD"
-
 # End activity session
 "$SCRIPTS_DIR/activity_log.sh" end-session
 ```
@@ -383,6 +395,12 @@ Changes can be undone within 24 hours:
 Events not immediately actioned are tracked for reminders:
 
 ```bash
+# Add pending invites (after presenting events to user)
+"$SCRIPTS_DIR/add_pending.sh" \
+    --email-id "$EMAIL_ID" \
+    --email-subject "Party Invite" \
+    --events-json '[{"title":"Birthday Party","date":"2026-02-15","time":"14:00","status":"pending"}]'
+
 # List pending invites (JSON)
 "$SCRIPTS_DIR/list_pending.sh"
 

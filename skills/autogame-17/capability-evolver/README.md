@@ -40,6 +40,7 @@ The **Capability Evolver** inspects runtime history, extracts signals, selects a
 - **Auto-Log Analysis**: scans memory and history files for errors and patterns.
 - **Self-Repair Guidance**: emits repair-focused directives from signals.
 - **GEP Protocol**: standardized evolution with reusable assets.
+- **Mutation + Personality Evolution (GEP v1.4)**: each evolution run is gated by an explicit Mutation object and an evolvable PersonalityState.
 - **One-Command Evolution**: `node index.js` to generate the prompt.
 
 ## Typical Use Cases
@@ -133,6 +134,78 @@ MAJOR.MINOR.PATCH
 - MAJOR: incompatible changes
 - MINOR: backward-compatible features
 - PATCH: backward-compatible bug fixes
+
+## Changelog
+
+### v1.4.4
+- Add validation command safety check: Gene validation commands are gated by prefix whitelist (node/npm/npx) and shell operator blocking.
+- Add validation audit on A2A Gene promotion: external Genes with unsafe validation commands are rejected before promotion.
+- Add Security Model documentation to README.
+
+### v1.4.3
+- Release preparation for v1.4.3.
+
+### v1.4.2
+- Add loop gating: do not start a new cycle until the previous run is solidified (prevents fast empty cycles).
+- Preserve `last_solidify` when writing solidify state (merge instead of overwrite).
+
+### v1.4.1
+- Add execute-by-default bridge: after generating the GEP prompt, emit `sessions_spawn(...)` to spawn an executor agent.
+- Write prompt artifacts to `memory/` for reliable handoff and auditing.
+
+### v1.4.0
+- Add explicit Mutation protocol (repair/optimize/innovate) and require Mutation per evolution run.
+- Add evolvable PersonalityState with small PersonalityMutation steps and natural selection statistics.
+- Extend EvolutionEvent with `mutation_id` and `personality_state`; record both into Memory Graph events.
+- Add `scripts/gep_personality_report.js` to observe personality success rates and convergence.
+
+### v1.3.1
+- Release preparation for v1.3.1.
+
+### v1.3.0
+- Release preparation for v1.3.0.
+
+### v1.2.0
+- Memory Graph v2 and A2A exchange protocol integration.
+
+### v1.1.0
+- Public build/publish pipeline, prompt budget enforcement, and structured GEP asset storage.
+
+## Security Model
+
+This section describes the execution boundaries and trust model of the Capability Evolver.
+
+### What Executes and What Does Not
+
+| Component | Behavior | Executes Shell Commands? |
+| :--- | :--- | :--- |
+| `src/evolve.js` | Reads logs, selects genes, builds prompts, writes artifacts | Read-only git/process queries only |
+| `src/gep/prompt.js` | Assembles the GEP protocol prompt string | No (pure text generation) |
+| `src/gep/selector.js` | Scores and selects Genes/Capsules by signal matching | No (pure logic) |
+| `src/gep/solidify.js` | Validates patches via Gene `validation` commands | Yes (see below) |
+| `index.js` (loop recovery) | Prints `sessions_spawn(...)` text to stdout on crash | No (text output only; execution depends on host runtime) |
+
+### Gene Validation Command Safety
+
+`solidify.js` executes commands listed in a Gene's `validation` array. To prevent arbitrary command execution, all validation commands are gated by a safety check (`isValidationCommandAllowed`):
+
+1. **Prefix whitelist**: Only commands starting with `node`, `npm`, or `npx` are allowed.
+2. **No command substitution**: Backticks and `$(...)` are rejected anywhere in the command string.
+3. **No shell operators**: After stripping quoted content, `;`, `&`, `|`, `>`, `<` are rejected.
+4. **Timeout**: Each command is limited to 180 seconds.
+5. **Scoped execution**: Commands run with `cwd` set to the repository root.
+
+### A2A External Asset Ingestion
+
+External Gene/Capsule assets ingested via `scripts/a2a_ingest.js` are staged in an isolated candidate zone. Promotion to local stores (`scripts/a2a_promote.js`) requires:
+
+1. Explicit `--validated` flag (operator must verify the asset first).
+2. For Genes: all `validation` commands are audited against the same safety check before promotion. Unsafe commands cause the promotion to be rejected.
+3. Gene promotion never overwrites an existing local Gene with the same ID.
+
+### `sessions_spawn` Output
+
+The `sessions_spawn(...)` strings in `index.js` and `evolve.js` are **text output to stdout**, not direct function calls. Whether they are interpreted depends on the host runtime (e.g., OpenClaw platform). The evolver itself does not invoke `sessions_spawn` as executable code.
 
 ## Configuration & Decoupling
 

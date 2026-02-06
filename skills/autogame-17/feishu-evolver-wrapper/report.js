@@ -155,7 +155,16 @@ const MASTER_ID = process.env.OPENCLAW_MASTER_ID || 'ou_cdc63fe05e88c580aedead04
         // Bypasses shell escaping issues and temporary files
         
         // Monitor Process Count (Leak Detection)
-        const procCount = (() => { try { return execSync('ps -e | wc -l', { timeout: 1000 }).toString().trim(); } catch(e) { return '?'; } })();
+        const procCount = (() => { 
+            try { 
+                // Optimization: Use /proc on Linux to avoid spawning a shell
+                if (process.platform === 'linux' && fs.existsSync('/proc')) {
+                     // Filter only numeric directories (PIDs)
+                     return fs.readdirSync('/proc').filter(f => /^\d+$/.test(f)).length;
+                }
+                return execSync('ps -e | wc -l', { timeout: 1000 }).toString().trim(); 
+            } catch(e) { return '?'; } 
+        })();
         
         // System Health
         const memUsage = Math.round(process.memoryUsage().rss / 1024 / 1024);
@@ -206,6 +215,17 @@ const MASTER_ID = process.env.OPENCLAW_MASTER_ID || 'ou_cdc63fe05e88c580aedead04
         });
         
         console.log('[Wrapper] Report sent successfully.');
+
+        // 📝 Persistence: Log to local file for audit trail
+        try {
+            const LOG_FILE = path.resolve(__dirname, '../../logs/evolution_reports.log');
+            if (!fs.existsSync(path.dirname(LOG_FILE))) {
+                fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+            }
+            fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] Cycle #${cycleId} - Status: SUCCESS - Target: ${target} - Duration: ${cycleInfo.duration}\n`);
+        } catch (logErr) {
+            console.warn('[Wrapper] Failed to write to local log:', logErr.message);
+        }
     } catch (e) {
         console.error('[Wrapper] Report failed:', e.message);
         process.exit(1);

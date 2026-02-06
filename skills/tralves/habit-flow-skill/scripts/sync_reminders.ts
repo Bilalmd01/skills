@@ -90,8 +90,8 @@ program
             const [hour, minute] = time.split(':');
             const cronExpression = `${minute} ${hour} * * *`;
 
-            const message = habit.reminderSettings.message ||
-              `🎯 Reminder: Time for your ${habit.name}\n\nTarget: ${habit.targetCount} ${habit.targetUnit || 'session'}\nCurrent streak: ${habit.currentStreak} days 🔥\n\nQuick log: Reply 'done', 'skipped', or 'missed'`;
+            // Minimal cron message - all logic is in run_reminder.ts
+            const message = `Run the HabitFlow reminder check and deliver the result:\ncd "${SKILL_DIR}" && npx tsx scripts/run_reminder.ts --habit-id ${habit.id}`;
 
             try {
               // Determine delivery method (priority: habit settings > config > default)
@@ -164,57 +164,25 @@ program
       const config = await loadConfig();
       const results = [];
 
+      // Minimal cron messages - all logic is in run_coaching.ts
       const coachingJobs = [
         {
           name: 'HabitFlow: Daily Coaching Check',
           cron: '0 8 * * *',
           description: 'Daily milestone and risk checks',
-          message: `Execute the HabitFlow proactive coaching check and deliver messages with visualizations.
-
-IMPORTANT: This is an automated coaching message. Run this command and display the results with any images:
-
-cd "${SKILL_DIR}" && npx tsx scripts/proactive_coaching.ts --check-milestones --check-risks --format json
-
-Parse the JSON output. For each message:
-1. Display the subject and body text
-2. If attachments exist, use the Read tool to display each image file
-3. Format as a complete coaching message with visualizations
-
-Send the complete message to the user.`
+          message: `Run the HabitFlow daily coaching check and deliver the result:\ncd "${SKILL_DIR}" && npx tsx scripts/run_coaching.ts --type daily`
         },
         {
           name: 'HabitFlow: Weekly Check-in',
           cron: '0 19 * * 0',
           description: 'Weekly progress check-in (Sunday 7pm)',
-          message: `Execute the HabitFlow weekly check-in and deliver with visualizations.
-
-IMPORTANT: This is an automated coaching message. Run this command and display the results with images:
-
-cd "${SKILL_DIR}" && npx tsx scripts/proactive_coaching.ts --weekly-checkin --format json
-
-Parse the JSON output. For each message:
-1. Display the subject and body text
-2. If attachments exist, use the Read tool to display each image file (trends chart + heatmap)
-3. Format as a complete coaching message with visualizations
-
-Send the complete message to the user.`
+          message: `Run the HabitFlow weekly check-in and deliver the result:\ncd "${SKILL_DIR}" && npx tsx scripts/run_coaching.ts --type weekly`
         },
         {
           name: 'HabitFlow: Pattern Insights',
           cron: '0 10 * * 3',
           description: 'Mid-week pattern insights (Wednesday 10am)',
-          message: `Execute the HabitFlow pattern insights analysis and deliver with visualizations.
-
-IMPORTANT: This is an automated coaching message. Run this command and display the results with images:
-
-cd "${SKILL_DIR}" && npx tsx scripts/proactive_coaching.ts --detect-insights --format json
-
-Parse the JSON output. For each message:
-1. Display the subject and body text
-2. If attachments exist, use the Read tool to display each image file
-3. Format as a complete coaching message with visualizations
-
-Send the complete message to the user.`
+          message: `Run the HabitFlow pattern insights check and deliver the result:\ncd "${SKILL_DIR}" && npx tsx scripts/run_coaching.ts --type insights`
         }
       ];
 

@@ -196,6 +196,7 @@ async function withdrawYield(userAddress: string, privateKey: string, amount?: s
 | `getAPYPerStrategy` | `(crossChain?, days?, strategyType?)` | Get APY for conservative/aggressive strategies |
 | `getUserDetails` | `()` | Get authenticated user details |
 | `getOnchainEarnings` | `(walletAddress)` | Get earnings data |
+| `registerAgentOnIdentityRegistry` | `(smartWallet, chainId)` | Register agent on ERC-8004 Identity Registry |
 | `disconnectAccount` | `()` | End session |
 
 **Note:** All methods that take `userAddress` expect the **EOA address**, not the subaccount/Safe address.
@@ -372,6 +373,61 @@ interface OnchainEarningsResponse {
   };
 }
 ```
+
+### registerAgentOnIdentityRegistry (ERC-8004)
+
+Register your Zyfai deployed agent on the Identity Registry following the ERC-8004 standard. This is used for OpenClaw agent registration. The method fetches a tokenUri containing the agent's metadata stored on IPFS, then registers it on-chain.
+
+**Supported Chains:**
+
+| Chain | Chain ID |
+|-------|----------|
+| Base | 8453 |
+| Arbitrum | 42161 |
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| smartWallet | string | ✅ | The Zyfai deployed smart wallet address to register as an agent |
+| chainId | SupportedChainId | ✅ | Chain ID (only 8453 or 42161) |
+
+**Example:**
+
+```typescript
+const sdk = new ZyfaiSDK({ apiKey: "your-api-key" });
+await sdk.connectAccount(privateKey, 8453);
+
+// Get smart wallet address
+const walletInfo = await sdk.getSmartWalletAddress(userAddress, 8453);
+const smartWallet = walletInfo.address;
+
+// Register agent on Identity Registry
+const result = await sdk.registerAgentOnIdentityRegistry(smartWallet, 8453);
+
+console.log("Registration successful:");
+console.log("  Tx Hash:", result.txHash);
+console.log("  Chain ID:", result.chainId);
+console.log("  Smart Wallet:", result.smartWallet);
+```
+
+**Returns:**
+
+```typescript
+interface RegisterAgentResponse {
+  success: boolean;
+  txHash: string;
+  chainId: number;
+  smartWallet: string;
+}
+```
+
+**How It Works:**
+
+1. Fetches a `tokenUri` from the Zyfai API (agent metadata stored on IPFS)
+2. Encodes the `register(tokenUri)` call for the Identity Registry contract
+3. Sends the transaction from the connected wallet
+4. Waits for on-chain confirmation
 
 ## Security
 

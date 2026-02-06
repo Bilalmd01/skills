@@ -5,103 +5,104 @@ user-invocable: true
 metadata: {"openclaw": {"emoji": "🧠", "requires": {"env": ["NEUTRON_API_KEY", "NEUTRON_APP_ID"]}, "primaryEnv": "NEUTRON_API_KEY"}}
 ---
 
-## Overview
+# Neutron Agent Memory Skill
 
-Neutron Agent Memory provides persistent memory storage with semantic search. Use this to:
-- Save information and search it semantically
-- Persist agent context between sessions
-- Organize content into bundles
+Persistent memory storage with semantic search for AI agents. Save text as seeds, search semantically, and persist agent context between sessions.
 
-## Configuration
+## Prerequisites
 
-Required environment variables:
-- `NEUTRON_API_KEY` - API authentication key
-- `NEUTRON_APP_ID` - Application ID (e.g., `5925f30c-135c-4e10-b275-edf0936ef4be`)
-- `NEUTRON_EXTERNAL_USER_ID` - User identifier (default: `1`)
-
-## API Base URL
-
-`https://api-development.myneutron.ai`
-
-## Authentication
-
-All requests require:
-- Header: `Authorization: Bearer $NEUTRON_API_KEY`
-- Query params: `appId` and `externalUserId`
-
----
-
-## Seeds (Memory Storage & Search)
-
-### Save Text Content
+API credentials via environment variables:
 ```bash
-curl -X POST "https://api-development.myneutron.ai/seeds?appId=$NEUTRON_APP_ID&externalUserId=$NEUTRON_EXTERNAL_USER_ID" \
-  -H "Authorization: Bearer $NEUTRON_API_KEY" \
-  -F 'text=["Your content to save"]' \
-  -F 'textTypes=["text"]' \
-  -F 'textSources=["mcp"]' \
-  -F 'textTitles=["Title of content"]'
+export NEUTRON_API_KEY=your_key
+export NEUTRON_APP_ID=your_app_id
+export NEUTRON_EXTERNAL_USER_ID=1  # optional, defaults to 1
 ```
 
-**Text types:** `text`, `markdown`, `json`, `csv`, `claude_chat`, `gpt_chat`, `email`
-**Sources:** `upload`, `mcp`, `chrome_extension`, `gmail`, `gdrive`
+Or stored in `~/.config/neutron/credentials.json`:
+```json
+{
+  "api_key": "your_key_here",
+  "app_id": "your_app_id_here",
+  "external_user_id": "1"
+}
+```
+
+## Testing
+
+Verify your setup:
+```bash
+./scripts/neutron-memory.sh test  # Test API connection
+```
+
+## Scripts
+
+Use the provided bash script in the `scripts/` directory:
+- `neutron-memory.sh` - Main CLI tool
+
+## Common Operations
+
+### Save Text as a Seed
+```bash
+./scripts/neutron-memory.sh save "Content to remember" "Title of this memory"
+```
 
 ### Semantic Search
 ```bash
-curl -X POST "https://api-development.myneutron.ai/seeds/query?appId=$NEUTRON_APP_ID&externalUserId=$NEUTRON_EXTERNAL_USER_ID" \
-  -H "Authorization: Bearer $NEUTRON_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "natural language search", "limit": 10, "threshold": 0.5}'
+./scripts/neutron-memory.sh search "what do I know about blockchain" 10 0.5
 ```
 
-**Request body:**
-- `query` (required): Natural language search query
-- `limit` (optional): Max results 1-100, default 30
-- `threshold` (optional): Similarity threshold 0-1, default 0.5
-- `seedIds` (optional): Limit to specific seeds
-
-**Response:** Array of results with `seedId`, `content`, `similarity` score (0-1)
-
----
-
-## Agent Contexts (Session Persistence)
-
-### Create Context
+### Create Agent Context
 ```bash
-curl -X POST "https://api-development.myneutron.ai/agent-contexts?appId=$NEUTRON_APP_ID&externalUserId=$NEUTRON_EXTERNAL_USER_ID" \
-  -H "Authorization: Bearer $NEUTRON_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agentId": "my-agent",
-    "memoryType": "episodic",
-    "data": {"key": "value"},
-    "metadata": {"tags": ["tag1"]}
-  }'
+./scripts/neutron-memory.sh context-create "my-agent" "episodic" '{"key":"value"}'
 ```
 
-**Memory types:**
-- `episodic` - Conversation history, decisions, actions
-- `semantic` - Domain knowledge, user preferences
-- `procedural` - System prompts, tool definitions
-- `working` - Current task state, variables
-
-### List Contexts
+### List Agent Contexts
 ```bash
-curl -X GET "https://api-development.myneutron.ai/agent-contexts?appId=$NEUTRON_APP_ID&externalUserId=$NEUTRON_EXTERNAL_USER_ID&agentId=my-agent" \
-  -H "Authorization: Bearer $NEUTRON_API_KEY"
+./scripts/neutron-memory.sh context-list "my-agent"
 ```
 
-### Get Context by ID
+### Get Specific Context
 ```bash
-curl -X GET "https://api-development.myneutron.ai/agent-contexts/{id}?appId=$NEUTRON_APP_ID&externalUserId=$NEUTRON_EXTERNAL_USER_ID" \
-  -H "Authorization: Bearer $NEUTRON_API_KEY"
+./scripts/neutron-memory.sh context-get abc-123
 ```
 
----
+## Interaction Seeds (Dual Storage)
 
-## Usage Guidelines
+When NeutronMemoryBot processes an interaction, it stores data in two places:
 
-1. **Seeds** for long-term knowledge: documents, notes, reference material
-2. **Agent Contexts** for session state: conversation history, task progress
-3. **Search** uses semantic similarity, not keyword matching
-4. Processing takes 5-30 seconds after creating seeds
+1. **Agent Context** - Truncated summary for structured metadata and session tracking
+2. **Seed** - Full thread snapshot for semantic search
+
+Each time the bot replies to a comment, the **full thread** (original post + all comments + the bot's reply) is saved as a seed. This means:
+
+- Every seed is a complete conversation snapshot
+- Later seeds contain more context than earlier ones
+- Semantic search finds the most relevant conversation state
+- Append-only: new snapshots are added, old ones remain
+
+### Seed Format
+
+```
+Thread snapshot - {timestamp}
+
+Post: {full post content}
+
+Comments:
+{author1}: {comment text}
+{author2}: {comment text}
+NeutronMemoryBot: {reply text}
+```
+
+## API Endpoints
+
+- `POST /seeds` - Save text content (multipart/form-data)
+- `POST /seeds/query` - Semantic search (JSON body)
+- `POST /agent-contexts` - Create agent context
+- `GET /agent-contexts` - List contexts (optional `agentId` filter)
+- `GET /agent-contexts/{id}` - Get specific context
+
+**Auth:** All requests require `Authorization: Bearer $NEUTRON_API_KEY` header and `appId`/`externalUserId` query params.
+
+**Memory types:** `episodic`, `semantic`, `procedural`, `working`
+
+**Text types for seeds:** `text`, `markdown`, `json`, `csv`, `claude_chat`, `gpt_chat`, `email`

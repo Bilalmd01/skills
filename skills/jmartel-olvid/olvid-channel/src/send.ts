@@ -5,7 +5,7 @@ import { getOlvidRuntime } from "./runtime.js";
 import { CoreConfig } from "./types.js";
 
 type OlvidSendOpts = {
-  daemonTarget?: string;
+  daemonUrl?: string;
   clientKey?: string;
   accountId?: string;
   replyTo?: string;

@@ -1,7 +1,7 @@
 ---
 name: clawvault
-version: 1.4.0
-description: Structured memory system for OpenClaw agents. Context death resilience (checkpoint/recover), structured storage, Obsidian-compatible markdown, and local semantic search.
+version: 1.5.1
+description: Structured memory system for OpenClaw agents. Context death resilience (checkpoint/recover), structured storage, Obsidian-compatible markdown, local semantic search, and session transcript repair.
 author: Versatly
 repository: https://github.com/Versatly/clawvault
 ---
@@ -18,22 +18,6 @@ An elephant never forgets. Structured memory for OpenClaw agents.
 npm install -g clawvault
 ```
 
-## Quick Setup (v1.4.0)
-
-```bash
-# Auto-discover OpenClaw memory folder and configure
-clawvault setup
-```
-
-## New in v1.4.0
-
-- **qmd required** — semantic search is now core functionality
-- **clawvault setup** — auto-discovers OpenClaw's memory folder
-- **clawvault status** — vault health, checkpoint age, qmd index
-- **clawvault template** — list/create/add with 7 built-in templates
-- **clawvault link --backlinks** — see what links to a file
-- **clawvault link --orphans** — find broken wiki-links
-
 ## Setup
 
 ```bash
@@ -42,9 +26,36 @@ clawvault init ~/my-vault
 
 # Or set env var to use existing vault
 export CLAWVAULT_PATH=/path/to/memory
+
+# Optional: shell integration (aliases + CLAWVAULT_PATH)
+clawvault shell-init >> ~/.bashrc
+```
+
+## Quick Start for New Agents
+
+```bash
+# Start your session (recover + recap + summary)
+clawvault wake
+
+# Capture and checkpoint during work
+clawvault capture "TODO: Review PR tomorrow"
+clawvault checkpoint --working-on "PR review" --focus "type guards"
+
+# End your session with a handoff
+clawvault sleep "PR review + type guards" --next "respond to CI" --blocked "waiting for CI"
+
+# Health check when something feels off
+clawvault doctor
 ```
 
 ## Core Commands
+
+### Wake + Sleep (primary)
+
+```bash
+clawvault wake
+clawvault sleep "what I was working on" --next "ship v1" --blocked "waiting for API key"
+```
 
 ### Store memories by type
 
@@ -73,20 +84,32 @@ clawvault vsearch "what did we decide about the database"
 
 ## Context Death Resilience
 
+### Wake (start of session)
+
+```bash
+clawvault wake
+```
+
+### Sleep (end of session)
+
+```bash
+clawvault sleep "what I was working on" --next "finish docs" --blocked "waiting for review"
+```
+
 ### Checkpoint (save state frequently)
 
 ```bash
 clawvault checkpoint --working-on "PR review" --focus "type guards" --blocked "waiting for CI"
 ```
 
-### Recover (check on wake)
+### Recover (manual check)
 
 ```bash
 clawvault recover --clear
 # Shows: death time, last checkpoint, recent handoff
 ```
 
-### Handoff (before session end)
+### Handoff (manual session end)
 
 ```bash
 clawvault handoff \
@@ -133,11 +156,57 @@ vault/
 
 ## Best Practices
 
-1. **Checkpoint every 10-15 min** during heavy work
-2. **Handoff before session end** — future you will thank you
-3. **Recover on wake** — check if last session died
+1. **Wake at session start** — `clawvault wake` restores context
+2. **Checkpoint every 10-15 min** during heavy work
+3. **Sleep before session end** — `clawvault sleep` captures next steps
 4. **Use types** — knowing WHAT you're storing helps WHERE to put it
 5. **Wiki-link liberally** — `[[person-name]]` builds your knowledge graph
+
+## Checklist for AGENTS.md
+
+```markdown
+## Memory Checklist
+- [ ] Run `clawvault wake` at session start
+- [ ] Checkpoint during heavy work
+- [ ] Capture key decisions/lessons with `clawvault remember`
+- [ ] Use wiki-links like `[[person-name]]`
+- [ ] End with `clawvault sleep "..." --next "..." --blocked "..."`
+- [ ] Run `clawvault doctor` when something feels off
+```
+
+## Session Transcript Repair (v1.5.0+)
+
+When the Anthropic API rejects with "unexpected tool_use_id found in tool_result blocks", use:
+
+```bash
+# See what's wrong (dry-run)
+clawvault repair-session --dry-run
+
+# Fix it
+clawvault repair-session
+
+# Repair a specific session
+clawvault repair-session --session <id> --agent <agent-id>
+
+# List available sessions
+clawvault repair-session --list
+```
+
+**What it fixes:**
+- Orphaned `tool_result` blocks referencing non-existent `tool_use` IDs
+- Aborted tool calls with partial JSON
+- Broken parent chain references
+
+Backups are created automatically (use `--no-backup` to skip).
+
+## Troubleshooting
+
+- **qmd not installed** — run `bun install -g github:tobi/qmd` or `npm install -g qmd`
+- **No ClawVault found** — run `clawvault init` or set `CLAWVAULT_PATH`
+- **CLAWVAULT_PATH missing** — run `clawvault shell-init` and add to shell rc
+- **Too many orphan links** — run `clawvault link --orphans`
+- **Inbox backlog warning** — process or archive inbox items
+- **"unexpected tool_use_id" error** — run `clawvault repair-session`
 
 ## Integration with qmd
 

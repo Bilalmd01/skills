@@ -13,7 +13,7 @@ else
     echo "   ❌ 缺少百度API环境变量"
     echo "   请设置:"
     echo "   export BAIDU_API_STRING='your_bce_v3_api_string'"
-    echo "   export BAIDU_SECRET_KEY='your_secret_key'"
+    echo "   export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'"
     exit 1
 fi
 

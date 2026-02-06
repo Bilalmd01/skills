@@ -79,8 +79,8 @@ except Exception as e:
 
 ### 配置API凭据
 ```bash
-export BAIDU_API_STRING='your_bce_v3_api_string'
-export BAIDU_SECRET_KEY='your_secret_key'
+export BAIDU_API_STRING='${BAIDU_API_STRING}'
+export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'
 ```
 
 ### 迁移指南

@@ -16,7 +16,7 @@ fi
 
 if [ -z "$BAIDU_SECRET_KEY" ]; then
     echo "  ❌ 错误: 缺少 BAIDU_SECRET_KEY 环境变量"
-    echo "  请设置: export BAIDU_SECRET_KEY='your_secret_key'"
+    echo "  请设置: export BAIDU_SECRET_KEY='${BAIDU_SECRET_KEY}'"
     exit 1
 else
     echo "  ✅ BAIDU_SECRET_KEY 已设置"

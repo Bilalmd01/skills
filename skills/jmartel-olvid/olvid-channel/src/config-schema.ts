@@ -4,7 +4,7 @@ export const OlvidAccountSchema = z
   .object({
     name: z.string().optional(),
     enabled: z.boolean().optional(),
-    daemonTarget: z.string().optional(),
+    daemonUrl: z.string().optional(),
     clientKey: z.string().optional(),
   })
   .strict();

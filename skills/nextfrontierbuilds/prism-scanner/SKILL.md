@@ -1,12 +1,15 @@
 ---
 name: prism-scanner
-description: Token safety scanner using Strykr PRISM API. Analyze any token for rug pull risk, copycat scams, holder concentration, and liquidity status.
-version: 1.0.0
+description: Instant rug pull detection for any token. Holder concentration, liquidity locks, contract risks. DYOR before you ape. Works with AI agents.
+version: 1.1.1
+keywords: rug-pull, token-scanner, crypto-safety, scam-detector, dyor, holder-analysis, liquidity-checker, solana-scanner, defi-security, ai, ai-agent, ai-coding, llm, cursor, claude, trading-bot, memecoin, web3, openclaw, moltbot, vibe-coding, agentic
 ---
 
-# PRISM Token Scanner
+# Token Rug Checker
 
-Scan any crypto token for safety risks using Strykr PRISM's unique analysis endpoints.
+**DYOR before you ape.** Instant rug pull detection for any crypto token.
+
+Scans holder concentration, liquidity locks, contract honeypots, and copycat scams. Works with Solana and EVM chains. Powered by Strykr PRISM.
 
 ## Quick Usage
 

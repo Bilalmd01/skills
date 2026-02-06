@@ -1,7 +1,7 @@
 ---
 name: asana
 description: |
-  Asana API integration with managed OAuth. Access tasks, projects, workspaces, users, and manage webhooks. Use this skill when users want to manage work items, track projects, or integrate with Asana workflows.
+  Asana API integration with managed OAuth. Access tasks, projects, workspaces, users, and manage webhooks. Use this skill when users want to manage work items, track projects, or integrate with Asana workflows. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
 compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
@@ -15,9 +15,12 @@ Access the Asana API with managed OAuth authentication. Manage tasks, projects, 
 ## Quick Start
 
 ```bash
-# List tasks
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/tasks?project=PROJECT_GID' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/tasks?project=PROJECT_GID')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ## Base URL
@@ -33,7 +36,7 @@ Replace `{native-api-path}` with the actual Asana API endpoint path. The gateway
 All requests require the Maton API key in the Authorization header:
 
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer $MATON_API_KEY
 ```
 
 **Environment Variable:** Set your API key as `MATON_API_KEY`:
@@ -55,24 +58,36 @@ Manage your Asana OAuth connections at `https://ctrl.maton.ai`.
 ### List Connections
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections?app=asana&status=ACTIVE' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=asana&status=ACTIVE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Create Connection
 
 ```bash
-curl -s -X POST 'https://ctrl.maton.ai/connections' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{"app": "asana"}'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'app': 'asana'}).encode()
+req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Get Connection
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -95,8 +110,12 @@ Open the returned `url` in a browser to complete OAuth authorization.
 ### Delete Connection
 
 ```bash
-curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}', method='DELETE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Specifying Connection
@@ -104,9 +123,13 @@ curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
 If you have multiple Asana connections, specify which one to use with the `Maton-Connection` header:
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/tasks?project=PROJECT_GID' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -H 'Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/tasks?project=PROJECT_GID')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Maton-Connection', '21fd90f9-5935-43cd-b6c8-bde9d915ca80')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -131,8 +154,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/tasks?project=1234567890&opt_fields=name,completed,due_on' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/tasks?project=1234567890&opt_fields=name,completed,due_on')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -158,8 +185,12 @@ GET /asana/api/1.0/tasks/{task_gid}
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/tasks/1234567890' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/tasks/1234567890')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 #### Create a Task
@@ -182,16 +213,14 @@ Content-Type: application/json
 **Example:**
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/asana/api/1.0/tasks' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "data": {
-      "name": "Complete API integration",
-      "projects": ["1234567890"],
-      "due_on": "2025-03-20"
-    }
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'data': {'name': 'Complete API integration', 'projects': ['1234567890'], 'due_on': '2025-03-20'}}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/tasks', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 #### Update a Task
@@ -203,14 +232,14 @@ PUT /asana/api/1.0/tasks/{task_gid}
 **Example:**
 
 ```bash
-curl -s -X PUT 'https://gateway.maton.ai/asana/api/1.0/tasks/1234567890' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "data": {
-      "completed": true
-    }
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'data': {'completed': True}}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/tasks/1234567890', data=data, method='PUT')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 #### Delete a Task
@@ -276,8 +305,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/projects?workspace=1234567890&opt_fields=name,owner,due_date' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/projects?workspace=1234567890&opt_fields=name,owner,due_date')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -312,16 +345,14 @@ POST /asana/api/1.0/projects
 **Example:**
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/asana/api/1.0/projects' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "data": {
-      "name": "New Project",
-      "workspace": "1234567890",
-      "notes": "Project description"
-    }
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'data': {'name': 'New Project', 'workspace': '1234567890', 'notes': 'Project description'}}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/projects', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 #### Update a Project
@@ -347,8 +378,12 @@ GET /asana/api/1.0/workspaces
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/workspaces' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/workspaces')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -402,8 +437,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/users?workspace=1234567890&opt_fields=name,email' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/users?workspace=1234567890&opt_fields=name,email')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -458,8 +497,12 @@ Query parameters:
 **Example:**
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/webhooks?workspace=1234567890' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/webhooks?workspace=1234567890')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 #### Create Webhook
@@ -488,15 +531,14 @@ Content-Type: application/json
 **Example:**
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/asana/api/1.0/webhooks' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "data": {
-      "resource": "1234567890",
-      "target": "https://example.com/webhook"
-    }
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'data': {'resource': '1234567890', 'target': 'https://example.com/webhook'}}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/webhooks', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -539,8 +581,12 @@ Returns `200 OK` with empty data on success.
 Asana uses cursor-based pagination. Use `offset` for pagination:
 
 ```bash
-curl -s -X GET 'https://gateway.maton.ai/asana/api/1.0/tasks?project=1234567890&limit=50&offset=OFFSET_TOKEN' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/asana/api/1.0/tasks?project=1234567890&limit=50&offset=OFFSET_TOKEN')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 Response includes `next_page` when more results exist:
@@ -593,6 +639,8 @@ data = response.json()
 - Use `opt_fields` to specify which fields to return
 - Workspaces are the highest-level organizational unit
 - Organizations are specialized workspaces representing companies
+- IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets (`fields[]`, `sort[]`, `records[]`) to disable glob parsing
+- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
 
 ## Error Handling
 
@@ -604,6 +652,27 @@ data = response.json()
 | 404 | Resource not found |
 | 429 | Rate limited |
 | 4xx/5xx | Passthrough error from Asana API |
+
+### Troubleshooting: Invalid API Key
+
+**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
+
+1. Check that the `MATON_API_KEY` environment variable is set:
+
+```bash
+echo $MATON_API_KEY
+```
+
+2. Verify the API key is valid by listing connections:
+
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
+```
 
 ## Resources
 

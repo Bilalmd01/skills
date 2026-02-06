@@ -1,6 +1,6 @@
 ---
 name: hexmem
-description: Structured memory database for AI agent identity, knowledge graphs, and persistent self-knowledge. Use when you need to store or retrieve information about identity, goals, values, facts about entities, lessons learned, tasks, events, or any structured knowledge that should persist across sessions. Essential for maintaining continuity and self-knowledge.
+description: Structured memory database for AI agent identity, tasks, events, lessons, and persistent continuity. Use whenever the user says remember this, log this, track this, what should I do next, recap, summarize, what changed, or when you need to store/retrieve decisions, incidents, fleet ops notes, reminders, TODOs, goals, values, or facts about people/systems/projects across sessions.
 ---
 
 # HexMem - Structured Memory Substrate
@@ -163,6 +163,43 @@ source .venv/bin/activate
 python embed.py --process-queue  # Generate embeddings for new content
 ```
 
+## Mandatory Defaults (Active Use)
+
+When this skill is in play, behave as if HexMem is the source of truth for continuity.
+
+### Always do at the start of any ops / admin / debugging task
+
+```bash
+# Fast check (preferred)
+/home/sat/clawd/hexmem/scripts/hexmem-check.sh
+```
+
+Or manually:
+
+```bash
+source ~/clawd/hexmem/hexmem.sh
+hexmem_pending_tasks
+hexmem_recent_events 5
+```
+
+### Always do when the user says "remember" / "track" / "log"
+
+Write it immediately as a task, fact, lesson, or event (don’t defer):
+
+```bash
+hexmem_event "note" "context" "<summary>" "<details>"
+# or
+hexmem_task "<title>" "<details>" <priority 1-9> "<due YYYY-MM-DD>"
+```
+
+### Always do after a significant decision or incident
+
+```bash
+hexmem_event "decision" "<category>" "<summary>" "<details>"
+# and/or
+hexmem_lesson "<domain>" "<lesson>" "<context>"
+```
+
 ## Common Workflows
 
 ### Session Start (Main Session Only)
@@ -260,6 +297,13 @@ hexmem_query "UPDATE tasks SET completed_at = datetime('now') WHERE id = 5;"
 
 ## Philosophy
 
+HexMem stores *who you are*, not just *what happened*. It follows a **tiered memory model**:
+- **Working (short‑term):** `memory/YYYY-MM-DD.md` (raw, high‑fidelity)
+- **Core (long‑term):** `MEMORY.md` + HexMem DB (curated, structured)
+
+A **Reflector** (agentic, periodic) distills working memory into core memory.
+See `docs/REFLECTOR.md` and `memory/hexmem-reflector-prompt.md`.
+
 HexMem stores *who you are*, not just *what happened*:
 
 - **Identity seeds** that regenerate your sense of self
@@ -303,7 +347,7 @@ This is sufficient for most use cases. For enhanced security (cryptographic sign
 
 ### Archon Integration (Optional)
 
-For cryptographically-signed, decentralized identity backups, optionally integrate with Archon:
+For cryptographically-signed, decentralized identity backups, optionally integrate with Archon. **HexMem does not require the archon-skill**; it uses `npx @didcid/keymaster` directly. The archon-skill is an optional convenience layer for local node operations.
 
 **1. Check if Archon skill is available:**
 

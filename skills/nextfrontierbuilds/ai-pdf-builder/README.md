@@ -1,14 +1,21 @@
-# AI PDF Builder
+# AI PDF Builder Skill
 
-Clawdbot skill for generating professional PDFs from Markdown using Pandoc and LaTeX.
+Clawdbot skill for generating professional PDFs from Markdown.
 
-## Features
+## Version
 
-- Whitepapers & Litepapers
-- Term Sheets
-- SAFEs & NDAs
-- Memos & Reports
-- Legal Agreements
+Uses `ai-pdf-builder@0.4.0` with premium templates.
+
+## Templates
+
+| Template | Style |
+|----------|-------|
+| **Whitepaper** | Modern tech - blue accents, clean typography |
+| **Term Sheet** | Executive finance - dark navy, gold accents |
+| **Memo** | Clean corporate - structured header block |
+| **Agreement** | Legal - serif font, numbered sections |
+| **SAFE** | Based on agreement template |
+| **NDA** | Based on agreement template |
 
 ## Installation
 
@@ -18,9 +25,16 @@ clawdhub install ai-pdf-builder
 
 ## Requirements
 
-Requires Pandoc and LaTeX installed locally, or use the cloud API (coming soon).
+Requires Pandoc and LaTeX:
+
+```bash
+# macOS
+brew install pandoc
+brew install --cask basictex
+```
 
 ## Links
 
 - [npm package](https://www.npmjs.com/package/ai-pdf-builder)
-- [GitHub](https://github.com/NextFrontierBuilds/ai-pdf-builder)
+- [Main repo](https://github.com/NextFrontierBuilds/ai-pdf-builder)
+- [ClawdHub](https://clawdhub.com)

@@ -2,14 +2,14 @@
 
 **Status:** ✅ Production-ready
 **Version:** 1.0.0
-**Size:** ~204KB (31 personas + docs)
+**Size:** ~204KB (20 personas + docs)
 **Created:** 2026-01-20
 
 ---
 
 ## What Is This?
 
-Transform OpenClaw into 31 specialized AI personalities on demand. Switch from a senior developer to an Italian chef to a fitness coach mid-conversation.
+Transform OpenClaw into 20 specialized AI personalities on demand. Switch from a senior developer to an Italian chef to a fitness coach mid-conversation.
 
 **Example:**
 ```
@@ -39,7 +39,7 @@ personas/
 ├── INTERNAL.md            # 🔧 Developer documentation (for us)
 ├── creator-workflow.md    # 🎨 Persona creation implementation guide
 ├── OVERVIEW.md            # 📋 This file (quick reference)
-└── data/                  # 📁 31 persona definitions (2-5KB each)
+└── data/                  # 📁 20 persona definitions (2-5KB each)
     ├── cami.md            #   🦎 Adaptive chameleon
     ├── dev.md             #   💻 Senior programmer
     ├── chef-marco.md      #   👨‍🍳 Italian cooking expert
@@ -69,7 +69,7 @@ personas/
 
 ## Quick Stats
 
-**Personas:** 31 default + unlimited custom
+**Personas:** 20 default + unlimited custom
 
 **Categories:**
 - Core: 5 personas (general use)
@@ -88,7 +88,7 @@ personas/
 
 ## Key Features
 
-✅ **31 pre-built expert personas**  
+✅ **20 pre-built expert personas**  
 ✅ **Create custom personas** (guided workflow)  
 ✅ **Switch mid-conversation**  
 ✅ **Token-efficient** (load only what you need)  
@@ -175,7 +175,7 @@ personas/
 
 ## Common Questions
 
-**Q: Do you load all 31 personas at once?**  
+**Q: Do you load all 20 personas at once?**  
 A: No! Only the active persona loads. Token-efficient.
 
 **Q: Can I create custom personas?**  
@@ -201,7 +201,7 @@ See **FAQ.md** for 50+ more questions.
 - License: MIT
 
 **OpenClaw Adaptation:**
-- By: Robby (robbyczgw-cla)
+- By: robbyczgw-cla
 - License: MIT
 
 ---
@@ -210,7 +210,7 @@ See **FAQ.md** for 50+ more questions.
 
 **v1.0.0** (2026-01-20)
 - Initial release
-- 31 default personas from Chameleon AI
+- 20 default personas from Chameleon AI
 - Creator workflow
 - Comprehensive documentation
 - Ready for ClawHub

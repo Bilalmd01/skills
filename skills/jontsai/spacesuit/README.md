@@ -109,8 +109,47 @@ openclaw-spacesuit/
 └── scripts/               # Automation
     ├── install.sh          # First-time setup
     ├── upgrade.sh          # Section-based merge upgrade
-    └── diff.sh             # Show pending changes
+    ├── diff.sh             # Show pending changes
+    └── sync-operators.sh   # Generate operators.json from sessions
 ```
+
+## Data Layer Scripts
+
+Spacesuit includes utility scripts that gather data for dashboards and tooling:
+
+### sync-operators.sh
+
+Auto-generates `state/operators.json` from session transcripts:
+
+```bash
+# Run from workspace
+./scripts/sync-operators.sh
+
+# Preview without writing
+./scripts/sync-operators.sh --dry-run
+
+# Explicit workspace
+./scripts/sync-operators.sh --workspace /path/to/workspace
+
+# Multi-profile support (uses ~/.openclaw-<name>)
+./scripts/sync-operators.sh --profile myprofile
+./scripts/sync-operators.sh --dev  # shortcut for --profile dev
+
+# Or via environment variable
+OPENCLAW_PROFILE=myprofile ./scripts/sync-operators.sh
+```
+
+**What it does:**
+- Scans OpenClaw session transcripts for user messages
+- Extracts Slack user IDs and usernames
+- Counts messages per operator
+- Preserves manually-set roles across syncs
+
+**Output:** `state/operators.json` — used by [OpenClaw Command Center](https://github.com/jontsai/openclaw-command-center)
+
+**Supported channels:**
+- ✅ Slack (`] username (USERID):` pattern)
+- 🔜 Telegram, Discord, Signal (PRs welcome!)
 
 ## Files Managed
 

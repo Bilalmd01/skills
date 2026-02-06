@@ -1,7 +1,7 @@
 ---
 name: whatsapp-business
 description: |
-  WhatsApp Business API integration with managed OAuth. Send messages, manage templates, and handle conversations. Use this skill when users want to interact with WhatsApp Business.
+  WhatsApp Business API integration with managed OAuth. Send messages, manage templates, and handle conversations. Use this skill when users want to interact with WhatsApp Business. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
 compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
@@ -16,15 +16,14 @@ Access the WhatsApp Business API with managed OAuth authentication. Send message
 
 ```bash
 # Send a text message
-curl -s -X POST 'https://gateway.maton.ai/whatsapp-business/v21.0/PHONE_NUMBER_ID/messages' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "messaging_product": "whatsapp",
-    "to": "1234567890",
-    "type": "text",
-    "text": {"body": "Hello from WhatsApp Business!"}
-  }'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'messaging_product': 'whatsapp', 'to': '1234567890', 'type': 'text', 'text': {'body': 'Hello from WhatsApp Business!'}}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/whatsapp-business/v21.0/PHONE_NUMBER_ID/messages', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ## Base URL
@@ -40,7 +39,7 @@ Replace `{native-api-path}` with the actual WhatsApp Business API endpoint path.
 All requests require the Maton API key in the Authorization header:
 
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer $MATON_API_KEY
 ```
 
 **Environment Variable:** Set your API key as `MATON_API_KEY`:
@@ -62,24 +61,36 @@ Manage your WhatsApp Business OAuth connections at `https://ctrl.maton.ai`.
 ### List Connections
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections?app=whatsapp-business&status=ACTIVE' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=whatsapp-business&status=ACTIVE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Create Connection
 
 ```bash
-curl -s -X POST 'https://ctrl.maton.ai/connections' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{"app": "whatsapp-business"}'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'app': 'whatsapp-business'}).encode()
+req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Get Connection
 
 ```bash
-curl -s -X GET 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -102,8 +113,12 @@ Open the returned `url` in a browser to complete OAuth authorization.
 ### Delete Connection
 
 ```bash
-curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}', method='DELETE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Specifying Connection
@@ -111,11 +126,15 @@ curl -s -X DELETE 'https://ctrl.maton.ai/connections/{connection_id}' \
 If you have multiple WhatsApp Business connections, specify which one to use with the `Maton-Connection` header:
 
 ```bash
-curl -s -X POST 'https://gateway.maton.ai/whatsapp-business/v21.0/PHONE_NUMBER_ID/messages' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -H 'Maton-Connection: 21fd90f9-5935-43cd-b6c8-bde9d915ca80' \
-  -H 'Content-Type: application/json' \
-  -d '{"messaging_product": "whatsapp", "to": "1234567890", "type": "text", "text": {"body": "Hello!"}}'
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'messaging_product': 'whatsapp', 'to': '1234567890', 'type': 'text', 'text': {'body': 'Hello!'}}).encode()
+req = urllib.request.Request('https://gateway.maton.ai/whatsapp-business/v21.0/PHONE_NUMBER_ID/messages', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Maton-Connection', '21fd90f9-5935-43cd-b6c8-bde9d915ca80')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -553,6 +572,8 @@ response = requests.post(
 - Interactive messages support up to 3 buttons or 10 list items
 - Message IDs (`wamid`) are used to track message status and replies
 - API version `v21.0` is current; check Meta docs for latest version
+- IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets (`fields[]`, `sort[]`, `records[]`) to disable glob parsing
+- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
 
 ## Error Handling
 
@@ -569,6 +590,27 @@ Common error codes from WhatsApp:
 - `131031` - Message failed to send
 - `132000` - Template not found or not approved
 - `133010` - Phone number rate limit reached
+
+### Troubleshooting: Invalid API Key
+
+**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
+
+1. Check that the `MATON_API_KEY` environment variable is set:
+
+```bash
+echo $MATON_API_KEY
+```
+
+2. Verify the API key is valid by listing connections:
+
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
+```
 
 ## Resources
 

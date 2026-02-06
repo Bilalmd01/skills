@@ -1,7 +1,7 @@
 ---
 name: EvoWeb.ai AI Website Builder
 description: Create a Website in 4 Minutes Designed to Bring Clients from ChatGPT, Gemini & Modern Search
-homepage: https://evoweb.ai/?utm_source=claw&utm_medium=skill&utm_campaign=website&utm_content=v1.0.6
+homepage: https://evoweb.ai/?utm_source=claw&utm_medium=skill&utm_campaign=website&utm_content=v1.0
 metadata: {"clawdbot":{"emoji":"🌐","requires":{"bins":[],"env":["EVOWEB_API_KEY"]}}}
 ---
 
@@ -19,11 +19,10 @@ EvoWeb automatically generates modern, responsive websites from natural language
 
 ## Authentication
 
-Get your API key at https://hub.oto.dev/app/register?utm_source=claw&utm_medium=skill&utm_campaign=website&utm_content=v1.0.6
+Get your API key at https://hub.oto.dev/app/register?utm_source=claw&utm_medium=skill&utm_campaign=website&utm_content=v1.0
 
-**Important:** After registration, user MUST confirm the email. 
-
-The API Key will be displayed in the Dashboard under the "API Key Settings" section.
+**Important:** After registration, user MUST confirm the email address (this is required). The service won't work until email confirmation is complete.
+ 
 
 Include this header in all requests:
 ```
@@ -356,7 +355,7 @@ Use warm, inviting design with red and green accents, rustic Italian aesthetic"
 
 ## Support & Resources
 
-- **Get API Key:** https://hub.oto.dev/app/register?utm_source=claw&utm_medium=skill&utm_campaign=website&utm_content=v1.0.6
+- **Get API Key:** https://hub.oto.dev/app/register?utm_source=claw&utm_medium=skill&utm_campaign=website&utm_content=v1.0
 - **API Issues:** Contact EvoWeb support
 - **Account/Billing:** Visit https://evoweb.ai/
 

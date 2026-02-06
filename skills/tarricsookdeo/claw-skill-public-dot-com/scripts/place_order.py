@@ -38,6 +38,8 @@ except ImportError:
     )
     from public_api_sdk.auth_config import ApiKeyAuthConfig
 
+from config import get_api_secret, get_account_id
+
 
 def place_order(
     symbol,
@@ -50,10 +52,11 @@ def place_order(
     stop_price=None,
     session=None,
     open_close=None,
+    time_in_force=None,
     account_id=None,
 ):
-    secret = os.getenv("PUBLIC_COM_SECRET")
-    account_id = account_id or os.getenv("PUBLIC_COM_ACCOUNT_ID")
+    secret = get_api_secret()
+    account_id = account_id or get_account_id()
 
     if not secret:
         print("Error: PUBLIC_COM_SECRET is not set.")
@@ -102,6 +105,9 @@ def place_order(
         "OPEN": OpenCloseIndicator.OPEN,
         "CLOSE": OpenCloseIndicator.CLOSE,
     }
+    time_in_force_map = {
+        "DAY": TimeInForce.DAY,
+    }
 
     try:
         client = PublicApiClient(
@@ -118,7 +124,7 @@ def place_order(
             ),
             "order_side": side_map[side],
             "order_type": order_type_map[order_type],
-            "expiration": OrderExpirationRequest(time_in_force=TimeInForce.DAY),
+            "expiration": OrderExpirationRequest(time_in_force=time_in_force_map.get(time_in_force, TimeInForce.DAY)),
         }
 
         # Add quantity or amount
@@ -152,6 +158,7 @@ def place_order(
         print(f"Symbol: {symbol}")
         print(f"Side: {side}")
         print(f"Type: {order_type}")
+        print(f"Time In Force: {time_in_force or 'DAY'}")
         if quantity is not None:
             print(f"Quantity: {quantity} shares")
         if amount is not None:
@@ -204,6 +211,12 @@ if __name__ == "__main__":
         choices=["OPEN", "CLOSE"],
         help="Open/Close indicator for options",
     )
+    parser.add_argument(
+        "--time-in-force",
+        choices=["DAY", "GTC"],
+        default="DAY",
+        help="Time in force: DAY (default) or GTC (Good Till Cancelled)",
+    )
     parser.add_argument("--account-id", help="Account ID (uses PUBLIC_COM_ACCOUNT_ID if not provided)")
 
     args = parser.parse_args()
@@ -219,5 +232,6 @@ if __name__ == "__main__":
         stop_price=args.stop_price,
         session=args.session,
         open_close=args.open_close,
+        time_in_force=args.time_in_force,
         account_id=args.account_id,
     )

@@ -1,5 +1,87 @@
 # Changelog
 
+## [1.13.1] - 2026-02-05
+
+### Fixed
+- **Complete Shell Quoting Fix**: Fixed remaining `eval ... $ARGS` patterns missed in v1.13.0
+  - Affected scripts: `calendar_delete.sh`, `email_read.sh`, `email_send.sh`, `undo.sh`, `process_calendar_replies.sh`
+  - Converted string-based argument building to bash arrays with `"${ARGS[@]}"` expansion
+  - All shell scripts now use safe array-based argument passing
+
+## [1.13.0] - 2026-02-05
+
+### Fixed
+- **Critical Shell Quoting Bug**: Fixed `eval ... $ARGS` pattern in all shell scripts that caused arguments with embedded quotes to fail silently
+  - Affected scripts: `disposition_email.sh`, `email_modify.sh`, `email_search.sh`, `calendar_search.sh`, `create_event.sh`, `check_duplicate.sh`
+  - Now uses proper bash array expansion `"${ARGS[@]}"` for safe argument passing
+  - This was causing email disposition (mark read, archive) to fail after event creation
+  - This was causing event tracking to `events.json` to fail
+
+- **Duplicate Detection Logic**: Fixed flawed duplicate detection for short titles
+  - Previously: Single-word titles like "Fastelavn" matched ANY event containing that word on the same date
+  - Now: Short titles (1-2 keywords) require ALL keywords to match; longer titles require 50% match
+  - Prevents false-positive duplicates and missed actual duplicates
+
+### Added
+- **Add Pending Invite Function**: New `add_pending_invite()` function in `pending_ops.py`
+  - Records pending invites when events are presented to user (was missing entirely)
+  - Enables heartbeat reminders to work correctly
+  - Prevents `pending_invites.json` from staying empty
+
+- **add_pending.sh**: New shell wrapper script for adding pending invites
+  - Usage: `add_pending.sh --email-id <id> --email-subject <subject> --events-json <json>`
+  - Uses proper array-based argument passing
+
+- **Unit Tests**: 4 new tests for `add_pending_invite()` function
+  - `test_add_new_invite`
+  - `test_add_updates_existing_invite`
+  - `test_add_multiple_events`
+  - `test_add_creates_file_if_missing`
+
+### Changed
+- **SKILL.md**: Updated workflow documentation to use `add_pending.sh` for recording pending invites
+
+## [1.12.1] - 2026-02-04
+
+### Added
+- **Agent Attribution**: Event descriptions now include "Created by [agent_name] (AI assistant)" footer
+  - Configurable via `agent_name` in config.json (default: "Ripurapu")
+
+### Changed
+- **SKILL.md Critical Rules**: Added prominent warnings about using scripts vs direct `gog` calls
+  - Rule 1 now explicitly forbids direct `gog` usage
+  - Rule 2 warns to ignore calendar notification emails (from `calendar-notification@google.com`)
+  - Added large warning block with WRONG/RIGHT examples
+- **BOOT.md**: Complete rewrite with critical operating rules
+  - Added "Critical Operating Rules" section listing all wrapper scripts
+  - Added explicit warning to ignore calendar notification emails
+  - Updated heartbeat section templates with calendar notification exclusion
+  - Added configuration reference section
+- **create_event.sh**: Auto-appends agent attribution to all event descriptions
+- **CONTRIBUTING.md**: Updated test count to 154
+
+## [1.12.0] - 2026-02-04
+
+### Added
+- **Automatic Email Disposition**: Emails are now automatically marked read and archived after event creation
+  - New `scripts/utils/disposition_ops.py`: Core disposition logic with `get_disposition_settings()` and `disposition_email()`
+  - New `scripts/disposition_email.sh`: Shell wrapper for manual disposition
+  - New `scripts/process_calendar_replies.sh`: Process calendar reply emails (accepts, declines, tentatives)
+- **Calendar Reply Auto-Processing**: Automatically disposition unread calendar notifications from Google Calendar
+  - Matches patterns: Accepted, Declined, Tentative, Updated invitation, Cancelled
+  - Run manually with `process_calendar_replies.sh` or `process_calendar_replies.sh --dry-run`
+- **New Config Option**: `email_handling.auto_dispose_calendar_replies` (default: true)
+- **Unit Tests**: 19 new tests for disposition operations in `test_disposition_ops.py`
+
+### Changed
+- **create_event.sh**: Now automatically dispositions source email after successful event creation
+- **Default Config**: `archive` now defaults to `true` (was `false`) for cleaner inbox management
+- **SKILL.md Section 6**: Replaced manual email handling instructions with automatic disposition documentation
+
+### Documentation
+- `SETUP.md`: Added `auto_dispose_calendar_replies` config option
+- Updated all example configs to include the new option and use `archive: true` default
+
 ## [1.11.0] - 2026-02-03
 
 ### Added

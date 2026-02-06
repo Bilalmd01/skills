@@ -129,7 +129,7 @@ Or use `X-API-Key: {MACHFIVE_API_KEY}` header.
 
 ### List lead lists
 
-List lead lists in the workspace. Optional query: `campaign_id`, `status` (`processing` | `completed` | `failed`), `limit` (default 50, max 100), `offset`.
+List lead lists in the workspace. Optional query: `campaign_id`, `status` (`pending` | `processing` | `completed` | `failed`), `limit` (default 50, max 100), `offset`.
 ```
 GET https://app.machfive.io/api/v1/lists
 GET https://app.machfive.io/api/v1/lists?campaign_id={campaign_id}&status=completed&limit=20
@@ -146,7 +146,7 @@ GET https://app.machfive.io/api/v1/lists/{list_id}
 Authorization: Bearer {MACHFIVE_API_KEY}
 ```
 
-**Response (200):** `id`, `campaign_id`, `custom_name`, `processing_status` (`processing` | `completed` | `failed`), `created_at`, `updated_at`. When `processing_status === 'completed'`: `leads_count`, `emails_created`, `completed_at`. When `failed`: `failed_at`. **404** if list not found or not in workspace.
+**Response (200):** `id`, `campaign_id`, `custom_name`, `processing_status` (`pending` | `processing` | `completed` | `failed`), `created_at`, `updated_at`. When `processing_status === 'completed'`: `leads_count`, `emails_created`, `completed_at`. When `failed`: `failed_at`. **404** if list not found or not in workspace.
 
 Poll every 10–30 seconds until `processing_status === 'completed'` or `failed`. If `failed`, the list cannot be exported; retry by submitting a new batch.
 
@@ -160,19 +160,21 @@ Authorization: Bearer {MACHFIVE_API_KEY}
 ```
 
 - **format=csv** (default): Returns the processed CSV (same as UI download), with `Content-Disposition: attachment; filename="MachFive-{list_id}.csv"`.
-- **format=json**: Returns `{ "leads": [ { "email": "...", "sequence": [ { "step": 1, "subject": "...", "body": "..." }, ... ] }, ... ] }`.
+- **format=json**: Returns `{ "leads": [ { "email": "...", "sequence": [ { "step": 1, "subject": "...", "body": "..." }, ... ] }, ... ] }`. Each lead may include optional `name`, `company`, `title` when present, e.g. `{ "email": "john@acme.com", "name": "John Smith", "company": "Acme Corp", "title": "VP Marketing", "sequence": [ ... ] }`.
 - **409** if list is not yet completed (poll GET /lists/:id first). **404** if list not found or not in workspace.
 
 **Batch flow:** POST generate-batch → 202 + list_id → poll GET /lists/:id until `processing_status === 'completed'` → GET /lists/:id/export?format=csv or json → return result to user.
 
 ## Lead Fields
 
+Each lead must include a valid **`email`**; it is used to map the lead through processing and to match generated sequences back to the lead in exports (same as the app UI). All other fields are optional but improve personalization.
+
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Full name or first name |
-| `email` | No | Lead's email address |
-| `company` | Yes | Company name |
-| `title` | No | Job title |
+| `email` | **Yes** | Lead's email address; used to map the lead through processing and in exports |
+| `name` | No | Full name or first name (improves personalization) |
+| `company` | No | Company name (improves personalization) |
+| `title` | No | Job title (improves personalization) |
 | `company_website` | No | Company URL for research |
 | `linkedin_url` | No | LinkedIn profile for deeper personalization |
 
@@ -186,15 +188,23 @@ Authorization: Bearer {MACHFIVE_API_KEY}
 | `campaign_angle` | string | None | Context for personalization |
 | `approved_ctas` | array | From campaign | CTAs to use (omit to use campaign defaults) |
 
+## Limits
+
+- **Single lead (sync):** Request can take 5–10 minutes; use a client timeout of at least 300s (5 min) or 600s (10 min).
+- **Batch (async):** Returns 202 immediately; poll **GET /api/v1/lists/{list_id}** every 10–30s until `processing_status` is `completed` or `failed`. Workspaces have a concurrent batch limit; if you get **429**, retry later.
+- **List lists:** Query param `limit` default 50, max 100; `offset` for pagination.
+
 ## Errors
 
 | Code | Error | Description |
 |------|-------|-------------|
+| 400 | BAD_REQUEST | Invalid JSON, missing `lead`/`leads`, or missing/invalid lead `email`; or campaign has no vector store |
 | 401 | UNAUTHORIZED | Invalid or missing API key |
 | 402 | INSUFFICIENT_CREDITS | Out of credits |
 | 403 | FORBIDDEN | Campaign not in your workspace |
 | 404 | NOT_FOUND | Campaign or list doesn't exist |
 | 409 | NOT_READY | Export called before list completed (poll GET /lists/:id first) |
+| 429 | WORKSPACE_LIMIT | Too many concurrent batch jobs; try again later |
 
 ## Usage Examples
 
@@ -207,6 +217,7 @@ Authorization: Bearer {MACHFIVE_API_KEY}
 - Free: 100 credits/month
 - Starter: 2,000 credits/month
 - Growth: 5,000 credits/month
+- Enterprise: Custom credits/month
 - 1 credit = 1 lead processed
 
 Get started: https://machfive.io

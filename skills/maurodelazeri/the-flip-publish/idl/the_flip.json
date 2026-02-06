@@ -8,23 +8,23 @@
   },
   "instructions": [
     {
-      "name": "close_entries",
+      "name": "claim",
       "docs": [
-        "Close entries manually (authority only)."
+        "Verify 14/14 predictions match and pay the entire jackpot. Permissionless."
       ],
       "discriminator": [
-        253,
-        235,
-        184,
-        82,
-        7,
-        50,
-        8,
-        208
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
       ],
       "accounts": [
         {
-          "name": "authority",
+          "name": "claimer",
           "signer": true
         },
         {
@@ -48,6 +48,25 @@
               }
             ]
           }
+        },
+        {
+          "name": "ticket",
+          "writable": true
+        },
+        {
+          "name": "player"
+        },
+        {
+          "name": "player_token_account",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -98,58 +117,10 @@
       "args": []
     },
     {
-      "name": "crank",
-      "docs": [
-        "Crank a ticket: check predictions against flips. Permissionless."
-      ],
-      "discriminator": [
-        0,
-        232,
-        3,
-        195,
-        124,
-        117,
-        105,
-        53
-      ],
-      "accounts": [
-        {
-          "name": "cranker",
-          "signer": true
-        },
-        {
-          "name": "game",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  103,
-                  97,
-                  109,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "game.authority",
-                "account": "Game"
-              }
-            ]
-          }
-        },
-        {
-          "name": "ticket",
-          "writable": true
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "enter",
       "docs": [
-        "Player enters the game. Transfers 1 USDC to the vault and creates a ticket PDA."
+        "Player enters the game. Transfers 1 USDC to the vault and creates a ticket PDA.",
+        "Always open — no rounds, no gates."
       ],
       "discriminator": [
         139,
@@ -191,7 +162,35 @@
         },
         {
           "name": "ticket",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  99,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              },
+              {
+                "kind": "account",
+                "path": "game.global_flip",
+                "account": "Game"
+              }
+            ]
+          }
         },
         {
           "name": "player_token_account",
@@ -216,7 +215,7 @@
           "type": {
             "array": [
               "u8",
-              20
+              14
             ]
           }
         }
@@ -225,7 +224,7 @@
     {
       "name": "flip",
       "docs": [
-        "Authority executes a coin flip. Result derived from on-chain slot hash."
+        "Execute the next global flip. Permissionless — anyone can call."
       ],
       "discriminator": [
         24,
@@ -239,52 +238,7 @@
       ],
       "accounts": [
         {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "game",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  103,
-                  97,
-                  109,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "game.authority",
-                "account": "Game"
-              }
-            ]
-          }
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "flip_all",
-      "docs": [
-        "Authority executes ALL remaining coin flips in a single transaction."
-      ],
-      "discriminator": [
-        183,
-        104,
-        211,
-        115,
-        104,
-        119,
-        23,
-        163
-      ],
-      "accounts": [
-        {
-          "name": "authority",
+          "name": "caller",
           "signer": true
         },
         {
@@ -395,115 +349,6 @@
       "args": []
     },
     {
-      "name": "new_round",
-      "docs": [
-        "Start a new round. Jackpot carries over if no winner. Authority only."
-      ],
-      "discriminator": [
-        16,
-        43,
-        233,
-        83,
-        204,
-        132,
-        201,
-        3
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "game",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  103,
-                  97,
-                  109,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "game.authority",
-                "account": "Game"
-              }
-            ]
-          }
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "settle",
-      "docs": [
-        "Settle a ticket: pay winnings from the vault. Permissionless."
-      ],
-      "discriminator": [
-        175,
-        42,
-        185,
-        87,
-        144,
-        131,
-        102,
-        212
-      ],
-      "accounts": [
-        {
-          "name": "settler",
-          "signer": true
-        },
-        {
-          "name": "game",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  103,
-                  97,
-                  109,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "game.authority",
-                "account": "Game"
-              }
-            ]
-          }
-        },
-        {
-          "name": "ticket",
-          "writable": true
-        },
-        {
-          "name": "player"
-        },
-        {
-          "name": "player_token_account",
-          "writable": true
-        },
-        {
-          "name": "vault",
-          "writable": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "withdraw_fees",
       "docs": [
         "Authority withdraws accumulated operator fees from the vault."
@@ -597,88 +442,48 @@
   "errors": [
     {
       "code": 6000,
-      "name": "EntriesClosed",
-      "msg": "Entries are closed"
-    },
-    {
-      "code": 6001,
-      "name": "GameAlreadyStarted",
-      "msg": "Game has already started"
-    },
-    {
-      "code": 6002,
       "name": "InvalidPrediction",
       "msg": "Invalid prediction: must be 1 (H) or 2 (T)"
     },
     {
+      "code": 6001,
+      "name": "NotAWinner",
+      "msg": "Not a 14/14 winner"
+    },
+    {
+      "code": 6002,
+      "name": "AlreadyCollected",
+      "msg": "Already collected payout"
+    },
+    {
       "code": 6003,
-      "name": "AllFlipsDone",
-      "msg": "All flips have been executed"
-    },
-    {
-      "code": 6004,
-      "name": "GameOver",
-      "msg": "Game is over"
-    },
-    {
-      "code": 6005,
-      "name": "NoEntries",
-      "msg": "No entries in the game"
-    },
-    {
-      "code": 6006,
       "name": "Unauthorized",
       "msg": "Unauthorized"
     },
     {
-      "code": 6007,
-      "name": "NoFlipsYet",
-      "msg": "No flips yet"
-    },
-    {
-      "code": 6008,
-      "name": "TicketDead",
-      "msg": "Ticket is dead"
-    },
-    {
-      "code": 6009,
-      "name": "AlreadyCranked",
-      "msg": "Already cranked"
-    },
-    {
-      "code": 6010,
-      "name": "NotFullyCranked",
-      "msg": "Not fully cranked"
-    },
-    {
-      "code": 6011,
-      "name": "AlreadySettled",
-      "msg": "Already settled"
-    },
-    {
-      "code": 6012,
-      "name": "GameNotOver",
-      "msg": "Game not over"
-    },
-    {
-      "code": 6013,
+      "code": 6004,
       "name": "TicketGameMismatch",
       "msg": "Ticket/game mismatch"
     },
     {
-      "code": 6014,
+      "code": 6005,
       "name": "PlayerMismatch",
       "msg": "Player mismatch"
     },
     {
-      "code": 6015,
+      "code": 6006,
       "name": "InsufficientFees",
       "msg": "Insufficient operator fees"
     },
     {
-      "code": 6016,
-      "name": "UnsettledTickets",
-      "msg": "All tickets must be settled before starting a new round"
+      "code": 6007,
+      "name": "FlipsNotRevealed",
+      "msg": "Not all 14 flips have been revealed yet"
+    },
+    {
+      "code": 6008,
+      "name": "BufferExpired",
+      "msg": "Ticket expired — circular buffer overwritten (claim within 256 flips)"
     }
   ],
   "types": [
@@ -708,21 +513,17 @@
             "type": "u8"
           },
           {
-            "name": "current_flip",
-            "type": "u8"
+            "name": "global_flip",
+            "type": "u32"
           },
           {
             "name": "flip_results",
             "type": {
               "array": [
                 "u8",
-                20
+                256
               ]
             }
-          },
-          {
-            "name": "milestone_pool",
-            "type": "u64"
           },
           {
             "name": "jackpot_pool",
@@ -737,29 +538,8 @@
             "type": "u32"
           },
           {
-            "name": "tickets_alive",
+            "name": "total_wins",
             "type": "u32"
-          },
-          {
-            "name": "tier_counts",
-            "type": {
-              "array": [
-                "u32",
-                6
-              ]
-            }
-          },
-          {
-            "name": "game_over",
-            "type": "bool"
-          },
-          {
-            "name": "accepting_entries",
-            "type": "bool"
-          },
-          {
-            "name": "round",
-            "type": "u8"
           }
         ]
       }
@@ -778,36 +558,24 @@
             "type": "pubkey"
           },
           {
-            "name": "round",
-            "type": "u8"
+            "name": "start_flip",
+            "type": "u32"
           },
           {
             "name": "predictions",
             "type": {
               "array": [
                 "u8",
-                20
+                14
               ]
             }
           },
           {
-            "name": "alive",
+            "name": "winner",
             "type": "bool"
           },
           {
-            "name": "score",
-            "type": "u8"
-          },
-          {
-            "name": "last_cranked_flip",
-            "type": "u8"
-          },
-          {
-            "name": "died_at_flip",
-            "type": "u8"
-          },
-          {
-            "name": "settled",
+            "name": "collected",
             "type": "bool"
           },
           {

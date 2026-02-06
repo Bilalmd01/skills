@@ -44,15 +44,25 @@ function check() {
     }
 
     // 4. Log Hygiene (Auto-Cleanup Stale Error Logs)
-    const ERROR_LOG = path.resolve(__dirname, '../private-evolver/evolution_error.log');
-    if (fs.existsSync(ERROR_LOG)) {
+    const possibleEvolvers = ['../private-evolver', '../evolver', '../capability-evolver'];
+    let errorLogPath = null;
+    
+    for (const d of possibleEvolvers) {
+         const p = path.resolve(__dirname, d, 'evolution_error.log');
+         if (fs.existsSync(p)) {
+             errorLogPath = p;
+             break;
+         }
+    }
+
+    if (errorLogPath) {
         try {
-            const stats = fs.statSync(ERROR_LOG);
+            const stats = fs.statSync(errorLogPath);
             const now = Date.now();
             const ageHours = (now - stats.mtimeMs) / (1000 * 60 * 60);
             // If error log is > 24 hours old, delete it to avoid confusion in future alerts
             if (ageHours > 24) {
-                fs.unlinkSync(ERROR_LOG);
+                fs.unlinkSync(errorLogPath);
             }
         } catch (e) {
             // Ignore cleanup errors

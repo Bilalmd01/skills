@@ -1,12 +1,15 @@
 ---
 name: fear-greed
-description: Crypto Fear & Greed Index widget using Strykr PRISM API. Embeddable gauge, bar, and badge components for websites and dashboards.
-version: 1.0.0
+description: Embeddable Fear & Greed Index for crypto dashboards. Real-time sentiment gauge. Drop-in React/HTML components. Works with AI agents, Claude, Cursor.
+version: 1.1.1
+keywords: fear-greed, crypto-sentiment, market-indicator, trading-widget, dashboard-component, react-widget, bitcoin-sentiment, ai, ai-agent, ai-coding, trading-bot, fintech, market-data, openclaw, moltbot, vibe-coding, agentic
 ---
 
-# Fear & Greed Widget
+# Crypto Sentiment Widget
 
-Display the Crypto Fear & Greed Index using Strykr PRISM API.
+**Market mood at a glance.** Embeddable Fear & Greed Index for crypto dashboards and trading apps.
+
+Drop-in React and HTML components. Real-time updates. No API key required. Powered by Strykr PRISM.
 
 ## Quick Usage
 

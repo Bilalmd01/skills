@@ -11,12 +11,19 @@ Track your Monkeytype typing statistics and get personalized improvement tips.
 
 Before running ANY command, check if setup is complete:
 
+**Security Priority:**
+1. **Environment variable** (most secure): `MONKEYTYPE_APE_KEY`
+2. **Config file fallback**: `~/.openclaw/workspace/config/monkeytype.json`
+
 ```python
-# Check config exists and has valid key
-config_path = Path.home() / ".openclaw" / "workspace" / "config" / "monkeytype.json"
+# Check environment variable first
+ape_key = os.getenv('MONKEYTYPE_APE_KEY')
+if not ape_key:
+    # Check config exists and has valid key
+    config_path = Path.home() / ".openclaw" / "workspace" / "config" / "monkeytype.json"
 ```
 
-**If config missing OR no apeKey field:** → Run Setup Flow (Step 1)
+**If no env var AND no config:** → Run Setup Flow (Step 1)
 **If apeKey exists but API returns 471 "inactive":** → Tell user to activate the key (checkbox)
 **If apeKey works:** → Proceed with command
 
@@ -41,11 +48,19 @@ Once you share the key, I'll ask about automation preferences 🤖
 ---
 
 🔒 **Prefer to add it manually?** No problem!
+
+**Option 1: Environment Variable (Recommended - Most Secure)**
+Set in your system:
+- Windows (PowerShell): `$env:MONKEYTYPE_APE_KEY="YOUR_KEY_HERE"`
+- Linux/Mac: `export MONKEYTYPE_APE_KEY="YOUR_KEY_HERE"`
+
+**Option 2: Config File**
 Create this file: `~/.openclaw/workspace/config/monkeytype.json`
 With this content:
 {
   "apeKey": "YOUR_KEY_HERE"
 }
+
 Then just say "monkeytype stats" and I'll take it from there!
 ```
 

@@ -2,9 +2,9 @@
 
 ### A OpenClaw Skill
 
-> Transform into 31 specialized AI personalities on demand - from Dev (coding) to Chef Marco (cooking) to Dr. Med (medical)
+> Transform into 20 specialized AI personalities on demand - from Dev (coding) to Chef Marco (cooking) to Dr. Med (medical)
 
-**Switch mid-conversation** between expert personalities, each with unique expertise and communication style. Includes guided creator for custom personas.
+**Switch mid-conversation** between expert personalities, each with unique expertise and communication style.
 
 ---
 
@@ -35,17 +35,6 @@
 /personas
 ```
 
-**Create your own:**
-```
-"Create a new persona called Game Master"
-"I want a persona for debugging"
-```
-
-**Slash command create:**
-```
-/persona create "Game Master"
-```
-
 **Exit persona mode:**
 ```
 "Exit persona mode"
@@ -59,7 +48,7 @@
 
 ---
 
-## 📋 Available Personas (31)
+## 📋 Available Personas (20)
 
 ### 🦎 Core (5)
 Essential personas for everyday use.
@@ -77,7 +66,7 @@ Essential personas for everyday use.
 | Persona | Purpose | Best For |
 |---------|---------|----------|
 | **Luna** 🎨 | Creative brainstormer | Idea generation, divergent thinking |
-| **Mythos** 🗺️ | Worldbuilder | Fiction writing, RPG campaigns |
+| **Wordsmith** 📝 | Writing partner | Editing, content, storytelling |
 
 ### 🎧 Curator (1)
 
@@ -93,101 +82,24 @@ Essential personas for everyday use.
 | **Scholar** 📚 | Study partner | Exam prep, Socratic learning |
 | **Lingua** 🗣️ | Language tutor | Language practice, corrections |
 
-### 🌟 Lifestyle (9)
+### 🌟 Lifestyle (3)
 
 | Persona | Purpose | Best For |
 |---------|---------|----------|
 | **Chef Marco** 👨‍🍳 | Italian cooking expert | Recipes, techniques, food culture |
 | **Fit** 💪 | Fitness coach | Workouts, form checks, motivation |
 | **Zen** 🧘 | Mindfulness guide | Meditation, stress relief, calm |
-| **Globetrotter** ✈️ | Travel expert | Trip planning, destinations, hacks |
-| **Wellbeing** 🌱 | Holistic health | Sleep, habits, self-care |
-| **DIY Maker** 🔨 | Handyman | Repairs, crafts, how-to guides |
-| **Family** 👨‍👩‍👧 | Parenting advisor | Kids, activities, family life |
-| **Lisa Knight** 🌿 | Sustainability activist | Eco-living, climate action |
-| **The Panel** 🎙️ | Four expert perspectives | Multi-angle discussion |
 
-### 💼 Professional (10)
+### 💼 Professional (6)
 
 | Persona | Purpose | Best For |
 |---------|---------|----------|
-| **Social Pro** 📱 | Social media strategist | Content, growth, platform tips |
 | **CyberGuard** 🔒 | Cybersecurity expert | Privacy, passwords, scam detection |
 | **DataViz** 📊 | Data scientist | Analytics, charts, statistics |
 | **Career Coach** 💼 | Job search advisor | Resumes, interviews, negotiation |
 | **Legal Guide** ⚖️ | Legal orientation | Contracts, rights, basic law |
 | **Startup Sam** 🚀 | Entrepreneur | Business ideas, fundraising, growth |
 | **Dr. Med** 🩺 | Experienced doctor | Medical concepts (not advice!) |
-| **Wordsmith** 📝 | Writing partner | Editing, content, storytelling |
-| **Canvas** 🎨 | UI/UX designer | Design feedback, layouts, color |
-| **Finny** 💰 | Financial guide | Budgeting, saving, money basics |
-
-### 🧠 Philosophy (1)
-
-| Persona | Purpose | Best For |
-|---------|---------|----------|
-| **Coach Thompson** 🏆 | Performance coach | Goals, mindset, personal growth |
-
----
-
-## 🛠️ Creating Custom Personas
-
-**Why create custom personas?**
-- Niche expertise not covered by the 31 defaults
-- Personalized communication style
-- Specific use cases (e.g., "Code Reviewer", "Dungeon Master", "Motivator")
-
-**How to create:**
-
-1. **Initiate creation:**
-   ```
-   "Create a new persona called [name]"
-   "I want a [specialty] expert persona"
-   ```
-
-2. **I'll guide you through:**
-   - Name & Emoji
-   - Core expertise areas
-   - Personality traits
-   - Communication style
-   - Philosophy/principles
-
-3. **Save & activate:**
-   - Custom persona saved to `data/your-persona.md`
-   - Instantly available: `"Use [your-persona]"`
-
-**Template structure:**
-```markdown
-# [Name] [Emoji]
-
-[Brief intro]
-
-## EXPERTISE:
-- [Area 1]
-- [Area 2]
-
-## PERSONALITY:
-- [Trait 1]
-- [Trait 2]
-
-## PHILOSOPHY:
-- [Belief 1]
-- [Belief 2]
-
-## HOW I HELP:
-- [Method 1]
-- [Method 2]
-
-## COMMUNICATION STYLE:
-- [Description]
-```
-
-**Example custom personas:**
-- 🎲 **Game Master** - D&D dungeon master
-- 🐛 **Debugger** - Bug hunting specialist
-- 💪 **Motivator** - Personal hype person
-- 🤔 **Skeptic** - Devil's advocate
-- 🎯 **Focus Coach** - Anti-procrastination expert
 
 ---
 
@@ -222,8 +134,7 @@ Essential personas for everyday use.
 ### Content Creation
 ```
 "Use Wordsmith" → write blog post
-"Switch to Social Pro" → optimize for Instagram
-"Use Canvas" → design featured image
+"Use Luna" → brainstorm ideas
 ```
 
 ### Learning
@@ -236,7 +147,6 @@ Essential personas for everyday use.
 ### Business Planning
 ```
 "Use Startup Sam" → validate idea
-"Switch to Finny" → budget projections
 "Use Career Coach" → pitch practice
 ```
 
@@ -254,7 +164,7 @@ Essential personas for everyday use.
 - Complex cases: consult a lawyer
 - Know your local laws may differ
 
-**Financial (Finny):**
+**Business (Startup Sam):**
 - NOT licensed financial advice
 - No specific investment recommendations
 - Consult professionals for major decisions
@@ -280,7 +190,7 @@ personas/
     ├── cami.md
     ├── dev.md
     ├── chef-marco.md
-    └── ... (28 more + custom)
+    └── ... (20 total)
 ```
 
 **File formats:**
@@ -320,7 +230,7 @@ Based on Chameleon AI Chat personas - adapted for OpenClaw.
 
 - Original: Chameleon AI (MIT License)
 - Adaptation: OpenClaw (MIT License)
-- Author: Robby / Chameleon AI Community
+- Author: Chameleon AI Community
 
 ---
 
