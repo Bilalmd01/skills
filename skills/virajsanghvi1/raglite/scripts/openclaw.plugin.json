@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "raglite",
   "name": "RAGLite",
-  "description": "Local-first RAG cache: distill docs into structured Markdown, then index/query with Chroma + hybrid search.",
-  "version": "1.0.0",
+  "description": "Local-first RAG cache: condense docs into structured Markdown, then index/query with Chroma + hybrid search.",
+  "version": "1.0.6",
   "entrypoints": {
     "run": {
       "kind": "exec",
