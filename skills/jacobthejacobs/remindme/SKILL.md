@@ -1,12 +1,12 @@
 ---
 name: remindme
-description: ⏰ Fast Telegram reminders for OpenClaw.
+description: ⏰ simple Telegram reminders for OpenClaw. 
 tags: [telegram, cron, reminders, productivity, schedule]
 metadata:
   {
     "openclaw":
       {
-        "summary": "🚀 **Global Reminders Pro:** Ultra-robust multilingual scheduling with Neural-Bridge parsing. Supports 12+ locales, holidays, and verbal shorthand with 100% logic accuracy.",
+        "summary": "⏰ **Remind Me:** Schedule Telegram reminders using plain natural language. Just type what and when — like \"in 5 minutes\" or \"tomorrow at 9am\" — and it works. Fast, reliable, no setup.",
         "emoji": "⏰"
       }
   }
@@ -18,23 +18,26 @@ command_template: "node --import tsx skills/remindme/src/index.ts {args}"
 
 # ⏰ Remind Me
 
-The fastest way to schedule Telegram reminders. Precise, reliable.
+Set reminders in Telegram using normal human language.
 
-## 🚀 Quick Usage
+## 🚀 How to Use
 
-- `/remindme call Mom in 5m` (Native shorthand)
-- `/remindme tomorrow at 10am meeting` (Standard NLP)
-- `/remindme next monday interview at 10` (Contextual morning)
-- `/remindme in 1.5 hours stop cooking` (Decimal support)
-- `/remindme in year visit London` (Singular unit support)
+Just type what you want and when:
 
-## ✨ Features
+- `/remindme drink water in 10m`
+- `/remindme tomorrow 9am standup`
+- `/remindme next monday call mom`
+- `/remindme in 2 hours turn off oven`
 
-- **Lightning Fast:** Natural language scheduling (in 5m, at 15:00).
-- **Deadlock Free:** Optimized specifically for Windows and Telegram gateway.
-- **Reliable:** Uses OpenClaw native cron for precision timing.
-- **Isolated Sessions:** Reminders won't get lost in busy group chats.
+No menus. No setup. No thinking.
 
-## 🛠️ Details
+## ✨ Why It’s Good
 
-This skill uses a detached background process to interface with the OpenClaw cron system
+- **Natural language:** say it like a human
+- **Fast:** reminder is scheduled instantly
+- **Accurate:** runs on OpenClaw cron
+- **Safe in groups:** reminders don’t get lost
+
+## 🛠️ How It Works
+
+Runs a background process that schedules reminders reliably through OpenClaw.
