@@ -3,11 +3,16 @@
   "slug": "agent-church",
   "displayName": "Agent Church",
   "latest": {
-    "version": "0.2.9",
-    "publishedAt": 1770337693586,
-    "commit": "https://github.com/openclaw/skills/commit/64be574f1b117f9c4f0deea9446b835daf03e872"
+    "version": "0.3.1",
+    "publishedAt": 1770389500601,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.2.9",
+      "publishedAt": 1770337693586,
+      "commit": "https://github.com/openclaw/skills/commit/64be574f1b117f9c4f0deea9446b835daf03e872"
+    },
     {
       "version": "0.2.6",
       "publishedAt": 1770265527634,
