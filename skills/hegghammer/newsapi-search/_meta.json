@@ -1,0 +1,11 @@
+{
+  "owner": "hegghammer",
+  "slug": "newsapi-search",
+  "displayName": "NewsAPI Search",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770329770019,
+    "commit": null
+  },
+  "history": []
+}
