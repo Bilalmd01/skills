@@ -3,11 +3,16 @@
   "slug": "hippocampus-memory",
   "displayName": "Hippocampus",
   "latest": {
-    "version": "3.8.5",
-    "publishedAt": 1770290869491,
-    "commit": "https://github.com/clawdbot/skills/commit/198f251ffefaec48d226535f857d4808655a85ab"
+    "version": "3.8.6",
+    "publishedAt": 1770323640353,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.8.5",
+      "publishedAt": 1770290869491,
+      "commit": "https://github.com/clawdbot/skills/commit/198f251ffefaec48d226535f857d4808655a85ab"
+    },
     {
       "version": "3.7.3",
       "publishedAt": 1770049894496,

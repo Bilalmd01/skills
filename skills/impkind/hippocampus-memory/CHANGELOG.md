@@ -2,6 +2,11 @@
 
 All notable changes to the Hippocampus Memory skill.
 
+## [3.8.6] - 2026-02-05
+
+### Changed
+- Added `title: "Hippocampus - Memory System"` for better search discoverability
+
 ## [3.8.3] - 2026-02-05
 
 ### Added
