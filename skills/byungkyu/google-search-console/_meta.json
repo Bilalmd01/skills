@@ -3,11 +3,16 @@
   "slug": "google-search-console",
   "displayName": "Google Search Console",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770255595425,
-    "commit": "https://github.com/clawdbot/skills/commit/1b9f599862cd67bf5f90c75e643bf28a88a5cd1e"
+    "version": "1.0.3",
+    "publishedAt": 1770344054654,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770255595425,
+      "commit": "https://github.com/clawdbot/skills/commit/1b9f599862cd67bf5f90c75e643bf28a88a5cd1e"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770117717069,
