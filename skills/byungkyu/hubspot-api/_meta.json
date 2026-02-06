@@ -3,11 +3,16 @@
   "slug": "hubspot-api",
   "displayName": "HubSpot",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770117644692,
-    "commit": "https://github.com/clawdbot/skills/commit/0c424efc393df537381314d7816e21496251046f"
+    "version": "1.0.2",
+    "publishedAt": 1770343936002,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770117644692,
+      "commit": "https://github.com/clawdbot/skills/commit/0c424efc393df537381314d7816e21496251046f"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770023458241,
