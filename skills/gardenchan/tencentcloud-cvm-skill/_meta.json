@@ -1,0 +1,11 @@
+{
+  "owner": "gardenchan",
+  "slug": "tencentcloud-cvm-skill",
+  "displayName": "Tencent Cloud CVM",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1770384200644,
+    "commit": null
+  },
+  "history": []
+}
