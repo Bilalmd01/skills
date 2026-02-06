@@ -3,9 +3,15 @@
   "slug": "shortcut",
   "displayName": "Shortcut",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770218449268,
-    "commit": "https://github.com/clawdbot/skills/commit/d159e38e51b8160b06bb9b4c61544965857ffd05"
+    "version": "1.2.0",
+    "publishedAt": 1770356380719,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770218449268,
+      "commit": "https://github.com/clawdbot/skills/commit/d159e38e51b8160b06bb9b4c61544965857ffd05"
+    }
+  ]
 }

@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-TOKEN=$(sudo cat /root/secrets/shortcut-api-token | tr -d '\n')
+TOKEN="${SHORTCUT_API_TOKEN:-$(cat ~/.config/shortcut/api-token 2>/dev/null | tr -d '\n')}"
 BASE_URL="https://api.app.shortcut.com/api/v3"
 
 STORY_ID="${1:-}"
