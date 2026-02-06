@@ -3,11 +3,16 @@
   "slug": "jotform",
   "displayName": "JotForm",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770117587576,
-    "commit": "https://github.com/clawdbot/skills/commit/631f5c471a1602bee5623572f61b87c87b4cd8c9"
+    "version": "1.0.2",
+    "publishedAt": 1770343895039,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770117587576,
+      "commit": "https://github.com/clawdbot/skills/commit/631f5c471a1602bee5623572f61b87c87b4cd8c9"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770023590819,
