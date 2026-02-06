@@ -1,0 +1,11 @@
+{
+  "owner": "killerapp",
+  "slug": "aws-agentcore-langgraph",
+  "displayName": "aws-agentcore-langgraph",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1770349609985,
+    "commit": null
+  },
+  "history": []
+}
