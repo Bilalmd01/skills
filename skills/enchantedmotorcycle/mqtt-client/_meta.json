@@ -1,0 +1,11 @@
+{
+  "owner": "enchantedmotorcycle",
+  "slug": "mqtt-client",
+  "displayName": "Mqtt Client",
+  "latest": {
+    "version": "1.0.6",
+    "publishedAt": 1770329837645,
+    "commit": null
+  },
+  "history": []
+}
