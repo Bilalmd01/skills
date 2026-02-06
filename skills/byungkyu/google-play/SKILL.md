@@ -1,7 +1,7 @@
 ---
 name: google-play
 description: |
-  Google Play Developer API (Android Publisher) integration with managed OAuth. Manage apps, subscriptions, in-app purchases, and reviews. Use this skill when users want to interact with Google Play Console programmatically.
+  Google Play Developer API (Android Publisher) integration with managed OAuth. Manage apps, subscriptions, in-app purchases, and reviews. Use this skill when users want to interact with Google Play Console programmatically. For other third party apps, use the api-gateway skill (https://clawhub.ai/byungkyu/api-gateway).
 compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
@@ -16,8 +16,12 @@ Access the Google Play Developer API (Android Publisher) with managed OAuth auth
 
 ```bash
 # List in-app products
-curl -s -X GET 'https://gateway.maton.ai/google-play/androidpublisher/v3/applications/{packageName}/inappproducts' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/google-play/androidpublisher/v3/applications/{packageName}/inappproducts')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ## Base URL
@@ -33,7 +37,7 @@ Replace `{native-api-path}` with the actual Android Publisher API endpoint path.
 All requests require the Maton API key in the Authorization header:
 
 ```
-Authorization: Bearer YOUR_API_KEY
+Authorization: Bearer $MATON_API_KEY
 ```
 
 **Environment Variable:** Set your API key as `MATON_API_KEY`:
@@ -54,44 +58,37 @@ Manage your Google OAuth connections at `https://ctrl.maton.ai`.
 
 ### List Connections
 
-```python
-import requests
-import os
-
-response = requests.get(
-    "https://ctrl.maton.ai/connections",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"},
-    params={"app": "google-play", "status": "ACTIVE"}
-)
-connections = response.json()
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=google-play&status=ACTIVE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Create Connection
 
-```python
-import requests
-import os
-
-response = requests.post(
-    "https://ctrl.maton.ai/connections",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"},
-    json={"app": "google-play"}
-)
-connection = response.json()
+```bash
+python <<'EOF'
+import urllib.request, os, json
+data = json.dumps({'app': 'google-play'}).encode()
+req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Content-Type', 'application/json')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Get Connection
 
-```python
-import requests
-import os
-
-connection_id = "21fd90f9-5935-43cd-b6c8-bde9d915ca80"
-response = requests.get(
-    f"https://ctrl.maton.ai/connections/{connection_id}",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"}
-)
-connection = response.json()
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 **Response:**
@@ -113,33 +110,27 @@ Open the returned `url` in a browser to complete OAuth authorization.
 
 ### Delete Connection
 
-```python
-import requests
-import os
-
-connection_id = "21fd90f9-5935-43cd-b6c8-bde9d915ca80"
-response = requests.delete(
-    f"https://ctrl.maton.ai/connections/{connection_id}",
-    headers={"Authorization": f"Bearer {os.environ['MATON_API_KEY']}"}
-)
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections/{connection_id}', method='DELETE')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 ### Specifying Connection
 
 If you have multiple Google Play connections, specify which one to use with the `Maton-Connection` header:
 
-```python
-import requests
-import os
-
-package_name = "com.example.app"
-response = requests.get(
-    f"https://gateway.maton.ai/google-play/androidpublisher/v3/applications/{package_name}/inappproducts",
-    headers={
-        "Authorization": f"Bearer {os.environ['MATON_API_KEY']}",
-        "Maton-Connection": "21fd90f9-5935-43cd-b6c8-bde9d915ca80"
-    }
-)
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://gateway.maton.ai/google-play/androidpublisher/v3/applications/{packageName}/inappproducts')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+req.add_header('Maton-Connection', '21fd90f9-5935-43cd-b6c8-bde9d915ca80')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
 ```
 
 If omitted, the gateway uses the default (oldest) active connection.
@@ -379,6 +370,8 @@ print(products)
 - The Google Play Developer API requires the app to be published on Google Play
 - Subscription management requires the app to have active subscriptions configured
 - Edits are transactional - create an edit, make changes, then commit
+- IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets (`fields[]`, `sort[]`, `records[]`) to disable glob parsing
+- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
 
 ## Error Handling
 
@@ -389,6 +382,27 @@ print(products)
 | 404 | Package not found or no access |
 | 429 | Rate limited (10 req/sec per account) |
 | 4xx/5xx | Passthrough error from Google Play API |
+
+### Troubleshooting: Invalid API Key
+
+**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
+
+1. Check that the `MATON_API_KEY` environment variable is set:
+
+```bash
+echo $MATON_API_KEY
+```
+
+2. Verify the API key is valid by listing connections:
+
+```bash
+python <<'EOF'
+import urllib.request, os, json
+req = urllib.request.Request('https://ctrl.maton.ai/connections')
+req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
+print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
+EOF
+```
 
 ## Resources
 
