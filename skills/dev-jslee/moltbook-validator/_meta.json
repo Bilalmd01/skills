@@ -1,0 +1,11 @@
+{
+  "owner": "dev-jslee",
+  "slug": "moltbook-validator",
+  "displayName": "Moltbook Validator",
+  "latest": {
+    "version": "1.0.0-alpha",
+    "publishedAt": 1770338973360,
+    "commit": null
+  },
+  "history": []
+}
