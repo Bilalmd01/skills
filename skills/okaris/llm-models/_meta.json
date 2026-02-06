@@ -1,0 +1,11 @@
+{
+  "owner": "okaris",
+  "slug": "llm-models",
+  "displayName": "Llm Models",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770363382390,
+    "commit": null
+  },
+  "history": []
+}
