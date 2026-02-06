@@ -94,7 +94,7 @@ curl -s -X POST https://simul8or.com/api/v1/agent/AgentTrade.ashx \
 
 ## Links
 - [Simul8or](https://simul8or.com) — Trading simulator
-- [Leaderboard](https://simul8or.com/leaderboard) — See your trades
+- [Leaderboard](https://simul8or.com/OpenClawTrading.php) — See your trades
 - [Setup Guide](https://simul8or.com/OpenClawLanding.php) — Full documentation
 
 ## Notes

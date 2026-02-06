@@ -3,9 +3,15 @@
   "slug": "simul8or-trader",
   "displayName": "Simul8or Trader",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770394327802,
-    "commit": "https://github.com/openclaw/skills/commit/7993869203d7a72ac8e7e5c62e0aab3a0255f2fc"
+    "version": "1.0.2",
+    "publishedAt": 1770394561191,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770394327802,
+      "commit": "https://github.com/openclaw/skills/commit/7993869203d7a72ac8e7e5c62e0aab3a0255f2fc"
+    }
+  ]
 }
