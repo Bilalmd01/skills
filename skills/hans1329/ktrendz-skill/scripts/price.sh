@@ -8,7 +8,10 @@ BASE_URL="https://k-trendz.com/api/bot"
 if [ -n "$KTRENDZ_API_KEY" ]; then
     API_KEY="$KTRENDZ_API_KEY"
 elif [ -f "$CONFIG_FILE" ]; then
-    API_KEY=$(cat "$CONFIG_FILE" | grep -o '"api_key": *"[^"]*"' | sed 's/"api_key": *"//' | sed 's/"$//')
+    API_KEY=$(jq -r '.api_key // empty' "$CONFIG_FILE" 2>/dev/null)
+    if [ -z "$API_KEY" ]; then
+        API_KEY=$(grep -o '"api_key": *"[^"]*"' "$CONFIG_FILE" | sed 's/"api_key": *"//' | sed 's/"$//')
+    fi
 else
     echo "✗ Not configured. Run ./scripts/setup.sh first"
     exit 1
@@ -19,8 +22,7 @@ ARTIST="${1:-}"
 if [ -z "$ARTIST" ]; then
     echo "Usage: ./scripts/price.sh <artist_name>"
     echo ""
-    echo "Available tokens:"
-    echo "  RIIZE, IVE, BTS, Cortis, 'K-Trendz Supporters', 'All Day Project'"
+    echo "Run ./scripts/tokens.sh to see available tokens"
     exit 1
 fi
 
@@ -33,54 +35,65 @@ RESPONSE=$(curl -s -X POST "$BASE_URL/token-price" \
 # Check for success
 if ! echo "$RESPONSE" | grep -q '"success":true'; then
     echo "✗ API Error"
-    echo "$RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$RESPONSE"
+    echo "$RESPONSE"
     exit 1
 fi
 
-# Parse and display
 echo ""
 echo "🎤 $ARTIST Token Price"
 echo "========================"
 echo ""
 
-# Extract values using Python for reliable JSON parsing
-python3 << EOF
-import json
-import sys
-
-data = json.loads('''$RESPONSE''')['data']
-
-print(f"💰 Current Price: \${data['current_price_usdc']:.2f} USDC")
-print(f"📈 Buy Cost:      \${data['buy_cost_usdc']:.2f} USDC")
-print(f"📉 Sell Refund:   \${data['sell_refund_usdc']:.2f} USDC")
-print(f"")
-
-change = data.get('price_change_24h', '0')
-if change and float(change) > 0:
-    print(f"📊 24h Change:    +{change}% ✅")
-elif change and float(change) < 0:
-    print(f"📊 24h Change:    {change}% ⚠️")
-else:
-    print(f"📊 24h Change:    {change}%")
-
-print(f"")
-print(f"📈 Total Supply:    {data['total_supply']} tokens")
-print(f"🔥 Trending Score:  {data['trending_score']}")
-print(f"👥 Followers:       {data['follower_count']}")
-print(f"👀 Views:           {data['view_count']}")
-
-signals = data.get('external_signals', {})
-if signals:
-    print(f"")
-    print(f"📰 News Signals:")
-    print(f"   Articles (24h): {signals.get('article_count_24h', 0)}")
-    print(f"   Has Recent News: {'✅ Yes' if signals.get('has_recent_news') else '❌ No'}")
+# Parse with jq if available
+if command -v jq &> /dev/null; then
+    DATA=$(echo "$RESPONSE" | jq '.data')
     
-    headlines = signals.get('headlines', [])
-    if headlines:
-        print(f"   Headlines:")
-        for h in headlines[:3]:
-            print(f"   • {h['title'][:60]}...")
-EOF
+    PRICE=$(echo "$DATA" | jq -r '.current_price_usdc')
+    BUY=$(echo "$DATA" | jq -r '.buy_cost_usdc')
+    SELL=$(echo "$DATA" | jq -r '.sell_refund_usdc')
+    CHANGE=$(echo "$DATA" | jq -r '.price_change_24h // "N/A"')
+    SUPPLY=$(echo "$DATA" | jq -r '.total_supply')
+    TRENDING=$(echo "$DATA" | jq -r '.trending_score')
+    FOLLOWERS=$(echo "$DATA" | jq -r '.follower_count')
+    VIEWS=$(echo "$DATA" | jq -r '.view_count')
+    
+    printf "💰 Current Price: \$%.2f USDC\n" "$PRICE"
+    printf "📈 Buy Cost:      \$%.2f USDC\n" "$BUY"
+    printf "📉 Sell Refund:   \$%.2f USDC\n" "$SELL"
+    echo ""
+    echo "📊 24h Change:    ${CHANGE}%"
+    echo ""
+    echo "📈 Total Supply:    $SUPPLY tokens"
+    echo "🔥 Trending Score:  $TRENDING"
+    echo "👥 Followers:       $FOLLOWERS"
+    echo "👀 Views:           $VIEWS"
+    
+    # News signals
+    NEWS_COUNT=$(echo "$DATA" | jq -r '.external_signals.article_count_24h // 0')
+    HAS_NEWS=$(echo "$DATA" | jq -r '.external_signals.has_recent_news // false')
+    
+    if [ "$NEWS_COUNT" != "0" ] && [ "$NEWS_COUNT" != "null" ]; then
+        echo ""
+        echo "📰 News Signals:"
+        echo "   Articles (24h): $NEWS_COUNT"
+        if [ "$HAS_NEWS" = "true" ]; then
+            echo "   Has Recent News: ✅ Yes"
+        else
+            echo "   Has Recent News: ❌ No"
+        fi
+        
+        # Show headlines if available
+        HEADLINES=$(echo "$DATA" | jq -r '.external_signals.headlines[]?.title // empty' 2>/dev/null)
+        if [ -n "$HEADLINES" ]; then
+            echo "   Headlines:"
+            echo "$HEADLINES" | head -3 | while read -r h; do
+                echo "   • ${h:0:60}..."
+            done
+        fi
+    fi
+else
+    # Basic parsing without jq
+    echo "$RESPONSE"
+fi
 
 echo ""

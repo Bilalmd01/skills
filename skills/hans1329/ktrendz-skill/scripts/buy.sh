@@ -8,7 +8,10 @@ BASE_URL="https://k-trendz.com/api/bot"
 if [ -n "$KTRENDZ_API_KEY" ]; then
     API_KEY="$KTRENDZ_API_KEY"
 elif [ -f "$CONFIG_FILE" ]; then
-    API_KEY=$(cat "$CONFIG_FILE" | grep -o '"api_key": *"[^"]*"' | sed 's/"api_key": *"//' | sed 's/"$//')
+    API_KEY=$(jq -r '.api_key // empty' "$CONFIG_FILE" 2>/dev/null)
+    if [ -z "$API_KEY" ]; then
+        API_KEY=$(grep -o '"api_key": *"[^"]*"' "$CONFIG_FILE" | sed 's/"api_key": *"//' | sed 's/"$//')
+    fi
 else
     echo "✗ Not configured. Run ./scripts/setup.sh first"
     exit 1
@@ -17,10 +20,9 @@ fi
 # Get artist name from argument
 ARTIST="${1:-}"
 if [ -z "$ARTIST" ]; then
-    echo "Usage: ./scripts/buy.sh <artist_name>"
+    echo "Usage: ./scripts/buy.sh <artist_name> [slippage_percent]"
     echo ""
-    echo "Available tokens:"
-    echo "  RIIZE, IVE, BTS, Cortis, 'K-Trendz Supporters', 'All Day Project'"
+    echo "Run ./scripts/tokens.sh to see available tokens"
     exit 1
 fi
 
@@ -39,7 +41,11 @@ PRICE_RESPONSE=$(curl -s -X POST "$BASE_URL/token-price" \
     -d "{\"artist_name\": \"$ARTIST\"}")
 
 if echo "$PRICE_RESPONSE" | grep -q '"success":true'; then
-    BUY_COST=$(echo "$PRICE_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['buy_cost_usdc'])")
+    if command -v jq &> /dev/null; then
+        BUY_COST=$(echo "$PRICE_RESPONSE" | jq -r '.data.buy_cost_usdc')
+    else
+        BUY_COST=$(echo "$PRICE_RESPONSE" | grep -o '"buy_cost_usdc":[0-9.]*' | cut -d: -f2)
+    fi
     echo "Buy cost: \$$BUY_COST USDC (+ ${SLIPPAGE}% slippage tolerance)"
 else
     echo "✗ Could not fetch price"
@@ -62,21 +68,26 @@ if echo "$RESPONSE" | grep -q '"success":true'; then
     echo "✅ Purchase Successful!"
     echo ""
     
-    python3 << EOF
-import json
-data = json.loads('''$RESPONSE''')['data']
-print(f"Token:      {data['artist_name']}")
-print(f"Amount:     {data['amount']} token")
-print(f"Cost:       \${data['total_cost_usdc']:.2f} USDC")
-print(f"Tx Hash:    {data.get('tx_hash', 'pending')}")
-print(f"")
-print(f"Daily limit remaining: \${data.get('remaining_daily_limit', 'N/A')}")
-EOF
+    if command -v jq &> /dev/null; then
+        DATA=$(echo "$RESPONSE" | jq '.data')
+        echo "Token:      $(echo "$DATA" | jq -r '.artist_name')"
+        echo "Amount:     $(echo "$DATA" | jq -r '.amount') token"
+        printf "Cost:       \$%.2f USDC\n" "$(echo "$DATA" | jq -r '.total_cost_usdc')"
+        echo "Tx Hash:    $(echo "$DATA" | jq -r '.tx_hash // "pending"')"
+        echo ""
+        printf "Daily limit remaining: \$%.2f\n" "$(echo "$DATA" | jq -r '.remaining_daily_limit // "N/A"')"
+    else
+        echo "$RESPONSE"
+    fi
 else
     echo ""
     echo "✗ Purchase Failed"
     echo ""
-    python3 -c "import json; d=json.loads('''$RESPONSE'''); print(d.get('error', d))" 2>/dev/null || echo "$RESPONSE"
+    if command -v jq &> /dev/null; then
+        echo "$RESPONSE" | jq -r '.error // .'
+    else
+        echo "$RESPONSE"
+    fi
     exit 1
 fi
 

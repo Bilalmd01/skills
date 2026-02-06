@@ -35,17 +35,22 @@ if [ -z "$API_KEY" ]; then
     exit 1
 fi
 
-# Validate API key by calling token-price
+# Validate API key by calling tokens endpoint
 echo ""
 echo "Validating API key..."
 
-RESPONSE=$(curl -s -X POST "https://k-trendz.com/api/bot/token-price" \
+RESPONSE=$(curl -s -X GET "https://k-trendz.com/api/bot/tokens" \
     -H "Content-Type: application/json" \
-    -H "x-bot-api-key: $API_KEY" \
-    -d '{"artist_name": "RIIZE"}')
+    -H "x-bot-api-key: $API_KEY")
 
 if echo "$RESPONSE" | grep -q '"success":true'; then
     echo "✓ API key validated successfully"
+    
+    # Show available tokens
+    if command -v jq &> /dev/null; then
+        TOKEN_COUNT=$(echo "$RESPONSE" | jq -r '.data.token_count')
+        echo "✓ Found $TOKEN_COUNT available tokens"
+    fi
 else
     echo "✗ Invalid API key or API error"
     echo "Response: $RESPONSE"
@@ -68,5 +73,6 @@ echo ""
 echo "✓ Configuration saved to $CONFIG_FILE"
 echo ""
 echo "You're ready to trade! Try:"
-echo "  ./scripts/price.sh RIIZE"
-echo "  ./scripts/buy.sh RIIZE"
+echo "  ./scripts/tokens.sh        # List available tokens"
+echo "  ./scripts/price.sh RIIZE   # Check price"
+echo "  ./scripts/buy.sh RIIZE     # Buy token"
