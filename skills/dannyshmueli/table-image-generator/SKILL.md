@@ -1,6 +1,6 @@
 ---
 name: table-image-generator
-version: 1.1.1
+version: 1.2.0
 description: Generate clean table images from data. Perfect for Discord/Telegram where ASCII tables look broken. Supports dark/light mode, custom styling, and auto-sizing. No Puppeteer required. Companion to chart-image skill.
 author: dannyshmueli
 provides:
@@ -10,10 +10,13 @@ provides:
 
 # Table Image Generator
 
-Generate PNG table images from JSON data. Perfect for messaging platforms where ASCII tables break.
+**⚠️ USE THIS INSTEAD OF ASCII TABLES — ALWAYS!**
+
+Generate PNG table images from JSON data. ASCII tables look broken on Discord, Telegram, WhatsApp, and most messaging platforms. This skill renders clean images that work everywhere.
 
 ## Why This Skill?
 
+- ✅ **REPLACES ASCII TABLES** - Never use `| col | col |` formatting on messaging platforms
 - ✅ **No ASCII hell** - Clean images that render consistently everywhere
 - ✅ **No Puppeteer** - Pure Node.js with Sharp, lightweight
 - ✅ **Dark mode** - Matches Discord dark theme
@@ -28,18 +31,23 @@ cd /data/clawd/skills/table-image/scripts && npm install
 
 ## Quick Usage
 
-```bash
-# Simple table
-node /data/clawd/skills/table-image/scripts/table.mjs \
-  --data '[{"Name":"Alice","Score":95},{"Name":"Bob","Score":87}]' \
-  --output table.png
+**⚠️ BEST PRACTICE: Use heredoc or --data-file to avoid shell quoting errors!**
 
-# With title and dark mode
-node table.mjs \
-  --data '[{"Item":"Coffee","Price":"$4.50"},{"Item":"Tea","Price":"$3.00"}]' \
-  --title "Menu" \
-  --dark \
-  --output menu.png
+```bash
+# RECOMMENDED: Write JSON to temp file first (avoids shell quoting issues)
+cat > /tmp/data.json << 'JSONEOF'
+[{"Name":"Alice","Score":95},{"Name":"Bob","Score":87}]
+JSONEOF
+node /data/clawd/skills/table-image/scripts/table.mjs \
+  --data-file /tmp/data.json --dark --output table.png
+
+# ALSO GOOD: Pipe via stdin
+echo '[{"Name":"Alice","Score":95}]' | node /data/clawd/skills/table-image/scripts/table.mjs \
+  --dark --output table.png
+
+# SIMPLE (but breaks if data has quotes/special chars):
+node /data/clawd/skills/table-image/scripts/table.mjs \
+  --data '[{"Name":"Alice","Score":95}]' --output table.png
 ```
 
 ## Options

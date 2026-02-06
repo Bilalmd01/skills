@@ -9,6 +9,7 @@
 
 import sharp from 'sharp';
 import { writeFileSync, readFileSync } from 'fs';
+import { segmentText, hasEmoji, precacheEmojis } from './emoji.mjs';
 
 // Parse CLI args
 function parseArgs(args) {
@@ -29,6 +30,7 @@ function parseArgs(args) {
     
     switch (arg) {
       case '--data': opts.data = JSON.parse(next); i++; break;
+      case '--data-file': opts.data = JSON.parse(readFileSync(next, 'utf8')); i++; break;
       case '--output': opts.output = next; i++; break;
       case '--title': opts.title = next; i++; break;
       case '--dark': opts.dark = true; break;
@@ -50,7 +52,8 @@ Usage:
   node table.mjs --data '[{"Name":"Alice"}]' --output table.png
 
 Options:
-  --data          JSON array of row objects (required)
+  --data          JSON array of row objects (required, or use --data-file/stdin)
+  --data-file     Read JSON data from a file (avoids shell quoting issues)
   --output        Output file path (default: table.png)
   --title         Table title
   --dark          Dark mode (Discord-friendly)
@@ -123,11 +126,67 @@ function escapeXml(str) {
     .replace(/'/g, '&apos;');
 }
 
+// Render a cell that may contain emoji as mixed text+image SVG elements
+function renderCell(text, x, y, anchor, cssClass, fontSize, emojiCache) {
+  const str = String(text);
+  if (!emojiCache || !hasEmoji(str)) {
+    // Simple text rendering
+    return `\n  <text x="${x}" y="${y}" text-anchor="${anchor}" class="${cssClass}">${escapeXml(str)}</text>`;
+  }
+  
+  // Mixed emoji + text rendering
+  const segments = segmentText(str);
+  const emojiSize = fontSize * 1.15;
+  let svgParts = '';
+  
+  // For proper positioning, we need to know total width
+  // We'll use a <g> group and position segments left-to-right
+  // Then offset the group based on anchor
+  const charWidth = fontSize * 0.6;
+  let totalWidth = 0;
+  const segWidths = segments.map(seg => {
+    if (seg.type === 'emoji') return emojiSize;
+    return seg.value.length * charWidth;
+  });
+  totalWidth = segWidths.reduce((a, b) => a + b, 0);
+  
+  // Calculate group start X based on anchor
+  let startX;
+  if (anchor === 'end') startX = x - totalWidth;
+  else if (anchor === 'middle') startX = x - totalWidth / 2;
+  else startX = x;
+  
+  let curX = startX;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (seg.type === 'emoji') {
+      const dataUri = emojiCache.get(seg.value);
+      if (dataUri) {
+        svgParts += `\n  <image href="${dataUri}" x="${curX}" y="${y - emojiSize + 2}" width="${emojiSize}" height="${emojiSize}"/>`;
+      } else {
+        svgParts += `\n  <text x="${curX}" y="${y}" class="${cssClass}">${escapeXml(seg.value)}</text>`;
+      }
+      curX += emojiSize;
+    } else {
+      svgParts += `\n  <text x="${curX}" y="${y}" text-anchor="start" class="${cssClass}">${escapeXml(seg.value)}</text>`;
+      curX += segWidths[i];
+    }
+  }
+  
+  return svgParts;
+}
+
 // Generate SVG table
-function generateTableSvg(data, opts) {
+async function generateTableSvg(data, opts) {
   if (!data || data.length === 0) {
     throw new Error('No data provided');
   }
+  
+  // Pre-cache emoji SVGs from all text in the table
+  const allTexts = [];
+  data.forEach(row => Object.values(row).forEach(v => allTexts.push(String(v))));
+  if (opts.title) allTexts.push(opts.title);
+  const emojiCache = await precacheEmojis(allTexts);
   
   // Determine columns
   let columns = opts.columns || Object.keys(data[0]);
@@ -237,8 +296,7 @@ function generateTableSvg(data, opts) {
     const anchor = alignments[i] === 'end' ? 'end' :
                    alignments[i] === 'middle' ? 'middle' : 'start';
     const headerText = truncateText(headers[i] || col, colWidths[i] - padding.x * 2, fontSize);
-    svg += `
-  <text x="${textX}" y="${y + rowHeight / 2 + fontSize / 3}" text-anchor="${anchor}" class="header">${escapeXml(headerText)}</text>`;
+    svg += renderCell(headerText, textX, y + rowHeight / 2 + fontSize / 3, anchor, 'header', fontSize, emojiCache);
     x += colWidths[i];
   });
   
@@ -263,8 +321,7 @@ function generateTableSvg(data, opts) {
       const anchor = alignments[i] === 'end' ? 'end' :
                      alignments[i] === 'middle' ? 'middle' : 'start';
       const cellText = truncateText(val, colWidths[i] - padding.x * 2, fontSize);
-      svg += `
-  <text x="${textX}" y="${y + rowHeight / 2 + fontSize / 3}" text-anchor="${anchor}" class="cell">${escapeXml(cellText)}</text>`;
+      svg += renderCell(cellText, textX, y + rowHeight / 2 + fontSize / 3, anchor, 'cell', fontSize, emojiCache);
       x += colWidths[i];
     });
     
@@ -299,7 +356,7 @@ async function main() {
   }
   
   // Generate SVG
-  const svg = generateTableSvg(opts.data, opts);
+  const svg = await generateTableSvg(opts.data, opts);
   
   // Convert to PNG
   const pngBuffer = await sharp(Buffer.from(svg))
