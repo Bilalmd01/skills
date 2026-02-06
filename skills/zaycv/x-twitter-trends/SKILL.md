@@ -6,6 +6,8 @@ metadata: {"openclaw":{"requires":{"bins":["twurl"]},"install":[{"id":"ruby","ki
 
 # X (Twitter) Trends CLI
 
+**GitHub:** https://github.com/aycvs2/x-trends
+
 ## Setup
 
 Install twurl (official Twitter CLI):

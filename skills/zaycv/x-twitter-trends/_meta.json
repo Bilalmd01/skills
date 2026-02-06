@@ -3,9 +3,15 @@
   "slug": "x-twitter-trends",
   "displayName": "X Trends",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770269479911,
-    "commit": "https://github.com/clawdbot/skills/commit/92b104605a8aa87d014a5d630faafdb4cd10834f"
+    "version": "1.0.1",
+    "publishedAt": 1770365679836,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770269479911,
+      "commit": "https://github.com/clawdbot/skills/commit/92b104605a8aa87d014a5d630faafdb4cd10834f"
+    }
+  ]
 }
