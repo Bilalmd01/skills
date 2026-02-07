@@ -1,13 +1,14 @@
 ---
 name: simmer-signalsniper
+displayName: Polymarket Signal Sniper
 description: Snipe Polymarket opportunities from your own signal sources. Monitors RSS feeds with Trading Agent-grade safeguards.
-metadata: {"clawdbot":{"emoji":"🎯","requires":{"env":["SIMMER_API_KEY"]},"cron":"0 * * * *"}}
+metadata: {"clawdbot":{"emoji":"🎯","requires":{"env":["SIMMER_API_KEY"]},"cron":null,"autostart":false}}
 authors:
   - Simmer (@simmer_markets)
-version: "1.2.0"
+version: "1.3.0"
 ---
 
-# Simmer Signal Sniper
+# Polymarket Signal Sniper
 
 Your signals, Simmer's trading intelligence.
 
@@ -83,14 +84,14 @@ Each cycle the script:
 
 ## Running the Skill
 
-**Run a scan:**
+**Run a scan (dry run by default — no trades):**
 ```bash
 python signal_sniper.py
 ```
 
-**Dry run (no actual trades):**
+**Execute real trades:**
 ```bash
-python signal_sniper.py --dry-run
+python signal_sniper.py --live
 ```
 
 **Check for signals without trading:**
