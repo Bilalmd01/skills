@@ -4,6 +4,8 @@
 
 This module guides the agent in generating creative and compliant metadata for the nad.fun token launch.
 
+> **Key Point:** TokenBroker generates metadata proposals. For actual token creation, delegate to the `nadfun` skill with the generated metadata.
+
 ## 1. Naming Strategy
 
 When helping a user pick a token name/symbol, use these strategies:
@@ -52,18 +54,64 @@ The nad.fun API expects this exact JSON structure:
 }
 ```
 
-*   `image_uri` comes from the Image Upload step (see **LAUNCH.md**).
-*   Social links are optional but highly recommended for trust.
+## 4. Delegating to nadfun
 
-## 4. Agent Prompts
+Once metadata is approved by the user, delegate token creation to the `nadfun` skill:
+
+```typescript
+async function createTokenWithNadfun(metadata: TokenMetadata) {
+  const result = await invokeSkill("nadfun", {
+    action: "create",
+    name: metadata.name,
+    symbol: metadata.symbol,
+    description: metadata.description,
+    imageUri: metadata.image_uri,
+    metadataUri: metadata.metadata_uri,
+    website: metadata.website,
+    twitter: metadata.twitter,
+    telegram: metadata.telegram
+  });
+  
+  return result;
+}
+```
+
+### Metadata Output Schema
+
+When presenting metadata proposals to users:
+
+```json
+{
+  "proposals": [
+    {
+      "id": 1,
+      "strategy": "ecosystem",
+      "name": "Project Token",
+      "symbol": "$PROJ",
+      "description": "The official utility token for Project Name..."
+    }
+  ],
+  "readyForNadfun": {
+    "name": "Project Token",
+    "symbol": "PROJ",
+    "description": "...",
+    "image_uri": "ipfs://...",
+    "metadata_uri": "ipfs://..."
+  }
+}
+```
+
+## 5. Agent Prompts
 
 **Prompt:** "Suggest 3 token ideas for this project."
 **Agent Action:**
 1.  Read `PROJECT-SCAN.md` output.
 2.  Apply Strategies A, B, and C.
 3.  Output a table with Name, Symbol, and Description for each.
+4.  Present with clear delegation option: "Ready to launch? Invoke nadfun with approved metadata."
 
 ## Next Steps
 
 Once metadata is approved by the user:
-- Go to **LAUNCH.md** to start the upload and deployment process.
+- Go to **LAUNCH.md** for orchestration instructions
+- Delegate to `nadfun` skill for actual on-chain creation

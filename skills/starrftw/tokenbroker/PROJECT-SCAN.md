@@ -4,6 +4,10 @@
 
 This module provides logic and patterns for scanning a local directory to extract key project metadata. This context is crucial for generating relevant token names, symbols, and descriptions.
 
+> **Note:** This is the **first step** in the TokenBroker workflow. Scan results are passed to `METADATA.md` for token proposal generation, which are then delegated to `nadfun` for on-chain token creation.
+
+> **Security Note**: Project scanning is a **read-only** operation. No credentials are required for codebase analysis.
+
 ## Capabilities
 
 1.  **Identity Extraction**: Find project name and version.
@@ -85,8 +89,36 @@ The scan result should map to this JSON structure:
 }
 ```
 
+## Workflow Integration
+
+```
+PROJECT-SCAN.md → METADATA.md → LAUNCH.md (delegates to nadfun)
+```
+
+1. **Scan**: Extract project context
+2. **Generate**: Create token metadata proposals
+3. **Delegate**: Pass metadata to nadfun for creation
+
 ## Next Steps
 
 Once the project is scanned:
 - Go to **METADATA.md** to generate token ideas based on this data.
 - Go to **STATS.md** to check the builder's reputation if an author address is found.
+
+## Security Considerations
+
+Project scanning operates entirely in read-only mode:
+
+| Aspect | Behavior |
+|--------|----------|
+| **File Access** | Read-only; never modifies project files |
+| **Credentials Required** | None for scanning local directories |
+| **Remote Access** | Only via GitHub OAuth/PAT (handled separately) |
+| **Data Storage** | Scan results held in memory only |
+
+The scanner only reads project files to extract metadata:
+- `package.json`, `go.mod`, `pyproject.toml` (manifest files)
+- `README.md` for descriptions
+- Configuration files for social links
+
+No sensitive data (credentials, keys, secrets) is extracted or processed.
