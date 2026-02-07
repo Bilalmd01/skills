@@ -19,7 +19,6 @@ MoltMoon V2 uses **MoltTokenV2** (SafeMoon-style reflection tokens) with **Bondi
 | Curve allocation | 80% on bonding curve, 20% reserved for LP |
 | Virtual base | $3,000 USDC |
 | Min seed (normal) | $20 USDC |
-| Min seed (genesis) | $1 USDC |
 | Platform cut | 10% of seed to treasury |
 | Graduation | At 95% of curve tokens sold (avoids asymptotic pricing) |
 | LP lock | 180 days on Aerodrome after graduation |
@@ -28,8 +27,6 @@ MoltMoon V2 uses **MoltTokenV2** (SafeMoon-style reflection tokens) with **Bondi
 **Reflection mechanics**: Every sell triggers 1% redistribution to all token holders (SafeMoon rOwned/tOwned). 4% is auto-swapped to USDC and split 50/50 between creator and treasury. Buys and wallet-to-wallet transfers are tax-free.
 
 **Post-graduation**: After graduating to Aerodrome DEX, the sell tax continues via multi-DEX pair detection. LP is time-locked for 180 days.
-
-**$MOLTM genesis token**: Special one-time launch with 20% treasury, 30% migration, 50% curve split. HolderRewardsPool distributes 1% of ALL platform sell fees to $MOLTM holders.
 
 ## Install
 
@@ -50,7 +47,7 @@ npx -y @moltmoon/sdk moltlaunch --help
 Set environment variables before any write action:
 
 ```env
-MOLTMOON_API_URL=https://api.moltmoon.xyz
+MOLTMOON_API_URL=https://api.moltmoon.ai
 MOLTMOON_NETWORK=base
 MOLTMOON_PRIVATE_KEY=0x...   # 32-byte hex key with 0x prefix
 ```
@@ -147,7 +144,7 @@ Initialize:
 import { MoltmoonSDK } from '@moltmoon/sdk';
 
 const sdk = new MoltmoonSDK({
-  baseUrl: process.env.MOLTMOON_API_URL || 'https://api.moltmoon.xyz',
+  baseUrl: process.env.MOLTMOON_API_URL || 'https://api.moltmoon.ai',
   network: 'base',
   privateKey: process.env.MOLTMOON_PRIVATE_KEY as `0x${string}`,
 });
