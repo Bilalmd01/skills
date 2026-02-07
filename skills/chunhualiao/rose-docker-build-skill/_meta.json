@@ -1,0 +1,11 @@
+{
+  "owner": "chunhualiao",
+  "slug": "rose-docker-build-skill",
+  "displayName": "Rose Docker Build",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1770488784322,
+    "commit": null
+  },
+  "history": []
+}
