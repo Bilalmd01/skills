@@ -1,0 +1,11 @@
+{
+  "owner": "nc9",
+  "slug": "squirrelscan",
+  "displayName": "audit website for SEO, security, performance and 200+ other issues",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770443990779,
+    "commit": null
+  },
+  "history": []
+}
