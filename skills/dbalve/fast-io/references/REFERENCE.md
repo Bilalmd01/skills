@@ -1,6 +1,6 @@
 # Fast.io for AI Agents
 
-> **Version:** 1.13.0 | **Last updated:** 2026-02-05
+> **Version:** 1.14.0 | **Last updated:** 2026-02-07
 >
 > This guide is available at the `/current/agents/` endpoint on the connected API server.
 
@@ -11,11 +11,23 @@ rooms, ask questions about documents using built-in AI, and hand everything off 
 infrastructure to manage, no subscriptions to set up, no credit card required.
 
 **MCP-enabled agents** should connect via the Model Context Protocol for the simplest integration — no raw HTTP calls
-needed. MCP-connected agents receive the full tool documentation, parameters, and guided prompts automatically through
-the MCP protocol (`resources/read`, `prompts/list`, `prompts/get`) for common multi-step operations — see the "MCP
-Prompts" section below. This guide covers platform concepts and capabilities; the MCP server provides tool-level
-details through its standard protocol interface. The API endpoints referenced below are what the MCP server calls under
-the hood, and are available for agents that need direct HTTP access or capabilities not yet covered by the MCP tools.
+needed.
+
+**Connection endpoints:**
+- **Streamable HTTP (recommended):** `https://mcp.fast.io/mcp`
+- **Legacy SSE:** `https://mcp.fast.io/sse`
+
+The MCP server exposes **14 consolidated tools** using action-based routing — each tool covers a domain (e.g., `auth`,
+`storage`, `upload`) and uses an `action` parameter to select the operation. See the "MCP Tool Architecture" section
+below for the full tool list.
+
+MCP-connected agents also receive guided prompts (`prompts/list`, `prompts/get`) for common multi-step operations — see
+the "MCP Prompts" section below — and can read resources (`resources/read`) including `skill://guide` for full tool
+documentation and `session://status` for current authentication state.
+
+This guide covers platform concepts and capabilities; the MCP server provides tool-level details through its standard
+protocol interface. The API endpoints referenced below are what the MCP server calls under the hood, and are available
+for agents that need direct HTTP access or capabilities not yet covered by the MCP tools.
 
 ---
 
@@ -125,6 +137,25 @@ Alternatively, the human can invite the agent programmatically:
 - **Org:** `POST /current/org/{org_id}/members/{agent_email}/` with `permission` level
 - **Workspace:** `POST /current/workspace/{workspace_id}/members/{agent_email}/` with `permission` level
 
+### Option 4: PKCE Browser Login — Secure Authentication Without Sharing Passwords
+
+For the most secure authentication flow — especially when a human wants to authorize an agent without sharing their
+password — use the PKCE (Proof Key for Code Exchange) browser login. No credentials pass through the agent at any point.
+
+1. Agent calls `POST /current/oauth/authorize/` with PKCE parameters (`code_challenge`, `code_challenge_method=S256`,
+   `client_id`, `redirect_uri`, `response_type=code`) — gets back an authorization URL
+2. The user opens the URL in their browser, signs in (supports SSO), and approves access
+3. The browser displays an authorization code that the user copies back to the agent
+4. Agent calls `POST /current/oauth/token/` with `grant_type=authorization_code`, the authorization `code`, and the
+   PKCE `code_verifier` — receives an access token and refresh token
+5. The agent is now authenticated. Access tokens last **1 hour**, refresh tokens last **30 days**. Use
+   `POST /current/oauth/token/` with `grant_type=refresh_token` to get new access tokens without repeating the flow.
+
+This is the recommended approach when:
+- A human wants to grant agent access without sharing their password
+- The organization uses SSO and password-based auth isn't available
+- You need the strongest security guarantees (no credentials stored by the agent)
+
 ### Recommendations
 
 | Scenario | Recommended Approach |
@@ -133,6 +164,7 @@ Alternatively, the human can invite the agent programmatically:
 | Helping a human manage their existing account | Ask the human to create an API key for you |
 | Working within a human's org with your own identity | Create an agent account, have the human invite you |
 | Building something to hand off to a human | Create an agent account, build it, then transfer the org |
+| Human wants to authorize an agent without sharing credentials | Use PKCE browser login (Option 4) |
 
 ### Authentication & Token Lifecycle
 
@@ -733,7 +765,7 @@ sidecar endpoint:
 
 1. `POST /blob` with your `Mcp-Session-Id` header and the raw bytes as the request body
 2. The server returns a `blob_id`
-3. Pass `blob_ref` (the `blob_id`) instead of the base64-encoded `chunk` field when calling `upload-chunk`
+3. Pass `blob_ref` (the `blob_id`) instead of the base64-encoded `chunk` field when calling the `upload` tool with action `chunk`
 
 This is MCP-specific — the REST API continues to use `multipart/form-data` as described above.
 
@@ -1026,6 +1058,57 @@ the human upgrades when they're ready. The agent retains admin access to keep ma
 4. Disable intelligence on storage-only workspaces to avoid ingestion costs
 5. Use attach-only AI chat (no intelligence needed) for one-off analysis to save credits
 6. When credits run low, transfer the org to a human who can upgrade to unlimited credits
+
+---
+
+## MCP Tool Architecture
+
+The MCP server exposes **14 consolidated tools**, each covering a domain. Every tool uses an `action` parameter to
+select the specific operation — agents don't need to discover hundreds of separate tools, just 14 tools with clearly
+named actions.
+
+| Tool         | Domain                          | Example Actions                                                               |
+|--------------|---------------------------------|-------------------------------------------------------------------------------|
+| `auth`       | Authentication                  | `signin`, `signup`, `set-api-key`, `pkce-login`, `pkce-complete`, `status`, `signout` |
+| `org`        | Organizations                   | `list`, `details`, `create`, `update`, `discover-all`                         |
+| `workspace`  | Workspaces                      | `list`, `details`, `create`, `update`, `check-name`                           |
+| `share`      | Shares                          | `list`, `create`, `update`, `delete`, `quickshare-create`                     |
+| `storage`    | Files, folders, locks, previews | `list`, `details`, `search`, `create-folder`, `create-note`, `move`, `delete`, `lock-acquire`, `lock-status`, `lock-release`, `preview-url`, `preview-transform` |
+| `upload`     | File uploads                    | `create-session`, `chunk`, `complete`, `text-file`, `web-import`              |
+| `download`   | Downloads                       | `file-url`, `zip-create`, `quickshare-details`                                |
+| `ai`         | AI chat                         | `chat-create`, `message-send`, `message-read`, `chat-list`                    |
+| `member`     | Members                         | `add`, `update`, `remove`, `details`                                          |
+| `invitation` | Invitations                     | `list`, `send`, `revoke`, `accept-all`                                        |
+| `asset`      | Branding assets                 | `types`, `list`, `upload`, `delete`                                           |
+| `comment`    | Comments                        | `list`, `create`, `details`, `delete`                                         |
+| `event`      | Events & audit                  | `search`, `details`, `summarize`, `activity-poll`                             |
+| `user`       | Account mgmt                    | `me`, `update`, `invitation-list`, `allowed`                                  |
+
+**Resources** available via `resources/read`:
+- `skill://guide` — full tool documentation with parameters and examples
+- `session://status` — current authentication state
+
+### Tool Annotations — Safety & Side Effects
+
+All 14 tools include explicit MCP annotations (`title`, `readOnlyHint`, `destructiveHint`) so agents and agent
+frameworks can make informed decisions about confirmation prompts and automated execution.
+
+**Read-only tools** (safe, no confirmation needed):
+- `download`, `event` — these tools only read data and never modify state
+
+**Non-destructive mutation tools** (create or update, no delete actions):
+- `upload`, `invitation` — these tools create or modify resources but cannot delete them
+
+**Destructive tools** (include delete, purge, or close actions — require user confirmation):
+- `auth`, `user`, `org`, `workspace`, `share`, `storage`, `ai`, `comment`, `member`, `asset` — these tools have at
+  least one action that permanently removes or closes a resource. Agent frameworks should prompt for confirmation before
+  executing destructive actions.
+
+**Credit-consuming operations** to be aware of:
+- AI chat: 1 credit per 100 tokens
+- File uploads: storage credits (100 credits/GB)
+- Downloads: bandwidth credits (212 credits/GB)
+- Document ingestion: 10 credits/page (when intelligence is enabled)
 
 ---
 
