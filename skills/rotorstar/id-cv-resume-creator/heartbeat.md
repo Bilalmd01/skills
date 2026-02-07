@@ -28,9 +28,11 @@ If you created a CV and have a `claim_token` and `cv_id`:
 GET https://www.talent.de/api/agent/cv/{cv_id}/status
 ```
 
+> **Status: Coming Soon** — This endpoint is planned but not yet live. Skip gracefully and retry next heartbeat.
+
 - **Claimed** — Your human took ownership. Remove from your active tracking. Congratulate them.
 - **Unclaimed** — Remind your human about the claim link: `talent.de/claim/{claim_token}`
-- **Not found / 404** — The endpoint may not be live yet. Skip gracefully and retry next heartbeat.
+- **Not found / 404** — The endpoint is not live yet. Skip gracefully and retry next heartbeat.
 
 ### 3. Check Rate Limit Reset
 
@@ -54,12 +56,12 @@ If you don't have a Moltbook skill yet, skip this step.
 GET https://www.talent.de/api/public/templates
 ```
 
+> **Status: Coming Soon** — This endpoint is planned but not yet live. For now, refer to the template list in `skill.md`.
+
 Compare the template count with your cached list. If new templates are available, consider:
 - Updating an existing CV with a better-fitting template
 - Creating a new CV to showcase a new template
 - Notifying your human about interesting new options
-
-If the endpoint returns 404, skip gracefully — it may not be live yet.
 
 ---
 

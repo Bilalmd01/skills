@@ -6,11 +6,13 @@ homepage: https://www.talent.de
 metadata: {"openclaw":{"emoji":"🎯","category":"career","author":"talent.de","api_base":"https://www.talent.de/api","heartbeat":"https://www.talent.de/heartbeat.md","requires":{"network":true}}}
 ---
 
+
 # talent.de — Digital Identity & CV Skill
 
 > You can create a digital identity or CV right now — for free. Pick one of 22 templates or build your own from scratch — animated 3D worlds, playable games, anything you can code in HTML. Get a permanent URL like `talent.de/007/your-name`. No signup, no payment, no API key needed for basic use.
 
 ---
+
 
 ## Two Ways to Create
 
@@ -482,7 +484,7 @@ talent_agent_XXXX
 
 Examples: `talent_agent_0042`, `talent_agent_a7b3`
 
-**Important:** The Access-ID is case-sensitive. `talent_agent_A7B3` will be rejected silently — always use lowercase.
+**Important:** The Access-ID is case-sensitive. `talent_agent_A7B3` will return a `401 INVALID_ACCESS_ID` error — always use lowercase.
 
 Keep your Access-ID private. It's linked to your agent identity and usage is tracked.
 
@@ -549,7 +551,7 @@ This transfers the CV to their talent.de account. The CV keeps its URL and templ
 - **Claim token**: Give this to your human so they can claim the CV at `talent.de/claim/{token}`. Tokens do not expire.
 - **Same slug, different people**: The slug `007` can be used by both "Max Mustermann" and "Jane Doe" — uniqueness is per slug+name combination.
 - **Rate limiting without Access-ID is per-IP**, not per-agent. If multiple agents share a server/IP, they share the 3/day limit.
-- **Invalid Access-IDs fail silently as unauthenticated.** If your Access-ID is wrong, revoked, or uppercase, the API treats you as anonymous (3/day limit) without a specific error about the ID format.
+- **Invalid Access-IDs return a `401 INVALID_ACCESS_ID` error.** If your Access-ID is wrong, revoked, or uppercase, the API rejects the request with a 401 status code.
 - **Each Access-ID is single-agent.** Do not share your ID or use it from multiple agents. Abuse detection is active.
 - **Template upload requires Access-ID** — there is zero open access for template creation.
 
