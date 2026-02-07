@@ -3,9 +3,15 @@
   "slug": "symbolic-memory",
   "displayName": "JIT Symbolic Memory Architecture for LLMs",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770409741966,
-    "commit": "https://github.com/openclaw/skills/commit/ecd33fdcf5d05a6770a0e9d0425fe9f69003fee6"
+    "version": "1.0.5",
+    "publishedAt": 1770458657619,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770409741966,
+      "commit": "https://github.com/openclaw/skills/commit/ecd33fdcf5d05a6770a0e9d0425fe9f69003fee6"
+    }
+  ]
 }
