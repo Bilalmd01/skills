@@ -3,11 +3,16 @@
   "slug": "tiktok-teneo",
   "displayName": "Tiktok - powered by Teneo Protocol",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1770302208080,
-    "commit": "https://github.com/clawdbot/skills/commit/f95c79412072ca7660739eea1e348da927007ae4"
+    "version": "1.0.9",
+    "publishedAt": 1770448422193,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1770302208080,
+      "commit": "https://github.com/clawdbot/skills/commit/f95c79412072ca7660739eea1e348da927007ae4"
+    },
     {
       "version": "1.0.7",
       "publishedAt": 1770216659151,
