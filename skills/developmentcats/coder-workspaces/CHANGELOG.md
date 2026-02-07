@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.5] - 2026-02-06
+
+### Changed
+- Restructured skill to follow standard CLI documentation patterns
+- Setup section now shows environment configuration (matches hass-cli style)
+- Commands no longer reference environment variables directly
+
+## [1.5.4] - 2026-02-06
+
+### Changed
+- Install instructions now point only to official Coder docs
+
+## [1.5.3] - 2026-02-06
+
+### Added
+- Context note clarifying commands run in isolated Coder workspaces, not host
+
+## [1.5.2] - 2026-02-06
+
+### Changed
+- Rewrote skill for agent (not user) as audience
+- Agent now attempts CLI install/auth fixes before asking user
+- Preset handling: try without, use default if exists, ask user only if needed
+
+### Removed
+- Brew install metadata (agent learns install from Coder docs)
+
 ## [1.5.1] - 2026-02-06
 
 ### Changed
