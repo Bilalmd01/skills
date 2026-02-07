@@ -3,9 +3,15 @@
   "slug": "heimdall",
   "displayName": "Heimdall Security Scanner",
   "latest": {
-    "version": "4.0.0",
-    "publishedAt": 1770297018125,
-    "commit": "https://github.com/clawdbot/skills/commit/fab7495a6289673b4c4e93b1985ad06869950175"
+    "version": "1.0.1",
+    "publishedAt": 1770464563629,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "4.0.0",
+      "publishedAt": 1770297018125,
+      "commit": "https://github.com/clawdbot/skills/commit/fab7495a6289673b4c4e93b1985ad06869950175"
+    }
+  ]
 }
