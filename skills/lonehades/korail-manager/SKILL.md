@@ -1,7 +1,7 @@
 ---
 name: korail-manager
-version: 0.1.2
-description: "Korail(KTX/SRT) reservation automation skill. Search, reserve, and watch for tickets. (English/Korean supported)"
+version: 1.0.1
+description: "Korail(KTX/SRT) reservation automation skill. Search, reserve, and watch for tickets. Supports Telegram and Slack notifications. (English/Korean supported)"
 tools:
   - name: korail_search
     description: "Search for trains between two stations."
@@ -41,3 +41,9 @@ dependencies:
   python:
     - requests
     - pycryptodome
+
+browserActions:
+  - label: "KTX/SRT 좌석 검색"
+    prompt: korail_search --dep "서울" --arr "부산"
+  - label: "잔여석 감시 및 예약"
+    prompt: korail_watch --dep "부산" --arr "서울" --date "20260208"

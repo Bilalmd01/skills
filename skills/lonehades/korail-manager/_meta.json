@@ -3,9 +3,15 @@
   "slug": "korail-manager",
   "displayName": "Korail Manager",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1770334089148,
-    "commit": "https://github.com/clawdbot/skills/commit/3afb0d31f66d167494affa861de823277df7f7ea"
+    "version": "1.0.1",
+    "publishedAt": 1770483577533,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1770334089148,
+      "commit": "https://github.com/clawdbot/skills/commit/3afb0d31f66d167494affa861de823277df7f7ea"
+    }
+  ]
 }
