@@ -1,11 +1,17 @@
 {
   "owner": "sxela",
   "slug": "falai",
-  "displayName": "Fal Ai clapi",
+  "displayName": "Fal Ai",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770450939088,
-    "commit": "https://github.com/openclaw/skills/commit/0a7d95a89c1a132b0c16e367125163fd4bb0a084"
+    "version": "1.0.2",
+    "publishedAt": 1770455987316,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770450939088,
+      "commit": "https://github.com/openclaw/skills/commit/0a7d95a89c1a132b0c16e367125163fd4bb0a084"
+    }
+  ]
 }

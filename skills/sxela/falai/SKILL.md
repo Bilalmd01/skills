@@ -62,6 +62,70 @@ input_data = {
 }
 ```
 
+### fal-ai/kling-video/o3/pro/video-to-video/edit (Video → Video)
+Kling O3 Pro for video transformation with AI effects.
+
+**Limits:**
+- Formats: **.mp4, .mov only**
+- Duration: **3-10 seconds**
+- Resolution: **720-2160px**
+- Max file size: **200MB**
+- Max elements: **4 total** (elements + reference images combined)
+
+```python
+input_data = {
+    # Required
+    "prompt": "Change environment to be fully snow as @Image1. Replace animal with @Element1",
+    "video_url": "https://example.com/video.mp4",    # .mp4/.mov, 3-10s, 720-2160px, max 200MB
+    
+    # Optional
+    "image_urls": [                                  # style/appearance references
+        "https://example.com/snow_ref.jpg"           # use as @Image1, @Image2 in prompt
+    ],
+    "keep_audio": True,                              # keep original audio (default: true)
+    "elements": [                                    # characters/objects to inject
+        {
+            "reference_image_urls": [                # reference images for the element
+                "https://example.com/element_ref1.png"
+            ],
+            "frontal_image_url": "https://example.com/element_front.png"  # frontal view (better results)
+        }
+    ],                                               # use as @Element1, @Element2 in prompt
+    "shot_type": "customize"                         # multi-shot type (default: customize)
+}
+```
+
+**Prompt references:**
+- `@Video1` — the input video
+- `@Image1`, `@Image2` — reference images for style/appearance
+- `@Element1`, `@Element2` — elements (characters/objects) to inject
+
+## Input Validation
+
+The skill validates inputs before submission. For multi-input models, ensure all required fields are provided:
+
+```bash
+# Check what a model needs
+python3 scripts/fal_client.py model-info "fal-ai/kling-video/o3/standard/video-to-video/edit"
+
+# List all models with their requirements
+python3 scripts/fal_client.py models
+```
+
+**Before submitting, verify:**
+- ✅ All `required` fields are present and non-empty
+- ✅ File fields (`image_url`, `video_url`, etc.) are URLs or base64 data URIs
+- ✅ Arrays (`image_urls`) have at least one item
+- ✅ Video files are within limits (200MB, 720-2160p)
+
+**Example validation output:**
+```
+⚠️  Note: Reference video in prompt as @Video1
+⚠️  Note: Max 4 total elements (video + images combined)
+❌ Validation failed:
+   - Missing required field: video_url
+```
+
 ## Usage
 
 ### CLI Commands
@@ -87,6 +151,9 @@ python3 scripts/fal_client.py list
 
 # Convert local image to base64 data URI
 python3 scripts/fal_client.py to-data-uri /path/to/image.jpg
+
+# Convert local video to base64 data URI (with validation)
+python3 scripts/fal_client.py video-to-uri /path/to/video.mp4
 ```
 
 ### Python Usage
