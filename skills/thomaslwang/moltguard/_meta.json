@@ -3,11 +3,16 @@
   "slug": "moltguard",
   "displayName": "moltguard",
   "latest": {
-    "version": "2.0.1",
-    "publishedAt": 1770378286178,
-    "commit": "https://github.com/openclaw/skills/commit/0af5745cb83ee90f852aab421da638f6bca7af55"
+    "version": "3.0.4",
+    "publishedAt": 1770422429980,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.1",
+      "publishedAt": 1770378286178,
+      "commit": "https://github.com/openclaw/skills/commit/0af5745cb83ee90f852aab421da638f6bca7af55"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1770306512990,
