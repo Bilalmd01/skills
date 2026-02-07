@@ -3,9 +3,15 @@
   "slug": "piv",
   "displayName": "PIV",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770400765748,
-    "commit": "https://github.com/openclaw/skills/commit/34a66e9aebef9d06e707fdf1ff327679cbf0af70"
+    "version": "1.0.4",
+    "publishedAt": 1770441577423,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770400765748,
+      "commit": "https://github.com/openclaw/skills/commit/34a66e9aebef9d06e707fdf1ff327679cbf0af70"
+    }
+  ]
 }
