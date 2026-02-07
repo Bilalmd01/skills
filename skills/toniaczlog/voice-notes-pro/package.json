@@ -1,0 +1,11 @@
+{
+  "name": "voice-notes-pro",
+  "version": "2.0.0",
+  "description": "Voice notes with 6 categories + people database",
+  "main": "voice-notes-pro.js",
+  "dependencies": {},
+  "openclaw": {
+    "skill": true,
+    "platforms": ["whatsapp"]
+  }
+}
