@@ -146,9 +146,9 @@ class OpenKMClient:
     def delete(self, doc_id):
         r = self._req(
             "DELETE",
-            f"/OpenKM/services/rest/document/delete/{quote(doc_id, safe='')}",
+            f"/OpenKM/services/rest/document/delete?docId={quote(doc_id, safe='')}",
         )
-        return r.status_code == 200
+        return r.status_code in (200, 204)
 
     # ---------- Metadata & Organization ----------
 
@@ -246,6 +246,112 @@ class OpenKMClient:
                 return versions if isinstance(versions, list) else [versions]
             return data
         raise OpenKMError(f"{r.status_code}: {r.text}")
+
+    def checkout(self, doc_id):
+        """Checkout a document for editing (creates a new version draft)"""
+        r = self._req(
+            "GET",
+            f"/OpenKM/services/rest/document/checkout?docId={quote(doc_id, safe='')}",
+        )
+        if r.status_code in (200, 204):
+            return {"checkedOut": True, "docId": doc_id}
+        raise OpenKMError(f"{r.status_code}: {r.text}")
+
+    def cancel_checkout(self, doc_id):
+        """Cancel checkout and discard changes"""
+        r = self._req(
+            "PUT",
+            f"/OpenKM/services/rest/document/cancelCheckout?docId={quote(doc_id, safe='')}",
+            headers={"Accept": "application/json"},
+        )
+        if r.status_code in (200, 201, 204):
+            return {"cancelled": True, "docId": doc_id}
+        raise OpenKMError(f"{r.status_code}: {r.text}")
+
+    def checkin(self, doc_id, local_path, comment=""):
+        """Checkin a document with new content (creates a new version)
+        
+        Args:
+            doc_id: Document UUID
+            local_path: Path to local file with new content
+            comment: Optional version comment
+        """
+        with open(local_path, "rb") as f:
+            files = {
+                "content": (os.path.basename(local_path), f, "application/octet-stream"),
+            }
+            data = {"docId": doc_id, "comment": comment}
+            r = self._req(
+                "POST",
+                "/OpenKM/services/rest/document/checkin",
+                files=files,
+                data=data,
+                headers={"Accept": "application/json"},
+            )
+        if r.status_code in (200, 201):
+            return r.json()
+        raise OpenKMError(f"{r.status_code}: {r.text}")
+
+    def set_content(self, doc_id, local_path):
+        """Update document content (creates new version in OpenKM)"""
+        with open(local_path, "rb") as f:
+            r = self._req(
+                "PUT",
+                f"/OpenKM/services/rest/document/setContent?docId={quote(doc_id, safe='')}",
+                data=f,
+                headers={"Accept": "application/json"},
+            )
+        if r.status_code in (200, 201, 204):
+            return {"updated": True, "docId": doc_id}
+        raise OpenKMError(f"{r.status_code}: {r.text}")
+
+    def upload_version(self, doc_path, local_path, comment=""):
+        """Upload a new version of an existing document
+        
+        Performs: checkout → checkin workflow
+        """
+        # First get document ID from path
+        doc = self.get_document_by_path(doc_path)
+        if not doc:
+            raise OpenKMError(f"Document not found: {doc_path}")
+        
+        doc_id = doc.get("uuid") or doc.get("docId")
+        
+        # Checkout
+        self.checkout(doc_id)
+        
+        try:
+            # Checkin with new content
+            result = self.checkin(doc_id, local_path, comment)
+            return result
+        except Exception as e:
+            # Cancel checkout on error
+            try:
+                self.cancel_checkout(doc_id)
+            except:
+                pass
+            raise e
+
+    def get_document_by_path(self, path):
+        """Get document info by path using search"""
+        # Use search to find document by exact path
+        r = self._req(
+            "GET",
+            f"/OpenKM/services/rest/search/findByName?name={quote(os.path.basename(path), safe='')}",
+            headers={"Accept": "application/json"},
+        )
+        if r.status_code == 200:
+            data = r.json()
+            if isinstance(data, dict) and "queryResult" in data:
+                results = data["queryResult"]
+                if not isinstance(results, list):
+                    results = [results]
+                # Find exact path match
+                for result in results:
+                    node = result.get("node", {})
+                    if node.get("path") == path:
+                        return node
+        return None
 
     def restore_version(self, doc_id, version_name):
         """Restore document to a specific version"""
@@ -555,6 +661,23 @@ def main():
     s.add_argument("--version", required=True, help="Version name")
     s.add_argument("--local-path", required=True)
 
+    # Checkout/Checkin commands
+    s = sp.add_parser("checkout")
+    s.add_argument("--doc-id", required=True, help="Document UUID to checkout")
+
+    s = sp.add_parser("cancel-checkout")
+    s.add_argument("--doc-id", required=True, help="Document UUID to cancel checkout")
+
+    s = sp.add_parser("checkin")
+    s.add_argument("--doc-id", required=True, help="Document UUID to checkin")
+    s.add_argument("--local-path", required=True, help="Path to file with new content")
+    s.add_argument("--comment", default="", help="Version comment")
+
+    s = sp.add_parser("upload-version")
+    s.add_argument("--okm-path", required=True, help="Document path in OpenKM (e.g., /okm:root/file.pdf)")
+    s.add_argument("--local-path", required=True, help="Path to local file with new content")
+    s.add_argument("--comment", default="", help="Version comment")
+
     # Search commands
     s = sp.add_parser("search-content")
     s.add_argument("--content", required=True, help="Full-text search query")
@@ -659,6 +782,14 @@ def main():
         print(json.dumps(cli.add_task_comment(args.task_id, args.message), indent=2))
     elif args.cmd == "assign-task":
         print(json.dumps(cli.assign_task(args.task_id, args.actor_id), indent=2))
+    elif args.cmd == "checkout":
+        print(json.dumps(cli.checkout(args.doc_id), indent=2))
+    elif args.cmd == "cancel-checkout":
+        print(json.dumps(cli.cancel_checkout(args.doc_id), indent=2))
+    elif args.cmd == "checkin":
+        print(json.dumps(cli.checkin(args.doc_id, args.local_path, args.comment), indent=2))
+    elif args.cmd == "upload-version":
+        print(json.dumps(cli.upload_version(args.okm_path, args.local_path, args.comment), indent=2))
 
 if __name__ == "__main__":
     main()

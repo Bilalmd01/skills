@@ -59,4 +59,4 @@ Examples:
   python3 openkm_cli.py search-content --content "server hosting"
   python3 openkm_cli.py search-keywords --keywords "Invoice,Hosting"
   python3 openkm_cli.py workflows
-  python3 openkm_cli.py tasks --actor-id picard
+  python3 openkm_cli.py tasks --actor-id john.doe

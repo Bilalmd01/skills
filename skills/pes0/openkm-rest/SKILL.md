@@ -142,7 +142,7 @@ python3 openkm_cli.py search-keywords --keywords "Invoice,Hosting"
 
 ### General search with filters
 ```bash
-python3 openkm_cli.py search --content "server" --author "picard" --path "/okm:root"
+python3 openkm_cli.py search --content "server" --author "john.doe" --path "/okm:root"
 ```
 
 ## Workflows
@@ -167,7 +167,7 @@ python3 openkm_cli.py start-workflow --workflow-uuid <workflow-uuid> --doc-id <d
 python3 openkm_cli.py tasks --doc-id <uuid>
 
 # Tasks for an actor
-python3 openkm_cli.py tasks --actor-id picard
+python3 openkm_cli.py tasks --actor-id john.doe
 ```
 
 ### Complete a task
@@ -182,7 +182,7 @@ python3 openkm_cli.py comment-task --task-id <task-id> --message "Review complet
 
 ### Assign task to actor
 ```bash
-python3 openkm_cli.py assign-task --task-id <task-id> --actor-id picard
+python3 openkm_cli.py assign-task --task-id <task-id> --actor-id john.doe
 ```
 
 ## Notes
