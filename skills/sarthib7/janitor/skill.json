@@ -1,0 +1,55 @@
+{
+  "name": "janitor",
+  "version": "1.0.0-lite",
+  "description": "Lightweight AI agent cleanup skill - removes cache, logs, and temp files",
+  "author": "OpenClaw Team",
+  "license": "MIT",
+  "main": "janitor.js",
+  "type": "skill",
+  "commands": [
+    {
+      "name": "janitor",
+      "description": "Clean up cache, logs, and temporary files",
+      "subcommands": [
+        {
+          "name": "clean",
+          "description": "Run immediate cleanup"
+        },
+        {
+          "name": "stats",
+          "description": "Show cleanup statistics"
+        },
+        {
+          "name": "report",
+          "description": "Generate cleanup report"
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "filesystem:read",
+    "filesystem:write"
+  ],
+  "config": {
+    "defaults": {
+      "enabled": true,
+      "unusedFileAgeDays": 7
+    }
+  },
+  "keywords": [
+    "cleanup",
+    "cache",
+    "maintenance",
+    "janitor",
+    "ai-agent",
+    "clawhub"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openclaw/janitor"
+  },
+  "links": {
+    "fullVersion": "https://github.com/openclaw/janitor",
+    "documentation": "https://github.com/openclaw/janitor#readme"
+  }
+}
