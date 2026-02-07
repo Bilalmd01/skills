@@ -1,3 +1,7 @@
+---
+name: kusa
+description: Generate images using the Kusa.pics API.
+---
 # Kusa.pics Image Generator
 
 Generate images using the Kusa.pics API.
