@@ -1,35 +1,25 @@
 ---
 name: openclaw-agent-token-optimizer
 slug: openclaw-agent-token-optimizer
-version: 1.0.0
-description: Optimize an OpenClaw agent setup (model routing, context management, delegation, rules, memory). Use when asked about optimizing agents, improving OpenClaw setup, or agent best practices.
+version: 1.0.1
+description: DEPRECATED — this page exists due to ClawHub review/visibility confusion. Please use the canonical skill instead.
 triggers:
-  - optimize agent
-  - optimizing agent
-  - improve OpenClaw setup
-  - agent best practices
-  - OpenClaw optimization
+  - openclaw-agent-token-optimizer
+  - deprecated skill
 ---
 
-# OpenClaw Agent Optimization
+# Deprecated: use `phenomenoner/openclaw-agent-optimize`
 
-Use this skill to tune an OpenClaw workspace for **cost-aware routing**, **parallel-first delegation**, and **lean context**.
+This skill entry is **deprecated**.
 
-## Workflow (concise)
-1. **Audit rules + memory**: ensure rules are modular/short; memory is only restart-critical facts.
-2. **Model routing**: confirm tiered routing (lightweight / mid / deep) aligns with live config.
-3. **Context discipline**: apply progressive disclosure; move large static data to references/scripts.
-4. **Delegation protocol**: parallelize independent tasks; use sub-agents for long/isolated work.
-5. **Heartbeat optimization**: treat heartbeat as control-plane; move heavy checks to isolated cron/scripts; offer profiles A/B/C and require user choice if removing checks.
-6. **Safeguards**: add anti-loop + budget guardrails; prefer fallbacks over retries.
+Why it exists:
+- ClawHub can temporarily hide updated skills while they are in review (審核中).
+- We mistakenly re-uploaded the same skill under a different name.
 
-## References
-- `references/optimization-playbook.md`
-- `references/model-selection.md`
-- `references/context-management.md`
-- `references/agent-orchestration.md`
-- `references/cron-optimization.md`
-- `references/heartbeat-optimization.md`
-- `references/memory-patterns.md`
-- `references/continuous-learning.md`
-- `references/safeguards.md`
+✅ Canonical skill:
+- https://clawhub.ai/phenomenoner/openclaw-agent-optimize
+
+Install:
+```bash
+clawhub install phenomenoner/openclaw-agent-optimize
+```
