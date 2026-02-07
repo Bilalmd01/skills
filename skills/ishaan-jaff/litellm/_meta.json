@@ -1,0 +1,11 @@
+{
+  "owner": "ishaan-jaff",
+  "slug": "litellm",
+  "displayName": "LiteLLM",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770488429166,
+    "commit": null
+  },
+  "history": []
+}
