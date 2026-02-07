@@ -1,0 +1,11 @@
+{
+  "owner": "datadrivenconstruction",
+  "slug": "resource-allocation-optimizer",
+  "displayName": "Resource Allocation Optimizer",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770476087211,
+    "commit": null
+  },
+  "history": []
+}
