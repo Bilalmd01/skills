@@ -3,11 +3,16 @@
   "slug": "research-cog",
   "displayName": "research-cog",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770270580686,
-    "commit": "https://github.com/clawdbot/skills/commit/c4bc896bec5f5998028a8eacbeca7a57dc5024f7"
+    "version": "1.0.2",
+    "publishedAt": 1770411039848,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770270580686,
+      "commit": "https://github.com/clawdbot/skills/commit/c4bc896bec5f5998028a8eacbeca7a57dc5024f7"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770176301747,
