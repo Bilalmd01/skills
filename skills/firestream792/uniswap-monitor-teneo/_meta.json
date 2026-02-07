@@ -3,11 +3,16 @@
   "slug": "uniswap-monitor-teneo",
   "displayName": "Uniswap Monitor - powered by Teneo Protocol",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770302211249,
-    "commit": "https://github.com/clawdbot/skills/commit/57fdab2a7e4d2d7dc713cc2936cc54c5699ccb94"
+    "version": "1.0.6",
+    "publishedAt": 1770448424851,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770302211249,
+      "commit": "https://github.com/clawdbot/skills/commit/57fdab2a7e4d2d7dc713cc2936cc54c5699ccb94"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1770216661608,
