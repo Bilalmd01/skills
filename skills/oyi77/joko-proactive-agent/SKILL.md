@@ -1,8 +1,9 @@
 ---
-name: proactive-agent
-version: 3.1.0
+slug: joko-proactive-agent
+name: Joko Proactive Agent
+version: 1.0.0
 description: "Transform AI agents from task-followers into proactive partners that anticipate needs and continuously improve. Now with WAL Protocol, Working Buffer, Autonomous Crons, and battle-tested patterns. Part of the Hal Stack 🦞"
-author: halthelobster
+author: oyi77
 ---
 
 # Proactive Agent 🦞
