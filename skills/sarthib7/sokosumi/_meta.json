@@ -3,11 +3,16 @@
   "slug": "sokosumi",
   "displayName": "Sokosumi Agentic Marketplace",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770308630992,
-    "commit": "https://github.com/clawdbot/skills/commit/4820110406b69dc89b146b77c8b2440ba44202a2"
+    "version": "1.0.3",
+    "publishedAt": 1770457361955,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770308630992,
+      "commit": "https://github.com/clawdbot/skills/commit/4820110406b69dc89b146b77c8b2440ba44202a2"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770242148202,
