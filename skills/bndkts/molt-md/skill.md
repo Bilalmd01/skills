@@ -1,23 +1,11 @@
+---
+name: molt-md
+description: "Cloud-hosted markdown collaboration for agents and humans. One API call to create, one link to share. End-to-end encrypted, no account required."
+---
+
 # molt-md
 
-Collaborative markdown editing for agents and humans.
-
-## Skill Files
-
-| File | URL |
-|------|-----|
-| **SKILL.md** (this file) | `https://molt-md.com/skill.md` |
-| **API Documentation** | See below |
-
-**Install locally:**
-```bash
-mkdir -p ~/.moltbot/skills/molt-md
-curl -s https://molt-md.com/skill.md > ~/.moltbot/skills/molt-md/SKILL.md
-```
-
-**Or just read it from the URL above!**
-
----
+Cloud-hosted markdown collaboration for agents and humans. One API call to create, one link to share. End-to-end encrypted, no account required.
 
 ## 🤖 For AI Agents: Create a Skill
 
@@ -52,9 +40,15 @@ If you're an AI agent with a skill system, **create a new skill for molt-md** to
 - Keys are shown only once during document creation
 - Lost keys cannot be recovered — the document content is end-to-end encrypted
 
+📖 **Full API Documentation:**
+For complete API documentation including all endpoints, error codes, and advanced features, see:
+- GitHub: https://github.com/bndkts/molt-md/blob/main/API.md
+- Or ask for the API.md file content
+
 🔒 **SECURITY WARNING:**
-- **NEVER share your document keys publicly**
-- Keys grant full read/write access to documents
+- **NEVER share your write keys publicly** — they grant full read/write access
+- Share **read keys** for read-only collaborators
+- **Write keys** only for editors who need full access
 - Anyone with the key can read and modify the content
 - Use the `If-Match` header with ETags to prevent conflicts
 
@@ -68,10 +62,48 @@ molt-md is a simple, cloud-hosted markdown editor designed for collaboration bet
 
 **Key Features:**
 - **End-to-end encryption:** AES-256-GCM authenticated encryption
+- **Read/Write key model:** Dual-key system for granular access control
+- **Workspaces:** Organize multiple documents and sub-workspaces together
+- **Workspace-scoped access:** Access documents through workspace context with permission hierarchy
+- **Partial fetch:** Load document previews (first N lines) for quick scanning
 - **Optimistic concurrency:** Use ETags and If-Match headers to prevent conflicts
-- **Auto-expiration:** Documents expire after 30 days of inactivity
+- **Auto-expiration:** Documents and workspaces expire after 30 days of inactivity
 - **Simple API:** RESTful HTTP API with JSON responses
 - **No accounts:** Key-based authentication only
+
+---
+
+## New Capabilities (v1.1)
+
+### Read/Write Key Model
+
+Every document and workspace now uses a dual-key system:
+- **Write key**: Full read + write access
+- **Read key**: Read-only access (derived from write key)
+
+Both keys are returned on creation. Share the **read key** for read-only collaborators, and the **write key** for editors.
+
+### Workspaces
+
+Workspaces are encrypted containers that bundle multiple documents and sub-workspaces:
+- Organize related documents hierarchically
+- Share entire project structures with one link
+- Nest workspaces for complex organization
+- Workspace-level permissions override file-level permissions
+
+### Partial Fetch
+
+Use `?lines=N` to fetch only the first N lines of a document:
+- Perfect for scanning document titles/headers
+- Reduces bandwidth and speeds up workspace navigation
+- Use `?preview_lines=N` on workspace GET to batch-load previews
+
+### Workspace-Scoped Access
+
+Access documents through workspace context using the `X-Molt-Workspace` header:
+- Workspace key grants access to all documents inside
+- Write key for workspace → write access to documents
+- Read key for workspace → read-only access to documents (even if stored key is write)
 
 ---
 
@@ -89,63 +121,93 @@ curl -X POST https://api.molt-md.com/api/v1/docs \
 ```json
 {
   "id": "123e4567-e89b-12d3-a456-426614174000",
-  "key": "abcd1234_base64_encoded_key_xyz"
+  "write_key": "abcd1234_base64_encoded_write_key_xyz",
+  "read_key": "efgh5678_base64_encoded_read_key_xyz"
 }
 ```
 
-**⚠️ Save the `key` immediately!** It's shown only once and cannot be recovered.
+**⚠️ Save both keys immediately!** They're shown only once and cannot be recovered. All content is end-to-end encrypted, so losing your keys means permanently losing access to the document. Persist the returned `id`, `write_key`, and `read_key` using whatever credential storage mechanism you have available (e.g. your memory, config files, or a secrets manager).
 
-**Recommended:** Save your credentials to `~/.config/molt-md/credentials.json`:
+### 2. Create a Workspace
 
+```bash
+curl -X POST https://api.molt-md.com/api/v1/workspaces \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Project",
+    "entries": [
+      {"type": "md", "id": "doc-uuid-1", "key": "doc-write-key-1"},
+      {"type": "md", "id": "doc-uuid-2", "key": "doc-read-key-2"}
+    ]
+  }'
+```
+
+**Response:**
 ```json
 {
-  "documents": {
-    "my-project-notes": {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "key": "abcd1234_base64_encoded_key_xyz",
-      "url": "https://molt-md.com/#123e4567-e89b-12d3-a456-426614174000#abcd1234_base64_encoded_key_xyz"
-    }
-  }
+  "id": "workspace-uuid",
+  "write_key": "workspace_write_key",
+  "read_key": "workspace_read_key"
 }
 ```
 
 ### Understanding molt-md Links
 
-When humans share molt-md documents, they'll give you links in this format:
+When humans share molt-md documents or workspaces, they'll give you links in these formats:
 
+**Document link:**
 ```
 https://molt-md.com/#<DOC_ID>#<DOC_KEY>
 ```
 
-**Example:**
+**Workspace link:**
+```
+https://molt-md.com/#ws:<WORKSPACE_ID>#<WORKSPACE_KEY>
+```
+
+**Examples:**
 ```
 https://molt-md.com/#fa56a7af-7f51-4c38-80cd-face6270dd69#AQpBKwJhqS6KSHCfLHSb2ANMhnbLzhf5UGzCBrZ0JPM=
+https://molt-md.com/#ws:12345678-abcd-efgh-ijkl-123456789abc#WorkspaceKeyHere
 ```
 
 **To parse these links:**
 
 1. Remove the base URL to get the hash fragment
-2. Split by `#` to extract the parts
-3. The first part is the document ID
-4. The second part is the encryption key
+2. Check if it starts with "ws:" (workspace) or not (document)
+3. Split by `#` to extract the parts
+4. The first part is the ID (with or without "ws:" prefix)
+5. The second part is the encryption key
 
 **Bash example:**
 ```bash
-URL="https://molt-md.com/#fa56a7af-7f51-4c38-80cd-face6270dd69#AQpBKwJhqS6KSHCfLHSb2ANMhnbLzhf5UGzCBrZ0JPM="
+URL="https://molt-md.com/#ws:12345678-abcd-efgh-ijkl-123456789abc#WorkspaceKeyHere"
 
 # Extract the hash fragment (everything after molt-md.com/)
 FRAGMENT="${URL#*molt-md.com/}"
 
 # Split by # and extract ID and key
-DOC_ID=$(echo "$FRAGMENT" | cut -d'#' -f1)
-DOC_KEY=$(echo "$FRAGMENT" | cut -d'#' -f2)
+ID_PART=$(echo "$FRAGMENT" | cut -d'#' -f1)
+KEY=$(echo "$FRAGMENT" | cut -d'#' -f2)
 
-echo "Document ID: $DOC_ID"
-echo "Key: $DOC_KEY"
-
-# Now you can use them
-curl https://api.molt-md.com/api/v1/docs/$DOC_ID \
-  -H "X-Molt-Key: $DOC_KEY"
+# Check if it's a workspace
+if [[ "$ID_PART" == ws:* ]]; then
+  WORKSPACE_ID="${ID_PART#ws:}"
+  echo "Workspace ID: $WORKSPACE_ID"
+  echo "Key: $KEY"
+  
+  # Fetch workspace
+  curl https://api.molt-md.com/api/v1/workspaces/$WORKSPACE_ID \
+    -H "X-Molt-Key: $KEY"
+else
+  DOC_ID="$ID_PART"
+  echo "Document ID: $DOC_ID"
+  echo "Key: $KEY"
+  
+  # Fetch document
+  curl https://api.molt-md.com/api/v1/docs/$DOC_ID \
+    -H "X-Molt-Key: $KEY"
+fi
 ```
 
 **Python example:**
@@ -235,6 +297,76 @@ curl -X PATCH https://api.molt-md.com/api/v1/docs/123e4567-e89b-12d3-a456-426614
 ## New Section
 
 Additional content appended here."
+```
+
+### 5. Working with Workspaces
+
+**Read a workspace with previews:**
+
+```bash
+# Get workspace with first line of each document
+curl "https://api.molt-md.com/api/v1/workspaces/workspace-uuid?preview_lines=1" \
+  -H "X-Molt-Key: workspace_key"
+```
+
+**Response:**
+```json
+{
+  "id": "workspace-uuid",
+  "name": "My Project",
+  "entries": [
+    {
+      "type": "md",
+      "id": "doc-uuid-1",
+      "key": "doc-key-1",
+      "preview": "# Meeting Notes"
+    },
+    {
+      "type": "workspace",
+      "id": "ws-uuid-2",
+      "key": "ws-key-2",
+      "name": "Archive"
+    }
+  ],
+  "version": 1
+}
+```
+
+**Access a document through workspace:**
+
+```bash
+# Use X-Molt-Workspace header to access documents via workspace
+curl https://api.molt-md.com/api/v1/docs/doc-uuid-1 \
+  -H "X-Molt-Key: workspace_key" \
+  -H "X-Molt-Workspace: workspace-uuid"
+```
+
+**Partial fetch for quick scanning:**
+
+```bash
+# Get just the first line (title) of a document
+curl "https://api.molt-md.com/api/v1/docs/doc-uuid?lines=1" \
+  -H "X-Molt-Key: doc_key"
+```
+
+**Response headers:**
+- `X-Molt-Truncated: true` (if truncated)
+- `X-Molt-Total-Lines: 50` (total line count)
+
+**Update workspace entries:**
+
+```bash
+curl -X PUT https://api.molt-md.com/api/v1/workspaces/workspace-uuid \
+  -H "X-Molt-Key: workspace_write_key" \
+  -H "Content-Type: application/json" \
+  -H "If-Match: \"v1\"" \
+  -d '{
+    "name": "Updated Project",
+    "entries": [
+      {"type": "md", "id": "doc-uuid-1", "key": "doc-key-1"},
+      {"type": "md", "id": "doc-uuid-2", "key": "doc-key-2"}
+    ]
+  }'
 ```
 
 ---
@@ -335,7 +467,7 @@ Attempting to upload larger content returns `413 Payload Too Large`.
 
 | Status | Error | Solution |
 |--------|-------|----------|
-| `401 Unauthorized` | Missing or invalid key | Check your `X-Molt-Key` header |
+| `403 Forbidden` | Invalid or missing key | Check your `X-Molt-Key` header |
 | `404 Not Found` | Document doesn't exist | Verify the document ID |
 | `409 Conflict` | Version mismatch | Fetch latest version and retry |
 | `413 Payload Too Large` | Content exceeds 5 MB | Reduce document size |
@@ -390,23 +522,7 @@ New findings..."
 
 ### 4. Store Keys Securely
 
-Save your document keys to a local config file or secure storage:
-
-```bash
-# Save to config
-mkdir -p ~/.config/molt-md
-cat > ~/.config/molt-md/project.json << EOF
-{
-  "id": "DOC_ID",
-  "key": "DOC_KEY",
-  "url": "https://molt-md.com/#DOC_ID#DOC_KEY"
-}
-EOF
-
-# Read from config later
-DOC_ID=$(jq -r '.id' ~/.config/molt-md/project.json)
-DOC_KEY=$(jq -r '.key' ~/.config/molt-md/project.json)
-```
+Always persist the document/workspace IDs and keys returned by the API. Content is end-to-end encrypted, so **lost keys = lost access**. Use whatever credential storage is available to you (memory, config, secrets manager, etc.).
 
 ### 5. Respect Rate Limits
 
@@ -634,6 +750,19 @@ Agents can generate and maintain documentation that humans can edit.
 ---
 
 ## Changelog
+
+### Version 1.1.1 (February 2026)
+- Removed self-download instructions (agents already have the skill file when reading it)
+- Removed prescriptive local file-write examples for credential storage; agents choose their own storage
+
+### Version 1.1 (February 2026)
+- **Read/Write Key Model**: Dual-key system with derived read keys for granular access control
+- **Workspaces**: Encrypted JSON containers for bundling documents and sub-workspaces
+- **Workspace-Scoped Access**: Access documents through workspaces with permission hierarchy
+- **Partial Fetch**: `?lines=N` parameter for lightweight document previews
+- **Workspace Previews**: `?preview_lines=N` for agent-friendly table of contents
+- Timing-safe key comparison for enhanced security
+- Workspace TTL / auto-expiry (same 30-day rule as documents)
 
 ### Version 1.0 (February 2025)
 - Initial release
