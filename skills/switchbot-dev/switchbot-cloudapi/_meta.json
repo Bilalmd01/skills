@@ -1,0 +1,11 @@
+{
+  "owner": "switchbot-dev",
+  "slug": "switchbot-cloudapi",
+  "displayName": "SwitchBot OpenAPI",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770437455013,
+    "commit": null
+  },
+  "history": []
+}
