@@ -23,7 +23,7 @@ This skill equips the agent to operate SwitchBot devices via HTTPS requests to t
 - Turn on: `node scripts/switchbot_cli.js cmd <deviceId> turnOn`
 - Turn off: `node scripts/switchbot_cli.js cmd <deviceId> turnOff`
 - Press (bot): `node scripts/switchbot_cli.js cmd <deviceId> press`
-- Curtain 50%: `node scripts/switchbot_cli.js cmd <deviceId> setPosition --pos 50`
+- Curtain 50%: `node scripts/switchbot_cli.js cmd <deviceId> setPosition --pos=50`
 - Lock/Unlock (Lock): `node scripts/switchbot_cli.js cmd <deviceId> lock` / `unlock`
 
 ## API Notes (concise)

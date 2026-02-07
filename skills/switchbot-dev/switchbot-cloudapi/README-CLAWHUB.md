@@ -40,8 +40,9 @@ export SWITCHBOT_REGION=global
 - 查询状态：`node skills/public/switchbot-openapi/scripts/switchbot_cli.js status <deviceId>`
 - 开/关：`node .../switchbot_cli.js cmd <deviceId> turnOn|turnOff`
 - 机械臂按压：`node .../switchbot_cli.js cmd <deviceId> press`
-- 窗帘 50%：`node .../switchbot_cli.js cmd <deviceId> setPosition --pos 50`
+- 窗帘 50%：`node .../switchbot_cli.js cmd <deviceId> setPosition --pos=50`
 - 门锁开/关：`node .../switchbot_cli.js cmd <deviceId> lock|unlock`
+- 扫地机开始清扫: `node .../switchbot_cli.js cmd <deviceId> startClean --param_json="{\"action\": \"sweep\", \"param\": {\"fanLevel\": 1, \"times\": 1}}"`
 
 4) Scenes（当设备无公开命令时的兜底）：
 
@@ -61,7 +62,7 @@ export SWITCHBOT_REGION=global
 
 - Bot：press；turnOn/turnOff（toggle 模式）
 - Plug/Plug Mini：turnOn/turnOff
-- Curtain：setPosition（0-100）；open/close/pause
+- Curtain：setPosition（参数格式 "0,ff,POS"，POS 为 0-100；CLI 会自动拼接）；open/close/pause
 - Lock：lock/unlock
 - AC（红外/Hub）：setAll 或 setTemperature；setMode；setFanSpeed
 - Light（红外/Hub）：turnOn/turnOff；setBrightness

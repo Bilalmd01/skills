@@ -18,8 +18,8 @@ Common commands by device type:
   - turnOn / turnOff
 
 - Curtain
-  - setPosition (parameter: 0-100)
-  - open / close / pause
+  - setPosition (parameter: "0,ff,POS" where POS is 0-100)
+  - turnOn / turnOff (parameter: default)
 
 - Lock
   - lock / unlock (parameter: default)

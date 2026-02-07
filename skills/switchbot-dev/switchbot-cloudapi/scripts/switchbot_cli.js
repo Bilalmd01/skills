@@ -135,18 +135,22 @@ function main() {
         try { parameter = JSON.parse(args.param_json); } catch { console.error('Invalid --param_json JSON'); process.exit(5); }
       }
       if (command === 'setPosition' && !args.param && !args.param_json) {
-        const pos = args.pos || args.position || 50;
-        parameter = `${pos}`;
+        let pos = Number(args.pos ?? args.position ?? 50);
+        if (!Number.isFinite(pos)) pos = 50;
+        pos = Math.max(0, Math.min(100, Math.round(pos)));
+        // SwitchBot OpenAPI requires curtain setPosition parameter in the form
+        // "0,ff,<pos>" where 0,ff is fixed and <pos> is 0-100.
+        parameter = `1,ff,${pos}`;
       }
       if (command === 'setTemperature' && !args.param && !args.param_json) {
         const temp = args.temp || 24;
         parameter = `${temp}`;
       }
+      let devType=(dev.deviceType||'').toLowerCase()
       // Some models (e.g., Robot Vacuum K10+ Pro Combo) require commandType 'customize'
-      const isVac = (dev.deviceType||'').toLowerCase().includes('robot vacuum') || (dev.deviceType||'').toLowerCase().includes('k10');
+      const isVac = devType.includes('robot vacuum') || devType.includes('k10')|| devType.includes('k20');
       const vacCmds = new Set(['startClean','pause','dock','setVolume','changeParam']);
-      let commandType = (isVac && vacCmds.has(command)) ? 'customize' : 'command';
-      if (args.ctype) commandType = String(args.ctype);
+      let commandType = 'command';
       const body = { commandType, command, parameter };
       return request('POST', `/v1.1/devices/${deviceId}/commands`, body).then((resp)=>{
         // If cloud accepted but device offline, API may still say success. Add a hint.
@@ -158,8 +162,7 @@ function main() {
         } else if (resp && resp.statusCode === 160) {
           // Unknown command – provide guidance, esp. for Robot Vacuums
           console.log(JSON.stringify(resp, null, 2));
-          const dt = (dev.deviceType||'').toLowerCase();
-          if (dt.includes('vacuum')) {
+          if (devType.includes('vacuum')) {
             console.warn('This robot vacuum model may not expose direct commands via OpenAPI v1.1. Create a Scene in the SwitchBot app (e.g., "Vacuum Start") and execute it via /v1.1/scenes/{id}/execute.');
           } else {
             console.warn('Unknown command for this device. Check device-specific command names or use a Scene.');
