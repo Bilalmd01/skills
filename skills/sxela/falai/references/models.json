@@ -1,0 +1,48 @@
+{
+  "models": {
+    "fal-ai/nano-banana-pro": {
+      "name": "Gemini 3 Pro Image (text-to-image)",
+      "description": "Text-to-image generation using Google's Gemini 3 Pro",
+      "type": "text-to-image",
+      "input": {
+        "prompt": { "type": "string", "required": true },
+        "num_images": { "type": "integer", "default": 1 },
+        "aspect_ratio": { "type": "enum", "default": "1:1", "options": ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"] },
+        "resolution": { "type": "enum", "default": "1K", "options": ["1K", "2K", "4K"] },
+        "output_format": { "type": "enum", "default": "png", "options": ["jpeg", "png", "webp"] },
+        "seed": { "type": "integer" },
+        "safety_tolerance": { "type": "enum", "default": "4", "options": ["1", "2", "3", "4", "5", "6"] }
+      }
+    },
+    "fal-ai/nano-banana-pro/edit": {
+      "name": "Gemini 3 Pro Image (edit/img2img)",
+      "description": "Edit images with text prompts using Google's Gemini 3 Pro. Supports multiple input images.",
+      "type": "image-to-image",
+      "input": {
+        "prompt": { "type": "string", "required": true, "description": "The editing instruction" },
+        "image_urls": { "type": "array", "required": true, "description": "Array of image URLs or base64 data URIs" },
+        "num_images": { "type": "integer", "default": 1 },
+        "aspect_ratio": { "type": "enum", "default": "auto", "options": ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"] },
+        "resolution": { "type": "enum", "default": "1K", "options": ["1K", "2K", "4K"] },
+        "output_format": { "type": "enum", "default": "png", "options": ["jpeg", "png", "webp"] },
+        "seed": { "type": "integer" },
+        "safety_tolerance": { "type": "enum", "default": "4", "options": ["1", "2", "3", "4", "5", "6"] }
+      }
+    },
+    "fal-ai/flux/dev/image-to-image": {
+      "name": "FLUX.1 [dev] Image-to-Image",
+      "description": "Transform images with FLUX.1 dev model",
+      "type": "image-to-image",
+      "input": {
+        "image_url": { "type": "string", "required": true },
+        "prompt": { "type": "string", "required": true },
+        "strength": { "type": "float", "default": 0.95 },
+        "num_inference_steps": { "type": "integer", "default": 40 },
+        "guidance_scale": { "type": "float", "default": 3.5 },
+        "seed": { "type": "integer" },
+        "num_images": { "type": "integer", "default": 1 },
+        "output_format": { "type": "enum", "default": "jpeg", "options": ["jpeg", "png"] }
+      }
+    }
+  }
+}
