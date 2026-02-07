@@ -3,11 +3,16 @@
   "slug": "youtube-ultimate",
   "displayName": "YouTube Ultimate",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1770357301367,
-    "commit": "https://github.com/openclaw/skills/commit/b16b4ad05789dc8b4d4950255b3e33bf8691ea1d"
+    "version": "1.0.1",
+    "publishedAt": 1770411784028,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1770357301367,
+      "commit": "https://github.com/openclaw/skills/commit/b16b4ad05789dc8b4d4950255b3e33bf8691ea1d"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770109913717,
