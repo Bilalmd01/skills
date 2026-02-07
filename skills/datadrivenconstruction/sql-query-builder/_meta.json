@@ -1,0 +1,11 @@
+{
+  "owner": "datadrivenconstruction",
+  "slug": "sql-query-builder",
+  "displayName": "Sql Query Builder",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770475388858,
+    "commit": null
+  },
+  "history": []
+}
