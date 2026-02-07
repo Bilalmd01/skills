@@ -1,0 +1,11 @@
+{
+  "owner": "datadrivenconstruction",
+  "slug": "data-silo-detection",
+  "displayName": "Data Silo Detection",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770475342659,
+    "commit": null
+  },
+  "history": []
+}
