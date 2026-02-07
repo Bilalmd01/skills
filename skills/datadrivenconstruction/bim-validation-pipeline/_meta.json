@@ -1,0 +1,11 @@
+{
+  "owner": "datadrivenconstruction",
+  "slug": "bim-validation-pipeline",
+  "displayName": "Bim Validation Pipeline",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770475785408,
+    "commit": null
+  },
+  "history": []
+}
