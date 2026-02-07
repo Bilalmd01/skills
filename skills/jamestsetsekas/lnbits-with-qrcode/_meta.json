@@ -1,0 +1,11 @@
+{
+  "owner": "jamestsetsekas",
+  "slug": "lnbits-with-qrcode",
+  "displayName": "LNBits Wallet wtih QR Code",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770439395173,
+    "commit": null
+  },
+  "history": []
+}
