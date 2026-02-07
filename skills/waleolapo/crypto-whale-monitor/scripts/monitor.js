@@ -1,63 +1,56 @@
 // scripts/monitor.js
-// Core logic to check for large transactions on a given wallet list.
+// Core logic to check for large transactions on a given wallet list using Public RPC.
 
 const axios = require('axios');
 
-// Placeholder for Etherscan-like API key
-const ETHERSCAN_API_KEY = 'YOUR_ETHERSCAN_KEY';
-const API_URL = 'https://api.etherscan.io/api';
+// Public RPC Endpoint (Free, no key required)
+const RPC_URL = 'https://eth.public-rpc.com';
 
-// Example Wallets (to be supplied by the user/skill)
+// Target Wallets (Example: Binance Hot Wallet, Foundation, etc.)
 const WALLET_ADDRESSES = [
-    '0x0000000000000000000000000000000000000000', // Example
+    '0xBE0eB53F46cd790Cd13851d5EfF43D12404d33E8', // Binance 7 (Known huge wallet)
+    '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B', // Vitalik Buterin (Vb 3)
 ];
-const TRANSACTION_THRESHOLD_ETH = 1000;
+
+const BALANCE_THRESHOLD_ETH = 100; // Reporting threshold
 
 async function checkWhales() {
-    console.log(\`Starting whale check for \${WALLET_ADDRESSES.length} wallets.\`);
-    
-    // NOTE: This Etherscan API call is a placeholder and would need to be 
-    // tailored to a specific API endpoint that tracks transactions for a list of wallets.
-    // For a real implementation, we'd need a paid service for real-time monitoring.
+    console.log("🐳 Starting Whale Monitor (Public RPC)...");
 
     for (const address of WALLET_ADDRESSES) {
         try {
-            const response = await axios.get(API_URL, {
-                params: {
-                    module: 'account',
-                    action: 'txlist',
-                    address: address,
-                    startblock: 0,
-                    endblock: 99999999,
-                    sort: 'desc',
-                    apikey: ETHERSCAN_API_KEY,
-                    limit: 10 // checking last 10 transactions
-                }
-            });
+            // RPC Payload: eth_getBalance
+            const payload = {
+                jsonrpc: "2.0",
+                method: "eth_getBalance",
+                params: [address, "latest"],
+                id: 1
+            };
 
-            const transactions = response.data.result;
-            if (!transactions || transactions.length === 0) continue;
+            const response = await axios.post(RPC_URL, payload);
+            const hexBalance = response.data.result;
+            
+            if (hexBalance) {
+                // Convert Hex to BigInt then to Number (ETH)
+                const balanceWei = BigInt(hexBalance);
+                const balanceEth = Number(balanceWei) / 10**18;
 
-            for (const tx of transactions) {
-                const valueETH = parseFloat(tx.value) / 10**18;
-                if (valueETH >= TRANSACTION_THRESHOLD_ETH) {
-                    console.log(\`\n!!! WHALE ALERT !!!\`);
-                    console.log(\`Wallet: \${address}\`);
-                    console.log(\`Transaction: \${tx.hash}\`);
-                    console.log(\`Amount: \${valueETH} ETH\`);
-                    // This is where OpenClaw would use the message tool to notify the user.
-                    // const messageTool = require('openclaw').tools.message;
-                    // messageTool.send({ target: 'user', message: \`Whale Alert: \${address} moved \${valueETH} ETH.\` });
+                console.log("Checking " + address + "...");
+                console.log("Balance: " + balanceEth.toFixed(2) + " ETH");
+
+                if (balanceEth > BALANCE_THRESHOLD_ETH) {
+                    console.log("🚨 WHALE DETECTED: Wallet holds > " + BALANCE_THRESHOLD_ETH + " ETH");
                 }
+            } else {
+                console.log("No data for " + address);
             }
 
         } catch (error) {
-            console.error(\`Error checking wallet \${address}:\`, error.message);
+            console.error("Error checking wallet " + address + ":", error.message);
         }
     }
-    console.log('Whale check complete.');
+    console.log("✅ Monitor run complete.");
 }
 
-// checkWhales(); // Uncomment to run directly
-
-module.exports = { checkWhales };
+// Execute
+checkWhales();
