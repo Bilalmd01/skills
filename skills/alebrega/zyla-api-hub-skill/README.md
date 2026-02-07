@@ -6,7 +6,7 @@ Power it with 10,000+ production-ready APIs from [Zyla API Hub](https://zylalabs
 ## Installation
 
 ```bash
-openclaw plugins install @zyla-labs/openclaw
+openclaw plugins install @zyla-labs/zyla-api-hub
 ```
 
 Or install via ClawHub:

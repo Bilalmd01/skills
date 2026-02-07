@@ -3,9 +3,15 @@
   "slug": "zyla-api-hub-skill",
   "displayName": "Zyla API Hub Skill",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770484927138,
-    "commit": "https://github.com/openclaw/skills/commit/811f7a920f92880a52c6e6e60f51802978caeb2b"
+    "version": "1.0.6",
+    "publishedAt": 1770485072797,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770484927138,
+      "commit": "https://github.com/openclaw/skills/commit/811f7a920f92880a52c6e6e60f51802978caeb2b"
+    }
+  ]
 }

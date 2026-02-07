@@ -6,7 +6,7 @@
  * - /zyla status    — Shows plan info and usage stats
  * - zyla_api tool   — Agent tool for making API calls directly
  *
- * Install: openclaw plugins install @zyla-labs/openclaw
+ * Install: openclaw plugins install @zyla-labs/zyla-api-hub
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
