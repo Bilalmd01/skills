@@ -1,5 +1,12 @@
 /** Built-in chain defaults */
 const CHAIN_DEFAULTS = {
+    8453: {
+        identityRegistryAddress: "0xFfE9395fa761e52DBC077a2e7Fd84f77e8abCc41",
+        reputationRegistryAddress: "0x187d72a58b3BF4De6432958fc36CE569Fb15C237",
+        rpcUrl: "https://mainnet.base.org",
+        agentUriApiBase: "https://agenturi.zpass.ai",
+        zeruApiBase: "https://agentapi.zpass.ai",
+    },
     84532: {
         identityRegistryAddress: "0xF0682549516A4BA09803cCa55140AfBC4e5ed2E0",
         reputationRegistryAddress: "0xaAC7557475023AEB581ECc8bD6886d1742382421",

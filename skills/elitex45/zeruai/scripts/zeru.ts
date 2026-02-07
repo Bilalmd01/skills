@@ -14,6 +14,7 @@
  *   RPC_URL      — Optional, override default RPC
  */
 
+import { readFileSync } from "fs";
 import { Wallet, JsonRpcProvider, formatEther } from "ethers";
 import {
   resolveConfig,
@@ -55,11 +56,27 @@ function parseArgs(argv: string[]): { command: string; positional: string[]; fla
   return { command, positional, flags };
 }
 
+/** Default chain: Base Mainnet. Override with CHAIN_ID env or --chain flag. */
+function getChainId(): number {
+  const envChain = process.env.CHAIN_ID;
+  if (envChain) return Number(envChain);
+  // Check for --chain flag in args
+  const idx = process.argv.indexOf("--chain");
+  if (idx !== -1 && process.argv[idx + 1]) return Number(process.argv[idx + 1]);
+  return 8453; // Base Mainnet default
+}
+
+function getChainLabel(chainId: number): string {
+  if (chainId === 8453) return "Base Mainnet (8453)";
+  if (chainId === 84532) return "Base Sepolia (84532)";
+  return `Chain ${chainId}`;
+}
+
 function getSigner() {
   const pk = process.env.PRIVATE_KEY;
   if (!pk) die("PRIVATE_KEY env var not set. Add it to your OpenClaw config under skills.entries.zeru-erc8004-identity.env");
   const config = resolveConfig({
-    chainId: 84532,
+    chainId: getChainId(),
     rpcUrl: process.env.RPC_URL,
   });
   const provider = new JsonRpcProvider(config.rpcUrl);
@@ -69,7 +86,7 @@ function getSigner() {
 
 function getReadConfig() {
   return resolveConfig({
-    chainId: 84532,
+    chainId: getChainId(),
     rpcUrl: process.env.RPC_URL,
   });
 }
@@ -77,22 +94,54 @@ function getReadConfig() {
 // ── Commands ──
 
 async function cmdRegister(flags: Record<string, string>) {
-  const name = flags.name;
-  const description = flags.description ?? flags.desc;
-  const endpoint = flags.endpoint;
-  const image = flags.image;
+  const jsonFile = flags.json;
 
-  if (!name) die("Missing --name. Usage: register --name 'My Agent' --description 'What it does' --endpoint 'https://...'");
-  if (!description) die("Missing --description");
-  if (!endpoint) die("Missing --endpoint");
+  let input: Record<string, unknown>;
+
+  if (jsonFile) {
+    // ── JSON file mode: read full agent input from file ──
+    let raw: string;
+    try {
+      raw = readFileSync(jsonFile, "utf-8");
+    } catch (e) {
+      die(`Cannot read JSON file: ${jsonFile} — ${e instanceof Error ? e.message : e}`);
+    }
+    try {
+      input = JSON.parse(raw!);
+    } catch {
+      die(`Invalid JSON in file: ${jsonFile}`);
+    }
+  } else {
+    // ── Simple flag mode: --name, --description, --endpoint ──
+    const name = flags.name;
+    const description = flags.description ?? flags.desc;
+    const endpoint = flags.endpoint;
+    const image = flags.image;
+
+    if (!name) die("Missing --name (or use --json <file>). Usage:\n  register --name 'My Agent' --description 'What it does' --endpoint 'https://...'\n  register --json agent.json");
+    if (!description) die("Missing --description");
+    if (!endpoint) die("Missing --endpoint");
+
+    input = {
+      name,
+      description,
+      services: [{ name: "api", endpoint }],
+    };
+    if (image) input.image = image;
+  }
 
   const { config, signer } = getSigner();
   const address = await signer.getAddress();
 
+  // Set owner from signer if not provided
+  if (!input!.owner) input!.owner = address;
+
   console.log("\u26D3\uFE0F  Zeru ERC-8004 Agent Registration");
   console.log("\u2501".repeat(40));
-  console.log(`  Network:  Base Sepolia (84532)`);
+  console.log(`  Network:  ${getChainLabel(config.chainId)}`);
   console.log(`  Wallet:   ${address}`);
+  if (jsonFile) console.log(`  JSON:     ${jsonFile}`);
+  console.log(`  Name:     ${(input! as any).name}`);
 
   // 1. Fee
   const fee = await getRegistrationFee(config);
@@ -109,14 +158,7 @@ async function cmdRegister(flags: Record<string, string>) {
 
   console.log("");
   console.log("Step 1/4: Creating agent URI...");
-  const input: Record<string, unknown> = {
-    name,
-    description,
-    services: [{ name: "api", endpoint }],
-    owner: address,
-  };
-  if (image) input.image = image;
-  const { id, agentURI, json } = await createAgentURI(config, signer, input as any);
+  const { id, agentURI, json } = await createAgentURI(config, signer, input! as any);
   console.log(`  URI: ${agentURI}`);
 
   console.log("Step 2/4: Minting NFT on-chain...");
@@ -129,7 +171,7 @@ async function cmdRegister(flags: Record<string, string>) {
     ...json,
     registrations: [{
       agentId: Number(agentId),
-      agentRegistry: `eip155:84532:${config.identityRegistryAddress}`,
+      agentRegistry: `eip155:${config.chainId}:${config.identityRegistryAddress}`,
     }],
   });
 
@@ -184,7 +226,7 @@ async function cmdFee() {
   const fee = await getRegistrationFee(config);
   const enabled = await isRegistrationEnabled(config);
 
-  console.log(`  Network:      Base Sepolia (84532)`);
+  console.log(`  Network:      ${getChainLabel(config.chainId)}`);
   console.log(`  Registry:     ${config.identityRegistryAddress}`);
   console.log(`  Fee:          ${formatEther(fee)} ETH`);
   console.log(`  Registration: ${enabled ? "OPEN" : "CLOSED"}`);
@@ -233,14 +275,19 @@ async function main() {
     console.log("Zeru ERC-8004 Identity Registry");
     console.log("\u2501".repeat(40));
     console.log("Commands:");
+    console.log("  register     --json <file>  (full agent JSON — recommended)");
     console.log("  register     --name <n> --description <d> --endpoint <url> [--image <url>]");
     console.log("  read         <agentId>");
     console.log("  fee          Show registration fee and status");
     console.log("  set-metadata <agentId> --key <key> --value <value>");
     console.log("  unset-wallet <agentId>");
     console.log("");
+    console.log("Global flags:");
+    console.log("  --chain <id> Chain ID (default: 8453 = Base Mainnet, 84532 = Base Sepolia)");
+    console.log("");
     console.log("Env:");
     console.log("  PRIVATE_KEY  Required for write operations");
+    console.log("  CHAIN_ID     Optional, override chain (default: 8453)");
     console.log("  RPC_URL      Optional, override RPC");
     return;
   }
