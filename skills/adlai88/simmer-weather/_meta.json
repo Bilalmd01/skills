@@ -1,13 +1,18 @@
 {
   "owner": "adlai88",
   "slug": "simmer-weather",
-  "displayName": "Weather",
+  "displayName": "Polymarket Weather Trader",
   "latest": {
-    "version": "1.6.0",
-    "publishedAt": 1770442558721,
-    "commit": "https://github.com/openclaw/skills/commit/89a8f9d51b6299ebc54793ff06a7f949359b9536"
+    "version": "1.6.1",
+    "publishedAt": 1770472748284,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.0",
+      "publishedAt": 1770442558721,
+      "commit": "https://github.com/openclaw/skills/commit/89a8f9d51b6299ebc54793ff06a7f949359b9536"
+    },
     {
       "version": "1.4.2",
       "publishedAt": 1770101251527,
