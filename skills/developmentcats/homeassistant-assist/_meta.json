@@ -1,0 +1,11 @@
+{
+  "owner": "developmentcats",
+  "slug": "homeassistant-assist",
+  "displayName": "Home Assistant Assist",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770438779477,
+    "commit": null
+  },
+  "history": []
+}
