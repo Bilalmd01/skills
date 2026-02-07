@@ -1,282 +1,317 @@
 #!/usr/bin/env python3
 """
-Ancient DNA Comparison Tool
-Compare modern genome to AADR ancient populations using metadata analysis
-and SNP overlap calculation.
+Ancient DNA Comparison
+Compare your genome to the Allen Ancient DNA Resource (AADR) database.
+Works with any ancestry/ethnic background.
+
+Privacy: All analysis runs locally. No network requests.
+
+Note: For full comparison, download the AADR v62+ files from:
+https://reich.hms.harvard.edu/allen-ancient-dna-resource-aadr-downloadable-genotypes-present-day-and-ancient-dna-data
 """
 
-import pandas as pd
-import numpy as np
+import sys
+import json
 from pathlib import Path
 from collections import defaultdict
-import json
 
-# Paths
-AADR_ANNO = Path.home() / "ancient-dna" / "v62.0_1240k_public.anno"
-KYLE_BIM = Path.home() / "dna-analysis" / "kyle_binary.bim"
-AADR_SNP = Path.home() / "ancient-dna" / "v62.0_1240k_public.snp"
+OUTPUT_DIR = Path.home() / "dna-analysis" / "reports"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-def load_aadr_metadata():
-    """Load AADR annotation file with ancient sample metadata"""
-    print("Loading AADR metadata (17,629 ancient samples)...")
+# Path to AADR annotation file (download separately)
+AADR_DIR = Path.home() / "ancient-dna"
+AADR_ANNO = AADR_DIR / "v62.0_1240k_public.anno"
+
+# Major ancient population categories
+POPULATION_CATEGORIES = {
+    'hunter_gatherer': [
+        'WHG', 'EHG', 'SHG', 'CHG', 'Mesolithic', 'Epipaleolithic',
+        'HG', 'Forager', 'Hunter', 'Gatherer'
+    ],
+    'neolithic_farmer': [
+        'Neolithic', 'EEF', 'Farmer', 'Anatolian_N', 'LBK',
+        'Cardial', 'TRB', 'Funnelbeaker'
+    ],
+    'steppe': [
+        'Yamnaya', 'Corded', 'Steppe', 'Sintashta', 'Andronovo',
+        'Afanasievo', 'Srubnaya', 'Scythian', 'Sarmatian'
+    ],
+    'bronze_age': [
+        'Bronze', 'BA_', 'Bell_Beaker', 'Beaker', 'Unetice',
+        'Mycenaean', 'Minoan'
+    ],
+    'iron_age': [
+        'Iron', 'IA_', 'Celtic', 'Hallstatt', 'La_Tene',
+        'Villanova', 'Etruscan'
+    ],
+    'viking_age': [
+        'Viking', 'VA_', 'Norse', 'Scandinavian'
+    ],
+    'medieval': [
+        'Medieval', 'MA_', 'Migration_period', 'Anglo', 'Saxon',
+        'Frank', 'Goth', 'Lombard'
+    ],
+    'ancient_african': [
+        'Africa', 'Mota', 'Taforalt', 'Iberomaurusian'
+    ],
+    'ancient_east_asian': [
+        'Tianyuan', 'Jomon', 'Devil', 'China_', 'Japan_',
+        'Korea_', 'Mongolia_'
+    ],
+    'ancient_american': [
+        'Clovis', 'Anzick', 'Kennewick', 'Spirit_Cave',
+        'Ancient_American', 'Paleo_American'
+    ],
+    'ancient_middle_east': [
+        'Natufian', 'PPNB', 'Levant', 'Iran_N', 'Mesopotamia',
+        'Phoenician', 'Canaanite'
+    ],
+}
+
+# Y-DNA haplogroup distributions by population
+Y_HAPLOGROUP_POPS = {
+    'R1b': ['Western_Europe', 'Celtic', 'Bell_Beaker', 'Iberia', 'Britain', 'Ireland', 'France', 'Germany'],
+    'R1a': ['Eastern_Europe', 'Corded_Ware', 'Sintashta', 'Indo_Iranian', 'Slavic', 'Baltic'],
+    'I1': ['Scandinavia', 'Viking', 'Germanic', 'Nordic'],
+    'I2': ['Balkans', 'Sardinia', 'WHG', 'Mesolithic_Europe'],
+    'J1': ['Middle_East', 'Semitic', 'Arabian', 'Jewish'],
+    'J2': ['Mediterranean', 'Anatolia', 'Neolithic_Farmer', 'Phoenician'],
+    'E': ['Africa', 'Mediterranean', 'Berber', 'Bantu'],
+    'G': ['Caucasus', 'Anatolia', 'EEF', 'Early_Farmer'],
+    'N': ['Siberia', 'Uralic', 'Finland', 'Baltic', 'Yakut'],
+    'O': ['East_Asia', 'China', 'Japan', 'Korea', 'Southeast_Asia'],
+    'Q': ['Siberia', 'Native_American', 'Paleo_Siberian'],
+    'C': ['Mongolia', 'East_Asia', 'Australia', 'Pacific'],
+    'D': ['Tibet', 'Japan', 'Andaman'],
+}
+
+# mtDNA haplogroup distributions
+MT_HAPLOGROUP_POPS = {
+    'H': ['Europe', 'Western_Europe', 'Post_LGM', 'Franco_Cantabrian'],
+    'U': ['Europe', 'WHG', 'Mesolithic', 'South_Asia'],
+    'K': ['Europe', 'Middle_East', 'Neolithic'],
+    'J': ['Middle_East', 'Neolithic_Farmer', 'Near_East'],
+    'T': ['Europe', 'Middle_East', 'Neolithic'],
+    'V': ['Europe', 'Iberia', 'Saami'],
+    'W': ['South_Asia', 'Europe', 'Middle_East'],
+    'X': ['Europe', 'Middle_East', 'Native_American'],
+    'L': ['Africa', 'Basal_Human'],
+    'M': ['Asia', 'South_Asia', 'East_Asia'],
+    'N': ['Asia', 'Europe', 'Oceania'],
+    'A': ['East_Asia', 'Native_American', 'Siberia'],
+    'B': ['East_Asia', 'Native_American', 'Polynesia'],
+    'C': ['East_Asia', 'Native_American', 'Siberia'],
+    'D': ['East_Asia', 'Native_American', 'Siberia'],
+}
+
+
+def load_dna_file(filepath):
+    """Load user's DNA data."""
+    import pandas as pd
     
-    # Read the annotation file
-    df = pd.read_csv(AADR_ANNO, sep='\t', low_memory=False)
+    df = pd.read_csv(filepath, sep='\t', comment='#', dtype=str, low_memory=False)
     
-    # Clean column names
-    df.columns = [c.split('[')[0].strip() for c in df.columns]
-    
-    # Key columns we need
-    key_cols = ['Genetic ID', 'Group ID', 'Locality', 'Political Entity', 
-                'Date mean in BP in years before 1950 CE', 'Y haplogroup in terminal mutation notation automatically called based on Yfull with the software described in Lazaridis et al. Science 2022',
-                'mtDNA haplogroup if >2x or published', 'Lat.', 'Long.']
+    if 'rsid' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.set_index('rsid')
+    elif 'rsID' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.rename(columns={'rsID': 'rsid'}).set_index('rsid')
+    else:
+        df.columns = ['rsid', 'chromosome', 'position', 'genotype'] + list(df.columns[4:])
+        df = df.set_index('rsid')
     
     return df
 
-def get_population_summary(df):
-    """Get summary of ancient populations"""
-    # Group by population
-    pop_counts = df['Group ID'].value_counts()
-    
-    # Filter for relevant European/ancestry populations
-    relevant_keywords = [
-        'Viking', 'Saxon', 'Frank', 'Goth', 'Celt', 'Gaul', 'Germanic', 
-        'Anglo', 'Norse', 'Irish', 'Scottish', 'British', 'Frisian',
-        'LaTene', 'Hallstat', 'Beaker', 'Corded', 'Unetice', 'Yamnaya',
-        'Medieval', 'Roman', 'Bronze', 'Iron', 'England', 'Germany',
-        'Denmark', 'Sweden', 'Norway', 'Scotland', 'Ireland', 'France',
-        'Spain', 'Visigoth', 'Merovingian', 'Carolingian', 'Burgundian'
-    ]
-    
-    relevant_pops = {}
-    for pop, count in pop_counts.items():
-        if any(kw.lower() in str(pop).lower() for kw in relevant_keywords):
-            relevant_pops[pop] = count
-    
-    return relevant_pops
 
-def analyze_kyle_ancestry():
-    """Analyze Kyle's ancestry context based on his known profile"""
-    
-    # Kyle's known genetic profile from our analysis
-    kyle_profile = {
-        'y_haplogroup': 'R1b',  # R1b-L21 Celtic subclade
-        'mt_haplogroup': 'H',   # Most common European
-        'ancestry_pct': {
-            'celtic_scottish_irish': 75,
-            'ashkenazi_jewish': 18,
-            'english': 7
-        },
-        'key_markers': {
-            'COMT': 'GG',  # Warrior variant
-            'HERC2': 'blue/green eyes',
-            'SLC24A5': 'light skin',
-            'LCT': 'lactase persistent'
-        }
-    }
-    
-    return kyle_profile
+def get_genotype(df, rsid):
+    try:
+        return df.loc[rsid, 'genotype']
+    except:
+        return None
 
-def match_to_ancient_populations(df, kyle_profile):
-    """Match Kyle's profile to ancient populations"""
+
+def load_aadr_annotation():
+    """Load AADR annotation file if available."""
+    if not AADR_ANNO.exists():
+        return None
     
+    import pandas as pd
+    
+    # AADR annotation columns
+    cols = ['sample_id', 'master_id', 'skeleton_id', 'publication', 'date_mean', 
+            'date_sd', 'location', 'country', 'lat', 'lon', 'coverage',
+            'y_haplogroup', 'mt_haplogroup', 'group_id', 'political_entity']
+    
+    df = pd.read_csv(AADR_ANNO, sep='\t', usecols=range(15), names=cols, 
+                     skiprows=1, dtype=str, low_memory=False)
+    
+    return df
+
+
+def match_haplogroups_to_populations(y_haplo, mt_haplo):
+    """Find which ancient populations share the user's haplogroups."""
     matches = []
     
-    # Get column names dynamically
-    cols = df.columns.tolist()
-    y_col = [c for c in cols if 'Y haplogroup' in c and 'terminal' in c][0]
-    mt_col = [c for c in cols if 'mtDNA haplogroup' in c][0]
-    date_col = [c for c in cols if 'Date mean in BP' in c][0]
-    
-    # Get populations with R1b Y-haplogroup
-    r1b_samples = df[df[y_col].str.contains('R1b', na=False, case=False)]
-    
-    # Get populations with H mtDNA
-    h_mt_samples = df[df[mt_col].str.contains('^H', na=False, case=False, regex=True)]
-    
-    # Priority populations based on Kyle's ancestry
-    priority_pops = [
-        # Celtic/British Isles (75% of Kyle's ancestry)
-        ('Ireland', 'Celtic heartland - direct ancestry'),
-        ('Scotland', 'Celtic heartland - direct ancestry'),
-        ('England_Saxon', 'Anglo-Saxon England'),
-        ('England_Viking', 'Viking Age Britain'),
-        ('Celtic', 'Ancient Celts'),
-        ('Briton', 'Ancient British Celts'),
-        ('Gaul', 'Continental Celts'),
-        
-        # Germanic/Viking (related to Saxon/Norse influence)
-        ('Viking', 'Norse Vikings'),
-        ('Saxon', 'Anglo-Saxons'),
-        ('Frank', 'Frankish Germanic'),
-        ('Frisian', 'North Sea Germanic'),
-        
-        # Earlier ancestral populations
-        ('Beaker', 'Bell Beaker - brought R1b to British Isles'),
-        ('Corded', 'Corded Ware - early Indo-Europeans'),
-        ('Yamnaya', 'Proto-Indo-European steppe ancestry'),
-        ('Unetice', 'Early Bronze Age Central Europe'),
-        ('Hallstat', 'Iron Age Celtic'),
-        ('LaTene', 'La Tène Celtic culture'),
-    ]
-    
-    for pop_keyword, description in priority_pops:
-        pop_samples = df[df['Group ID'].str.contains(pop_keyword, na=False, case=False)]
-        if len(pop_samples) > 0:
-            # Calculate match score based on haplogroup overlap
-            r1b_overlap = len(pop_samples[pop_samples[y_col].str.contains('R1b', na=False, case=False)])
-            h_overlap = len(pop_samples[pop_samples[mt_col].str.contains('^H', na=False, case=False, regex=True)])
-            
-            match_score = (r1b_overlap / len(pop_samples) * 50) + (h_overlap / len(pop_samples) * 30) + 20
-            
-            # Get date range
-            dates = pop_samples[date_col].dropna()
-            if len(dates) > 0:
-                avg_date = dates.mean()
-                date_ce = 1950 - avg_date
-            else:
-                date_ce = 'Unknown'
-            
+    if y_haplo:
+        y_base = y_haplo.split('-')[0].split('*')[0][:2] if y_haplo else None
+        if y_base in Y_HAPLOGROUP_POPS:
             matches.append({
-                'population': pop_keyword,
-                'description': description,
-                'samples': len(pop_samples),
-                'match_score': min(match_score, 100),
-                'r1b_pct': r1b_overlap / len(pop_samples) * 100 if len(pop_samples) > 0 else 0,
-                'h_mt_pct': h_overlap / len(pop_samples) * 100 if len(pop_samples) > 0 else 0,
-                'avg_date': f"{int(date_ce)} CE" if isinstance(date_ce, float) else date_ce,
-                'locations': pop_samples['Political Entity'].value_counts().head(3).to_dict()
+                'haplogroup': y_haplo,
+                'type': 'Y-DNA',
+                'associated_populations': Y_HAPLOGROUP_POPS[y_base]
             })
     
-    # Sort by match score
-    matches.sort(key=lambda x: x['match_score'], reverse=True)
+    if mt_haplo:
+        mt_base = mt_haplo[0] if mt_haplo else None
+        if mt_base in MT_HAPLOGROUP_POPS:
+            matches.append({
+                'haplogroup': mt_haplo,
+                'type': 'mtDNA', 
+                'associated_populations': MT_HAPLOGROUP_POPS[mt_base]
+            })
     
     return matches
 
-def get_top_individual_matches(df, kyle_profile):
-    """Find specific ancient individuals most similar to Kyle"""
-    
-    # Get column names
-    cols = df.columns.tolist()
-    y_col = [c for c in cols if 'Y haplogroup' in c and 'terminal' in c][0]
-    mt_col = [c for c in cols if 'mtDNA haplogroup' in c][0]
-    id_col = cols[0]  # First column is genetic ID
-    date_col = [c for c in cols if 'Date mean in BP' in c][0]
-    
-    # Filter for R1b males with good data
-    r1b_samples = df[
-        (df[y_col].str.contains('R1b', na=False, case=False)) &
-        (df[mt_col].str.contains('^H', na=False, case=False, regex=True))
-    ].copy()
-    
-    # Focus on Celtic/Germanic/Viking samples
-    relevant = r1b_samples[r1b_samples['Group ID'].str.contains(
-        'Viking|Saxon|Celtic|Briton|Irish|Scottish|England|German|Frank|Gaul|Beaker|Corded', 
-        na=False, case=False
-    )]
-    
-    # Get top samples
-    top_samples = []
-    for _, row in relevant.head(20).iterrows():
-        date_bp = row[date_col]
-        date_ce = f"{int(1950 - date_bp)} CE" if pd.notna(date_bp) else "Unknown"
-        
-        top_samples.append({
-            'id': row[id_col],
-            'population': row['Group ID'],
-            'location': f"{row['Locality']}, {row['Political Entity']}",
-            'date': date_ce,
-            'y_haplogroup': row[y_col],
-            'mt_haplogroup': row[mt_col]
-        })
-    
-    return top_samples
 
-def main():
-    print("=" * 60)
-    print("ANCIENT DNA COMPARISON - Kyle W. Graves")
-    print("=" * 60)
-    print()
+def categorize_by_period(populations):
+    """Categorize ancient populations by time period."""
+    categorized = defaultdict(list)
     
-    # Load data
-    df = load_aadr_metadata()
-    print(f"Loaded {len(df)} ancient samples from AADR v62.0")
-    print()
+    for pop in populations:
+        for category, keywords in POPULATION_CATEGORIES.items():
+            if any(kw.lower() in pop.lower() for kw in keywords):
+                categorized[category].append(pop)
+                break
     
-    # Get Kyle's profile
-    kyle = analyze_kyle_ancestry()
-    print("Kyle's Genetic Profile:")
-    print(f"  Y-DNA: {kyle['y_haplogroup']} (Celtic R1b-L21 subclade)")
-    print(f"  mtDNA: {kyle['mt_haplogroup']}")
-    print(f"  Ancestry: {kyle['ancestry_pct']}")
-    print()
-    
-    # Get relevant populations
-    print("=" * 60)
-    print("POPULATION MATCHES")
-    print("=" * 60)
-    
-    matches = match_to_ancient_populations(df, kyle)
-    
-    print("\nTop Ancient Population Matches:\n")
-    print(f"{'Rank':<5} {'Population':<25} {'Score':<8} {'R1b%':<8} {'H-mt%':<8} {'Samples':<8} {'Period':<15}")
-    print("-" * 85)
-    
-    for i, m in enumerate(matches[:15], 1):
-        print(f"{i:<5} {m['population']:<25} {m['match_score']:.1f}%{'':<3} {m['r1b_pct']:.0f}%{'':<4} {m['h_mt_pct']:.0f}%{'':<4} {m['samples']:<8} {m['avg_date']:<15}")
-    
-    print()
-    print("=" * 60)
-    print("INDIVIDUAL ANCIENT MATCHES (R1b + H mtDNA)")
-    print("=" * 60)
-    
-    individuals = get_top_individual_matches(df, kyle)
-    print("\nAncient individuals with similar haplogroup profile:\n")
-    
-    for ind in individuals[:10]:
-        print(f"  • {ind['id']}")
-        print(f"    Population: {ind['population']}")
-        print(f"    Location: {ind['location']}")
-        print(f"    Date: {ind['date']}")
-        print(f"    Y-DNA: {ind['y_haplogroup'][:30]}..." if len(str(ind['y_haplogroup'])) > 30 else f"    Y-DNA: {ind['y_haplogroup']}")
-        print(f"    mtDNA: {ind['mt_haplogroup']}")
-        print()
-    
-    # Summary
-    print("=" * 60)
-    print("ANCESTRY INTERPRETATION")
-    print("=" * 60)
-    print("""
-Based on AADR analysis of 17,629 ancient genomes:
+    return dict(categorized)
 
-Kyle's genetic profile (R1b Y-DNA, H mtDNA, 75% Celtic ancestry) shows
-strongest affinity to:
 
-1. CELTIC POPULATIONS (Iron Age - Medieval)
-   - La Tène and Hallstatt Celtic cultures
-   - Ancient British Celts (Britons)
-   - Irish and Scottish medieval populations
-   
-2. ANGLO-SAXON/GERMANIC (400-1066 CE)
-   - Saxon migrations to Britain
-   - Frankish continental relatives
-   - Frisian North Sea populations
+def generate_report(aadr_available, haplo_matches, y_haplo, mt_haplo):
+    """Generate human-readable report."""
+    lines = []
+    lines.append("=" * 70)
+    lines.append("ANCIENT DNA COMPARISON")
+    lines.append("=" * 70)
+    lines.append("")
+    
+    if not aadr_available:
+        lines.append("⚠️  AADR database not found. For full comparison, download from:")
+        lines.append("    https://reich.hms.harvard.edu/allen-ancient-dna-resource")
+        lines.append("")
+        lines.append("    Place files in: ~/ancient-dna/")
+        lines.append("    Required: v62.0_1240k_public.anno")
+        lines.append("")
+    
+    lines.append("-" * 70)
+    lines.append("HAPLOGROUP ASSOCIATIONS")
+    lines.append("-" * 70)
+    lines.append("")
+    
+    if y_haplo:
+        lines.append(f"  Y-DNA Haplogroup: {y_haplo}")
+        y_base = y_haplo.split('-')[0].split('*')[0][:2]
+        if y_base in Y_HAPLOGROUP_POPS:
+            lines.append(f"    Associated ancient populations:")
+            for pop in Y_HAPLOGROUP_POPS[y_base][:5]:
+                lines.append(f"      • {pop.replace('_', ' ')}")
+    else:
+        lines.append("  Y-DNA Haplogroup: Not determined (need haplogroup analysis)")
+    
+    lines.append("")
+    
+    if mt_haplo:
+        lines.append(f"  mtDNA Haplogroup: {mt_haplo}")
+        mt_base = mt_haplo[0] if mt_haplo else None
+        if mt_base in MT_HAPLOGROUP_POPS:
+            lines.append(f"    Associated ancient populations:")
+            for pop in MT_HAPLOGROUP_POPS[mt_base][:5]:
+                lines.append(f"      • {pop.replace('_', ' ')}")
+    else:
+        lines.append("  mtDNA Haplogroup: Not determined (need haplogroup analysis)")
+    
+    lines.append("")
+    lines.append("-" * 70)
+    lines.append("ANCIENT POPULATION REFERENCE")
+    lines.append("-" * 70)
+    lines.append("")
+    
+    lines.append("Major ancient population categories:")
+    lines.append("")
+    
+    for category, keywords in POPULATION_CATEGORIES.items():
+        lines.append(f"  {category.upper().replace('_', ' ')}:")
+        lines.append(f"    Examples: {', '.join(keywords[:5])}")
+        lines.append("")
+    
+    lines.append("")
+    lines.append("-" * 70)
+    lines.append("ABOUT AADR COMPARISON")
+    lines.append("-" * 70)
+    lines.append("""
+The Allen Ancient DNA Resource (AADR) contains data from 17,000+ ancient
+individuals spanning from the Paleolithic to the Medieval period.
 
-3. VIKING AGE (750-1100 CE)
-   - Danish and Norwegian Vikings
-   - Viking settlers in Britain
-   
-4. DEEP ANCESTRY (3000-1000 BCE)
-   - Bell Beaker culture brought R1b to British Isles
-   - Yamnaya steppe ancestry (proto-Indo-European)
-   - Bronze Age Central Europeans (Unetice)
+Full comparison allows:
+• Finding ancient individuals who share your haplogroups
+• Identifying your closest ancient population matches
+• Tracing the geographic origins of your ancestry
 
-This matches your MyTrueAncestry results showing Franks, Saxons, 
-and Visigoths as top matches - all R1b-rich Germanic populations
-that share ancestry with the Celtic peoples of Britain.
+To enable full comparison:
+1. Download AADR v62+ from Harvard Reich Lab
+2. Place annotation file in ~/ancient-dna/
+3. Re-run this analysis
 """)
     
-    return matches, individuals
+    return "\n".join(lines)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python ancient_comparison.py <dna_file> [y_haplogroup] [mt_haplogroup]")
+        print("Example: python ancient_comparison.py my_dna.txt R1b H")
+        sys.exit(1)
+    
+    filepath = sys.argv[1]
+    y_haplo = sys.argv[2] if len(sys.argv) > 2 else None
+    mt_haplo = sys.argv[3] if len(sys.argv) > 3 else None
+    
+    print(f"Loading {filepath}...")
+    df = load_dna_file(filepath)
+    print(f"Loaded {len(df):,} SNPs")
+    
+    print("Checking for AADR database...")
+    aadr = load_aadr_annotation()
+    aadr_available = aadr is not None
+    
+    if aadr_available:
+        print(f"Found AADR with {len(aadr):,} ancient samples")
+    else:
+        print("AADR not found - using haplogroup reference data")
+    
+    print("Matching haplogroups to ancient populations...")
+    haplo_matches = match_haplogroups_to_populations(y_haplo, mt_haplo)
+    
+    # Save results
+    results = {
+        'aadr_available': aadr_available,
+        'y_haplogroup': y_haplo,
+        'mt_haplogroup': mt_haplo,
+        'haplogroup_matches': haplo_matches,
+    }
+    
+    with open(OUTPUT_DIR / "ancient_comparison.json", 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    # Generate report
+    report = generate_report(aadr_available, haplo_matches, y_haplo, mt_haplo)
+    
+    with open(OUTPUT_DIR / "ancient_comparison.md", 'w') as f:
+        f.write(report)
+    
+    print(report)
+    print(f"\n✓ Reports saved to {OUTPUT_DIR}/")
+
 
 if __name__ == "__main__":
-    matches, individuals = main()
+    main()

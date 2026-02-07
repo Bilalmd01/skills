@@ -1,179 +1,311 @@
+#!/usr/bin/env python3
+"""
+Ancestry and Ethnicity Analysis
+Analyzes population-specific markers across ALL major ethnic groups.
+Works with any ancestry background.
+
+Privacy: All analysis runs locally. No network requests.
+"""
+
+import sys
 import json
+from pathlib import Path
+from collections import defaultdict
 
-# Load DNA data
-snp_data = {}
-with open('raw_data.txt', 'r') as f:
-    for line in f:
-        if line.startswith('#') or line.startswith('rsid'):
-            continue
-        parts = line.strip().split('\t')
-        if len(parts) >= 5:
-            rsid, chrom, pos, a1, a2 = parts[:5]
-            snp_data[rsid] = {'geno': a1 + a2, 'a1': a1, 'a2': a2}
+OUTPUT_DIR = Path.home() / "dna-analysis" / "reports"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-def get(rsid):
-    return snp_data.get(rsid, {}).get('geno', 'NA')
+# =============================================================================
+# POPULATION-SPECIFIC MARKERS - Global coverage
+# =============================================================================
 
-print("="*70)
-print("ANCESTRY-INFORMATIVE MARKER (AIM) ANALYSIS")
-print("="*70)
-
-# EUROPEAN MARKERS
-print("\n🏔️ EUROPEAN ANCESTRY MARKERS")
-print("-"*50)
-
-european_markers = {
-    'rs1426654': {'name': 'SLC24A5', 'euro': 'A', 'desc': 'Skin pigmentation (European light skin)'},
-    'rs16891982': {'name': 'SLC45A2', 'euro': 'G', 'desc': 'Skin/hair pigmentation'},
-    'rs12913832': {'name': 'HERC2/OCA2', 'euro': 'G', 'desc': 'Blue/green eyes vs brown'},
-    'rs1800407': {'name': 'OCA2', 'euro': 'T', 'desc': 'Eye color modifier'},
-    'rs12896399': {'name': 'SLC24A4', 'euro': 'T', 'desc': 'Hair/eye color'},
-    'rs1393350': {'name': 'TYR', 'euro': 'A', 'desc': 'Freckling, eye color'},
-    'rs2228479': {'name': 'MC1R', 'euro': 'A', 'desc': 'Red hair/fair skin variant'},
+ANCESTRY_MARKERS = {
+    # EUROPEAN MARKERS
+    "european": {
+        "rs16891982": {"name": "SLC45A2", "allele": "G", "desc": "Light skin pigmentation (European)"},
+        "rs1426654": {"name": "SLC24A5", "allele": "A", "desc": "Light skin (European/Middle Eastern)"},
+        "rs12913832": {"name": "HERC2", "allele": "G", "desc": "Blue eyes (Northern European)"},
+        "rs4988235": {"name": "LCT", "allele": "A", "desc": "Lactase persistence (European)"},
+    },
+    
+    # NORTHERN/WESTERN EUROPEAN
+    "northern_european": {
+        "rs1805007": {"name": "MC1R R151C", "allele": "T", "desc": "Red hair variant (Celtic/Nordic)"},
+        "rs1805008": {"name": "MC1R R160W", "allele": "T", "desc": "Red hair variant"},
+        "rs1805009": {"name": "MC1R D294H", "allele": "C", "desc": "Red hair variant"},
+        "rs12203592": {"name": "IRF4", "allele": "T", "desc": "Freckling (high in Irish/British)"},
+        "rs4778138": {"name": "OCA2", "allele": "A", "desc": "Light eyes (Northern European)"},
+    },
+    
+    # SOUTHERN EUROPEAN / MEDITERRANEAN
+    "mediterranean": {
+        "rs1800407": {"name": "OCA2 R419Q", "allele": "T", "desc": "Blue/green eyes in darker populations"},
+        "rs28777": {"name": "SLC45A2", "allele": "A", "desc": "Mediterranean pigmentation variant"},
+    },
+    
+    # ASHKENAZI JEWISH
+    "ashkenazi": {
+        "rs1801133": {"name": "MTHFR C677T", "allele": "A", "desc": "Higher frequency in Ashkenazi (~30-40%)"},
+        # Note: Disease carrier variants (Gaucher, Tay-Sachs) require clinical testing
+    },
+    
+    # EAST ASIAN
+    "east_asian": {
+        "rs3827760": {"name": "EDAR V370A", "allele": "A", "desc": "Thick hair, shovel-shaped incisors (East Asian)"},
+        "rs671": {"name": "ALDH2", "allele": "A", "desc": "Alcohol flush reaction (East Asian)"},
+        "rs1229984": {"name": "ADH1B", "allele": "T", "desc": "Alcohol metabolism (East Asian)"},
+        "rs17822931": {"name": "ABCC11", "allele": "T", "desc": "Dry earwax (East Asian)"},
+    },
+    
+    # SOUTH ASIAN
+    "south_asian": {
+        "rs2470102": {"name": "SLC24A5", "allele": "G", "desc": "Skin pigmentation variant"},
+        "rs1426654": {"name": "SLC24A5", "allele": "G", "desc": "South Asian pigmentation pattern"},
+    },
+    
+    # AFRICAN
+    "african": {
+        "rs2814778": {"name": "DARC/Duffy", "allele": "C", "desc": "Duffy null (malaria resistance, African)"},
+        "rs8176719": {"name": "ABO", "allele": "delG", "desc": "O blood type (higher in some African pops)"},
+        "rs1426654": {"name": "SLC24A5", "allele": "G", "desc": "Ancestral skin pigmentation"},
+        "rs16891982": {"name": "SLC45A2", "allele": "C", "desc": "Ancestral skin pigmentation"},
+    },
+    
+    # NATIVE AMERICAN
+    "native_american": {
+        "rs3827760": {"name": "EDAR V370A", "allele": "A", "desc": "Shared with East Asian ancestry"},
+        "rs17822931": {"name": "ABCC11", "allele": "T", "desc": "Dry earwax (Native American)"},
+    },
+    
+    # MIDDLE EASTERN / NORTH AFRICAN
+    "middle_eastern": {
+        "rs1426654": {"name": "SLC24A5", "allele": "A", "desc": "Light skin variant"},
+        "rs12913832": {"name": "HERC2", "allele": "A", "desc": "Brown eyes (ancestral)"},
+    },
+    
+    # OCEANIAN / PACIFIC ISLANDER
+    "oceanian": {
+        "rs2814778": {"name": "DARC", "allele": "T", "desc": "Duffy positive (Oceanian pattern)"},
+    },
 }
 
-euro_score = 0
-euro_total = 0
-for rsid, info in european_markers.items():
-    geno = get(rsid)
-    if geno != 'NA':
-        euro_alleles = geno.count(info['euro'])
-        euro_score += euro_alleles
-        euro_total += 2
-        marker = "🔵" * euro_alleles + "⚪" * (2 - euro_alleles)
-        print(f"  {info['name']} ({rsid}): {geno} {marker}")
-        print(f"     {info['desc']}")
-
-print(f"\n  European allele score: {euro_score}/{euro_total} ({100*euro_score/euro_total:.0f}%)")
-
-# CELTIC/IRISH SPECIFIC
-print("\n\n☘️ CELTIC/IRISH SPECIFIC MARKERS")
-print("-"*50)
-
-celtic_markers = {
-    'rs1805007': {'name': 'MC1R R151C', 'celtic': 'T', 'desc': 'Red hair variant (high in Ireland/Scotland)'},
-    'rs1805008': {'name': 'MC1R R160W', 'celtic': 'T', 'desc': 'Red hair variant'},
-    'rs1805009': {'name': 'MC1R D294H', 'celtic': 'C', 'desc': 'Red hair variant'},
-    'rs2228479': {'name': 'MC1R V92M', 'celtic': 'A', 'desc': 'Associated with Celtic populations'},
-    'rs12203592': {'name': 'IRF4', 'celtic': 'T', 'desc': 'Freckling (high in Irish)'},
-    'rs4778138': {'name': 'OCA2', 'celtic': 'A', 'desc': 'Light eyes'},
+# Y-DNA Haplogroup markers (simplified - full analysis requires more markers)
+Y_HAPLOGROUP_MARKERS = {
+    "rs9786184": {"haplogroup": "R1b", "allele": "A", "desc": "R1b indicator (Western European)"},
+    "rs17250804": {"haplogroup": "R1a", "allele": "G", "desc": "R1a indicator (Eastern European/South Asian)"},
+    "rs2032652": {"haplogroup": "I", "allele": "G", "desc": "Haplogroup I indicator (Nordic/Balkan)"},
+    "rs9341296": {"haplogroup": "E", "allele": "C", "desc": "Haplogroup E indicator (African/Mediterranean)"},
+    "rs2032631": {"haplogroup": "J", "allele": "A", "desc": "Haplogroup J indicator (Middle Eastern)"},
+    "rs3908": {"haplogroup": "O", "allele": "T", "desc": "Haplogroup O indicator (East Asian)"},
+    "rs17316625": {"haplogroup": "Q", "allele": "C", "desc": "Haplogroup Q indicator (Native American/Siberian)"},
+    "rs9341301": {"haplogroup": "N", "allele": "A", "desc": "Haplogroup N indicator (Uralic/Siberian)"},
 }
 
-celtic_score = 0
-celtic_total = 0
-for rsid, info in celtic_markers.items():
-    geno = get(rsid)
-    if geno != 'NA':
-        c_alleles = geno.count(info['celtic'])
-        celtic_score += c_alleles
-        celtic_total += 2
-        marker = "☘️" * c_alleles + "⚪" * (2 - c_alleles)
-        print(f"  {info['name']} ({rsid}): {geno} {marker}")
-
-print(f"\n  Celtic marker score: {celtic_score}/{celtic_total} ({100*celtic_score/celtic_total:.0f}%)")
-
-# ASHKENAZI JEWISH MARKERS
-print("\n\n✡️ ASHKENAZI JEWISH MARKERS")
-print("-"*50)
-
-# These are SNPs with elevated frequency in Ashkenazi populations
-ashkenazi_markers = {
-    'rs1801133': {'name': 'MTHFR C677T', 'desc': 'Higher in Ashkenazi (~30-40% carrier rate)'},
-    'rs80338939': {'name': 'GBA N370S', 'desc': 'Gaucher disease carrier (Ashkenazi)'},
-    'rs121908120': {'name': 'HEXA', 'desc': 'Tay-Sachs carrier'},
-    'rs28940579': {'name': 'BRCA1 185delAG', 'desc': 'Ashkenazi founder mutation'},
-    'rs80357906': {'name': 'BRCA2 6174delT', 'desc': 'Ashkenazi founder mutation'},
+# mtDNA Haplogroup markers (simplified)
+MT_HAPLOGROUP_MARKERS = {
+    "rs2853499": {"haplogroup": "H", "allele": "G", "desc": "Haplogroup H indicator (European)"},
+    "rs28358571": {"haplogroup": "U", "allele": "A", "desc": "Haplogroup U indicator (European/Middle Eastern)"},
+    "rs3928306": {"haplogroup": "L", "allele": "A", "desc": "Haplogroup L indicator (African)"},
+    "rs2853515": {"haplogroup": "A", "allele": "G", "desc": "Haplogroup A indicator (Asian/Native American)"},
+    "rs2853508": {"haplogroup": "B", "allele": "A", "desc": "Haplogroup B indicator (Asian/Polynesian)"},
+    "rs2853510": {"haplogroup": "C", "allele": "T", "desc": "Haplogroup C indicator (Asian/Native American)"},
+    "rs2853511": {"haplogroup": "D", "allele": "C", "desc": "Haplogroup D indicator (Asian/Native American)"},
 }
 
-print("  Checking Ashkenazi founder mutations and associated SNPs...")
-for rsid, info in ashkenazi_markers.items():
-    geno = get(rsid)
-    if geno != 'NA':
-        print(f"  {info['name']} ({rsid}): {geno}")
-        print(f"     {info['desc']}")
+
+def load_dna_file(filepath):
+    """Load DNA data."""
+    import pandas as pd
+    
+    df = pd.read_csv(filepath, sep='\t', comment='#', dtype=str, low_memory=False)
+    
+    if 'rsid' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.set_index('rsid')
+    elif 'rsID' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.rename(columns={'rsID': 'rsid'}).set_index('rsid')
     else:
-        print(f"  {info['name']} ({rsid}): Not on chip")
+        df = df.rename(columns={df.columns[0]: 'rsid'})
+        if 'genotype' not in df.columns:
+            df['genotype'] = df.iloc[:, 3] if df.shape[1] > 3 else ''
+        df = df.set_index('rsid')
+    
+    return df
 
-# The MTHFR we already know
-print(f"\n  MTHFR C677T: {get('rs1801133')} — Heterozygous (common in Ashkenazi)")
 
-# EAST ASIAN MARKERS
-print("\n\n🏯 EAST ASIAN MARKERS")
-print("-"*50)
+def get_genotype(df, rsid):
+    try:
+        return df.loc[rsid, 'genotype']
+    except:
+        return None
 
-asian_markers = {
-    'rs3827760': {'name': 'EDAR', 'asian': 'C', 'desc': 'Thick hair, shovel incisors (East Asian)'},
-    'rs671': {'name': 'ALDH2', 'asian': 'A', 'desc': 'Alcohol flush (East Asian)'},
-    'rs1229984': {'name': 'ADH1B', 'asian': 'T', 'desc': 'Alcohol metabolism'},
-}
 
-asian_score = 0
-asian_total = 0
-for rsid, info in asian_markers.items():
-    geno = get(rsid)
-    if geno != 'NA':
-        a_alleles = geno.count(info['asian'])
-        asian_score += a_alleles
-        asian_total += 2
-        print(f"  {info['name']} ({rsid}): {geno}")
-        print(f"     {info['desc']}")
+def analyze_population_markers(df):
+    """Analyze markers for each population group."""
+    results = {}
+    
+    for population, markers in ANCESTRY_MARKERS.items():
+        pop_results = {"score": 0, "total": 0, "markers": []}
+        
+        for rsid, info in markers.items():
+            geno = get_genotype(df, rsid)
+            if geno:
+                allele_count = geno.count(info['allele'])
+                pop_results['total'] += 2
+                pop_results['score'] += allele_count
+                pop_results['markers'].append({
+                    'rsid': rsid,
+                    'name': info['name'],
+                    'genotype': geno,
+                    'target_allele': info['allele'],
+                    'count': allele_count,
+                    'description': info['desc']
+                })
+        
+        if pop_results['total'] > 0:
+            pop_results['percentage'] = round(100 * pop_results['score'] / pop_results['total'], 1)
+        else:
+            pop_results['percentage'] = 0
+        
+        results[population] = pop_results
+    
+    return results
 
-if asian_total > 0:
-    print(f"\n  East Asian marker score: {asian_score}/{asian_total}")
 
-# AFRICAN MARKERS  
-print("\n\n🌍 AFRICAN ANCESTRY MARKERS")
-print("-"*50)
+def analyze_haplogroups(df):
+    """Analyze Y-DNA and mtDNA haplogroup indicators."""
+    y_results = []
+    mt_results = []
+    
+    for rsid, info in Y_HAPLOGROUP_MARKERS.items():
+        geno = get_genotype(df, rsid)
+        if geno and info['allele'] in geno:
+            y_results.append({
+                'haplogroup': info['haplogroup'],
+                'rsid': rsid,
+                'genotype': geno,
+                'description': info['desc']
+            })
+    
+    for rsid, info in MT_HAPLOGROUP_MARKERS.items():
+        geno = get_genotype(df, rsid)
+        if geno and info['allele'] in geno:
+            mt_results.append({
+                'haplogroup': info['haplogroup'],
+                'rsid': rsid,
+                'genotype': geno,
+                'description': info['desc']
+            })
+    
+    return {'y_dna': y_results, 'mt_dna': mt_results}
 
-african_markers = {
-    'rs2814778': {'name': 'DARC (Duffy)', 'african': 'C', 'desc': 'Duffy-null (malaria resistance, African)'},
-    'rs7349332': {'name': 'TRPS1', 'african': 'T', 'desc': 'Hair texture'},
-}
 
-for rsid, info in african_markers.items():
-    geno = get(rsid)
-    if geno != 'NA':
-        a_alleles = geno.count(info['african'])
-        print(f"  {info['name']} ({rsid}): {geno}")
-        if a_alleles == 0:
-            print(f"     No African-associated alleles")
+def generate_report(pop_results, haplogroups):
+    """Generate human-readable ancestry report."""
+    lines = []
+    lines.append("=" * 70)
+    lines.append("ANCESTRY & ETHNICITY ANALYSIS")
+    lines.append("=" * 70)
+    lines.append("")
+    lines.append("⚠️  Note: This analysis uses a limited set of ancestry-informative")
+    lines.append("    markers. For comprehensive ancestry analysis, use services like")
+    lines.append("    23andMe, AncestryDNA, or professional genetic genealogy tools.")
+    lines.append("")
+    
+    # Population affinities
+    lines.append("-" * 70)
+    lines.append("POPULATION MARKER AFFINITIES")
+    lines.append("-" * 70)
+    lines.append("")
+    
+    # Sort by percentage
+    sorted_pops = sorted(pop_results.items(), key=lambda x: x[1]['percentage'], reverse=True)
+    
+    for pop, data in sorted_pops:
+        if data['total'] > 0:
+            bar_len = int(data['percentage'] / 5)
+            bar = "█" * bar_len + "░" * (20 - bar_len)
+            lines.append(f"  {pop.replace('_', ' ').title():25} {bar} {data['percentage']:5.1f}%")
+    
+    lines.append("")
+    lines.append("  (Higher % = more markers matching that population's typical pattern)")
+    lines.append("")
+    
+    # Haplogroups
+    lines.append("-" * 70)
+    lines.append("HAPLOGROUP INDICATORS")
+    lines.append("-" * 70)
+    lines.append("")
+    
+    if haplogroups['y_dna']:
+        lines.append("  Y-DNA (paternal line):")
+        for h in haplogroups['y_dna']:
+            lines.append(f"    → {h['haplogroup']}: {h['description']}")
+    else:
+        lines.append("  Y-DNA: No clear indicators found (may need more markers)")
+    
+    lines.append("")
+    
+    if haplogroups['mt_dna']:
+        lines.append("  mtDNA (maternal line):")
+        for h in haplogroups['mt_dna']:
+            lines.append(f"    → {h['haplogroup']}: {h['description']}")
+    else:
+        lines.append("  mtDNA: No clear indicators found (may need more markers)")
+    
+    lines.append("")
+    lines.append("-" * 70)
+    lines.append("DETAILED MARKERS BY POPULATION")
+    lines.append("-" * 70)
+    
+    for pop, data in sorted_pops:
+        if data['markers']:
+            lines.append(f"\n{pop.replace('_', ' ').upper()}:")
+            for m in data['markers']:
+                status = "✓" if m['count'] > 0 else "○"
+                lines.append(f"  {status} {m['name']} ({m['rsid']}): {m['genotype']} - {m['description']}")
+    
+    lines.append("")
+    lines.append("=" * 70)
+    
+    return "\n".join(lines)
 
-# LACTASE PERSISTENCE (Population history marker)
-print("\n\n🥛 LACTASE PERSISTENCE (Population History)")
-print("-"*50)
-lct = get('rs4988235')
-print(f"  LCT rs4988235: {lct}")
-if 'A' in lct:
-    print("     A allele = European lactase persistence")
-    print("     Emerged ~7,500 years ago in Northern Europe")
-    print("     Spread with dairy farming cultures")
 
-# SUMMARY
-print("\n" + "="*70)
-print("ETHNICITY ESTIMATE SUMMARY")
-print("="*70)
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python ethnicity_analysis.py <dna_file>")
+        sys.exit(1)
+    
+    filepath = sys.argv[1]
+    print(f"Loading {filepath}...")
+    df = load_dna_file(filepath)
+    print(f"Loaded {len(df):,} SNPs")
+    
+    print("Analyzing population markers...")
+    pop_results = analyze_population_markers(df)
+    
+    print("Analyzing haplogroups...")
+    haplogroups = analyze_haplogroups(df)
+    
+    # Save JSON
+    results = {
+        'population_affinities': pop_results,
+        'haplogroups': haplogroups
+    }
+    
+    with open(OUTPUT_DIR / "ancestry_report.json", 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    # Generate and print report
+    report = generate_report(pop_results, haplogroups)
+    
+    with open(OUTPUT_DIR / "ancestry_report.md", 'w') as f:
+        f.write(report)
+    
+    print(report)
+    print(f"\n✓ Reports saved to {OUTPUT_DIR}/")
 
-print("""
-Based on ancestry-informative markers:
 
-┌─────────────────────────────────────────────────────────────┐
-│  EUROPEAN (Northwestern)              ~95-97%              │
-│    ├── Celtic/Irish/Scottish          ~70-75%              │
-│    ├── British/English                ~5-10%               │
-│    └── General Northwestern European  ~15-20%              │
-│                                                             │
-│  ASHKENAZI JEWISH                     ~15-20%              │
-│    └── Confirmed by MTHFR + methylation pattern            │
-│                                                             │
-│  OTHER                                <1%                   │
-│    └── No significant non-European markers                 │
-└─────────────────────────────────────────────────────────────┘
-
-Note: Ashkenazi is genetically ~50% Middle Eastern, ~50% European,
-so the "European" above includes the European portion of Ashkenazi.
-
-Your marker profile is consistent with:
-  • Irish/Scottish primary ancestry (MC1R carriers, IRF4, pigmentation)
-  • Ashkenazi admixture (methylation variants, founder mutations pattern)
-  • No detectable African, East Asian, or Native American ancestry
-""")
+if __name__ == "__main__":
+    main()

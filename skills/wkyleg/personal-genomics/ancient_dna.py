@@ -1,215 +1,261 @@
+#!/usr/bin/env python3
+"""
+Ancient DNA Marker Analysis
+Identifies markers shared with ancient populations.
+Works with any ancestry/ethnic background.
+
+Privacy: All analysis runs locally. No network requests.
+"""
+
+import sys
 import json
+from pathlib import Path
+from collections import defaultdict
 
-# Load DNA data
-snp_data = {}
-with open('raw_data.txt', 'r') as f:
-    for line in f:
-        if line.startswith('#') or line.startswith('rsid'):
-            continue
-        parts = line.strip().split('\t')
-        if len(parts) >= 5:
-            rsid, chrom, pos, a1, a2 = parts[:5]
-            snp_data[rsid] = a1 + a2
+OUTPUT_DIR = Path.home() / "dna-analysis" / "reports"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-def get(rsid):
-    return snp_data.get(rsid, 'NA')
+# =============================================================================
+# ANCIENT DNA MARKERS
+# Markers commonly used in aDNA studies to identify ancestry layers
+# =============================================================================
 
-print("="*70)
-print("ANCIENT DNA COMPARISON")
-print("="*70)
-print("""
-Comparing your genetic markers to ancient population signatures.
-These markers help trace which ancestral migrations contributed to your genome.
+ANCIENT_MARKERS = {
+    # Mesolithic Hunter-Gatherers (Western Europe)
+    "mesolithic_hunter_gatherer": {
+        "description": "Pre-farming Europeans (~10,000-5,000 BCE)",
+        "markers": {
+            "rs12913832": {"name": "HERC2", "ancient": "A", "derived": "G", "trait": "Blue eyes arose in this population"},
+            "rs16891982": {"name": "SLC45A2", "ancient": "C", "derived": "G", "trait": "Light skin (partial)"},
+        }
+    },
+    
+    # Neolithic Farmers (Anatolia → Europe)
+    "neolithic_farmer": {
+        "description": "Early farmers from Anatolia (~7,000-4,000 BCE)",
+        "markers": {
+            "rs1426654": {"name": "SLC24A5", "ancient": "A", "derived": "A", "trait": "Light skin (fixed in this population)"},
+            "rs4988235": {"name": "LCT", "ancient": "G", "derived": "A", "trait": "Lactose tolerance (rare in early farmers)"},
+        }
+    },
+    
+    # Steppe Pastoralists (Yamnaya and related)
+    "steppe_pastoralist": {
+        "description": "Bronze Age steppe herders (Yamnaya, ~3,000-2,000 BCE)",
+        "markers": {
+            "rs4988235": {"name": "LCT", "ancient": "A", "derived": "A", "trait": "Lactase persistence spread with this population"},
+            "rs12913832": {"name": "HERC2", "ancient": "G", "derived": "G", "trait": "Mixed eye color"},
+        }
+    },
+    
+    # Archaic Introgression Markers
+    "archaic_introgression": {
+        "description": "Markers from Neanderthal/Denisovan introgression",
+        "markers": {
+            "rs2298850": {"name": "OAS1", "neanderthal": "G", "trait": "Immune function (Neanderthal origin)"},
+            "rs1051730": {"name": "CHRNA3", "neanderthal": "A", "trait": "Nicotine addiction (possible Neanderthal origin)"},
+            "rs4846049": {"name": "MCPH1", "archaic": "T", "trait": "Brain development (archaic variant)"},
+        }
+    },
+    
+    # Y-DNA Ancient Haplogroups
+    "ancient_y_haplogroups": {
+        "description": "Y-chromosome lineages traceable to ancient populations",
+        "markers": {
+            # R1b - Western European, spread with Bell Beaker
+            "rs9786184": {"haplogroup": "R1b", "allele": "A", "origin": "Steppe → Western Europe via Bell Beaker"},
+            # R1a - Eastern European/South Asian, Corded Ware
+            "rs17250804": {"haplogroup": "R1a", "allele": "G", "origin": "Steppe → Eastern Europe via Corded Ware"},
+            # I - Pre-Indo-European, Mesolithic Europe
+            "rs2032652": {"haplogroup": "I", "allele": "G", "origin": "Mesolithic Europe (WHG)"},
+            # J - Middle East/Mediterranean, Neolithic expansion
+            "rs2032631": {"haplogroup": "J", "allele": "A", "origin": "Middle East, spread with Neolithic"},
+            # E - Africa/Mediterranean
+            "rs9341296": {"haplogroup": "E", "allele": "C", "origin": "Africa, present in Mediterranean"},
+            # G - Anatolia/Caucasus, early farmers
+            "rs2032636": {"haplogroup": "G", "allele": "T", "origin": "Anatolia, spread with early farmers"},
+            # N - Siberia/Finland/Baltic
+            "rs9341301": {"haplogroup": "N", "allele": "A", "origin": "Siberia, spread to Baltic/Finland"},
+            # O - East Asia
+            "rs3908": {"haplogroup": "O", "allele": "T", "origin": "East Asia"},
+            # Q - Siberia/Americas
+            "rs17316625": {"haplogroup": "Q", "allele": "C", "origin": "Siberia, spread to Americas"},
+        }
+    },
+    
+    # mtDNA Ancient Haplogroups
+    "ancient_mt_haplogroups": {
+        "description": "Mitochondrial lineages with ancient origins",
+        "markers": {
+            "rs2853499": {"haplogroup": "H", "allele": "G", "origin": "Most common European, expanded post-LGM"},
+            "rs28358571": {"haplogroup": "U", "allele": "A", "origin": "Ancient European, strong in WHG"},
+            "rs3928306": {"haplogroup": "L", "allele": "A", "origin": "African origin, basal human mtDNA"},
+            "rs2853515": {"haplogroup": "A", "allele": "G", "origin": "East Asian/Native American"},
+            "rs2853508": {"haplogroup": "B", "allele": "A", "origin": "East Asian/Polynesian"},
+        }
+    },
+}
+
+
+def load_dna_file(filepath):
+    """Load DNA data."""
+    import pandas as pd
+    
+    df = pd.read_csv(filepath, sep='\t', comment='#', dtype=str, low_memory=False)
+    
+    if 'rsid' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.set_index('rsid')
+    elif 'rsID' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.rename(columns={'rsID': 'rsid'}).set_index('rsid')
+    else:
+        # Assume first column is rsid
+        df.columns = ['rsid', 'chromosome', 'position', 'genotype'] + list(df.columns[4:])
+        df = df.set_index('rsid')
+    
+    return df
+
+
+def get_genotype(df, rsid):
+    try:
+        return df.loc[rsid, 'genotype']
+    except:
+        return None
+
+
+def analyze_ancient_markers(df):
+    """Analyze ancient DNA markers."""
+    results = {}
+    
+    for period, data in ANCIENT_MARKERS.items():
+        period_results = {
+            "description": data["description"],
+            "markers_found": [],
+            "markers_missing": []
+        }
+        
+        for rsid, info in data["markers"].items():
+            geno = get_genotype(df, rsid)
+            marker_info = {"rsid": rsid, **info}
+            
+            if geno:
+                marker_info["genotype"] = geno
+                
+                # Determine which allele(s) present
+                if "ancient" in info:
+                    marker_info["has_ancient"] = info["ancient"] in geno
+                if "derived" in info:
+                    marker_info["has_derived"] = info["derived"] in geno
+                if "neanderthal" in info:
+                    marker_info["has_archaic"] = info["neanderthal"] in geno
+                if "allele" in info:
+                    marker_info["has_haplogroup_marker"] = info["allele"] in geno
+                
+                period_results["markers_found"].append(marker_info)
+            else:
+                period_results["markers_missing"].append(marker_info)
+        
+        results[period] = period_results
+    
+    return results
+
+
+def generate_report(results):
+    """Generate human-readable report."""
+    lines = []
+    lines.append("=" * 70)
+    lines.append("ANCIENT DNA MARKER ANALYSIS")
+    lines.append("=" * 70)
+    lines.append("")
+    lines.append("This analysis identifies markers shared with ancient populations.")
+    lines.append("These markers have been studied in ancient DNA samples and can")
+    lines.append("provide insights into your deep ancestry.")
+    lines.append("")
+    
+    for period, data in results.items():
+        lines.append("-" * 70)
+        lines.append(f"{period.upper().replace('_', ' ')}")
+        lines.append(f"  {data['description']}")
+        lines.append("-" * 70)
+        
+        if data['markers_found']:
+            for m in data['markers_found']:
+                lines.append(f"\n  {m.get('name', m['rsid'])} ({m['rsid']}): {m.get('genotype', 'N/A')}")
+                
+                if m.get('trait'):
+                    lines.append(f"    → {m['trait']}")
+                if m.get('origin'):
+                    lines.append(f"    → Origin: {m['origin']}")
+                if m.get('has_ancient'):
+                    lines.append(f"    → Carries ancient/ancestral allele")
+                if m.get('has_derived'):
+                    lines.append(f"    → Carries derived allele")
+                if m.get('has_archaic'):
+                    lines.append(f"    → Carries archaic (Neanderthal/Denisovan) allele")
+                if m.get('has_haplogroup_marker'):
+                    lines.append(f"    → Haplogroup {m.get('haplogroup', '?')} indicator positive")
+        else:
+            lines.append("  No markers available in your data for this category.")
+        
+        lines.append("")
+    
+    lines.append("=" * 70)
+    lines.append("INTERPRETATION NOTES")
+    lines.append("=" * 70)
+    lines.append("""
+All modern humans outside Africa carry 1-2% Neanderthal DNA.
+Ancient ancestry markers show the "layers" of your genome:
+
+1. DEEP AFRICAN ORIGIN (>70,000 years ago)
+   → All humans share common African ancestry
+
+2. OUT OF AFRICA (70,000-50,000 years ago)
+   → Non-African populations diverged; Neanderthal admixture occurred
+
+3. POPULATION DIFFERENTIATION (50,000-10,000 years ago)
+   → Regional populations developed; haplogroups diversified
+
+4. AGRICULTURAL REVOLUTION (10,000-5,000 years ago)
+   → Farmers from Anatolia spread across Europe
+   → Lactase persistence began to spread
+
+5. BRONZE AGE MIGRATIONS (5,000-3,000 years ago)
+   → Steppe ancestry spread via Yamnaya and related cultures
+   → R1a/R1b haplogroups expanded dramatically
+
+Your genome is a palimpsest of all these layers.
 """)
+    
+    return "\n".join(lines)
 
-# ANCIENT POPULATION MARKERS
-print("\n🏛️ NEOLITHIC FARMER MARKERS (Anatolia → Europe ~8,000 years ago)")
-print("-"*60)
 
-# SLC24A5 - the "light skin" allele spread with Neolithic farmers
-slc24a5 = get('rs1426654')
-print(f"  SLC24A5 (rs1426654): {slc24a5}")
-if 'A' in slc24a5:
-    print("  → A allele: Derived from Anatolian farmers")
-    print("  → This mutation for lighter skin spread with agriculture into Europe")
-    print("  → You carry the Neolithic farmer variant ✓")
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python ancient_dna.py <dna_file>")
+        sys.exit(1)
+    
+    filepath = sys.argv[1]
+    print(f"Loading {filepath}...")
+    df = load_dna_file(filepath)
+    print(f"Loaded {len(df):,} SNPs")
+    
+    print("Analyzing ancient DNA markers...")
+    results = analyze_ancient_markers(df)
+    
+    # Save JSON
+    with open(OUTPUT_DIR / "ancient_dna_report.json", 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    # Generate report
+    report = generate_report(results)
+    
+    with open(OUTPUT_DIR / "ancient_dna_report.md", 'w') as f:
+        f.write(report)
+    
+    print(report)
+    print(f"\n✓ Reports saved to {OUTPUT_DIR}/")
 
-# LCT - lactase persistence emerged ~7,500 years ago
-lct = get('rs4988235')
-print(f"\n  LCT lactase (rs4988235): {lct}")
-if 'A' in lct:
-    print("  → A allele: Lactase persistence mutation")
-    print("  → Emerged in dairy-farming populations ~7,500 years ago")
-    print("  → Spread from Pontic Steppe with Indo-European migrations")
-    print("  → Strong positive selection in Northern Europe ✓")
 
-print("\n\n🐴 YAMNAYA / INDO-EUROPEAN MARKERS (~5,000 years ago)")
-print("-"*60)
-print("""
-The Yamnaya were Bronze Age pastoralists from the Pontic-Caspian Steppe.
-They spread across Europe ~5,000 years ago, bringing:
-  • Indo-European languages (including Proto-Celtic)
-  • The R1b Y-haplogroup (your likely paternal line)
-  • Lactase persistence
-  • Horse domestication
-""")
-
-# Yamnaya had high frequency of R1b (which you likely carry)
-print("  Y-haplogroup: Likely R1b-L21")
-print("  → R1b originated in Yamnaya and spread with Bronze Age migrations")
-print("  → R1b-L21 (Atlantic/Celtic) is a European descendant branch")
-print("  → Your paternal line traces to Yamnaya expansion ✓")
-
-# HERC2 blue eyes - ancient in Europe, pre-Yamnaya
-herc2 = get('rs12913832')
-print(f"\n  HERC2 eye color (rs12913832): {herc2}")
-if 'G' in herc2:
-    print("  → G allele: Blue/green eye variant")
-    print("  → Ancient in Europe - found in Mesolithic hunter-gatherers")
-    print("  → Pre-dates Yamnaya migrations")
-    print("  → You carry ancient European hunter-gatherer ancestry ✓")
-
-print("\n\n🦌 WESTERN HUNTER-GATHERER (WHG) MARKERS (~10,000+ years ago)")
-print("-"*60)
-print("""
-Before farming arrived, Europe was populated by Mesolithic hunter-gatherers.
-They had dark skin but blue eyes - a distinctive combination.
-""")
-
-# SLC45A2 - originally derived in WHG
-slc45a2 = get('rs16891982')
-print(f"  SLC45A2 (rs16891982): {slc45a2}")
-if 'G' in slc45a2:
-    print("  → G allele: Light pigmentation variant")
-    print("  → Rose to high frequency in WHG populations")
-
-# mtDNA H originated in WHG
-print(f"\n  mtDNA Haplogroup: H")
-print("  → Haplogroup H was present in Western Hunter-Gatherers")
-print("  → Expanded dramatically with Neolithic farmers")
-print("  → Your maternal line has deep European roots ✓")
-
-print("\n\n☘️ CELTIC/ATLANTIC BRONZE AGE MARKERS (~4,000-2,500 years ago)")
-print("-"*60)
-print("""
-The Atlantic Bronze Age cultures developed along Western European coasts.
-The Celtic languages spread from this region into Ireland, Britain, Gaul.
-""")
-
-# MC1R red hair variants - high in Celtic populations
-mc1r_1 = get('rs1805007')
-mc1r_2 = get('rs1805008')
-print(f"  MC1R R151C (rs1805007): {mc1r_1}")
-print(f"  MC1R R160W (rs1805008): {mc1r_2}")
-if 'T' in mc1r_1 or 'T' in mc1r_2:
-    print("  → T alleles: Red hair variants")
-    print("  → Reached highest frequency in Celtic populations")
-    print("  → Possibly under positive selection in cloudy/rainy climates")
-    print("  → You carry Celtic red hair variants ✓")
-
-# R1b-L21 is the "Atlantic Celtic" haplogroup
-print(f"\n  Y-haplogroup R1b-L21")
-print("  → The 'Celtic' Y-chromosome")
-print("  → ~70-80% of Irish men carry this lineage")
-print("  → Spread with Atlantic Bronze Age / early Celtic cultures")
-
-print("\n\n✡️ ASHKENAZI JEWISH MARKERS (~2,000 years ago to medieval)")
-print("-"*60)
-print("""
-Ashkenazi Jews descend from Middle Eastern populations who settled in
-the Rhineland ~1,000 years ago, then expanded into Eastern Europe.
-They experienced multiple founder effects creating distinctive patterns.
-""")
-
-mthfr = get('rs1801133')
-print(f"  MTHFR C677T (rs1801133): {mthfr}")
-if 'G' in mthfr:
-    print("  → G (T encoding) allele elevated in Ashkenazi (~30-40%)")
-    print("  → Founder effect from medieval bottlenecks")
-    print("  → You carry the Ashkenazi-elevated variant ✓")
-
-print("""
-  Ashkenazi genetic signature:
-  • ~50% Middle Eastern (Levantine) ancestry
-  • ~50% Southern European (Italian/Mediterranean)
-  • Distinctive founder mutations from population bottlenecks
-  • Your ~18% Ashkenazi = ~9% ancient Middle Eastern ancestry
-""")
-
-print("\n\n🗺️ YOUR GENETIC TIME MACHINE")
-print("="*70)
-print("""
-╔════════════════════════════════════════════════════════════════════╗
-║                    ANCESTRAL TIMELINE                              ║
-╠════════════════════════════════════════════════════════════════════╣
-║                                                                    ║
-║  ~45,000 years ago  │ Out of Africa → Europe                      ║
-║                     │ Your deepest ancestors enter Europe          ║
-║                     │                                              ║
-║  ~20,000 years ago  │ Last Glacial Maximum                        ║
-║                     │ mtDNA Haplogroup H expands from Iberian     ║
-║                     │ refugium (your maternal line)                ║
-║                     │                                              ║
-║  ~10,000 years ago  │ Mesolithic Hunter-Gatherers                 ║
-║                     │ Blue eyes (HERC2 G) already present         ║
-║                     │ Dark skin still prevalent                    ║
-║                     │                                              ║
-║  ~8,000 years ago   │ Neolithic Farmers arrive from Anatolia      ║
-║                     │ SLC24A5 light skin spreads                   ║
-║                     │ Agriculture transforms Europe                ║
-║                     │                                              ║
-║  ~5,000 years ago   │ Yamnaya/Indo-European expansion             ║
-║                     │ R1b Y-haplogroup spreads (your paternal line)║
-║                     │ Lactase persistence spreads                  ║
-║                     │ Proto-Celtic languages emerge                ║
-║                     │                                              ║
-║  ~3,000 years ago   │ Atlantic Bronze Age / Celtic expansion      ║
-║                     │ R1b-L21 becomes dominant in Ireland         ║
-║                     │ MC1R red hair variants reach high frequency  ║
-║                     │                                              ║
-║  ~2,000 years ago   │ Roman Empire / Jewish diaspora              ║
-║                     │ Ashkenazi founder population forms           ║
-║                     │                                              ║
-║  ~1,000 years ago   │ Medieval period                             ║
-║                     │ Ashkenazi expansion in Eastern Europe        ║
-║                     │ MTHFR founder mutations amplified            ║
-║                     │ Graves family arrives Virginia (1608)        ║
-║                     │                                              ║
-║  ~100 years ago     │ Greenberg family immigrates to America      ║
-║                     │ Ashkenazi + Celtic lines merge               ║
-║                     │                                              ║
-║  1994               │ You are born - carrying all these layers    ║
-║                                                                    ║
-╚════════════════════════════════════════════════════════════════════╝
-
-Your genome is a palimpsest of:
-  • Mesolithic European hunter-gatherers (blue/green eyes, HERC2)
-  • Anatolian Neolithic farmers (light skin, SLC24A5)
-  • Yamnaya pastoralists (R1b, lactase persistence)
-  • Atlantic Celtic populations (MC1R red hair variants, R1b-L21)
-  • Ashkenazi Jewish (methylation variants, founder mutations)
-
-Each layer wrote over the previous but didn't erase it entirely.
-You carry genetic echoes of 45,000 years of European prehistory.
-""")
-
-print("\n\n🔬 ANCIENT DNA DATABASES FOR DEEPER ANALYSIS")
-print("-"*60)
-print("""
-For further exploration:
-
-1. GEDmatch Ancient DNA
-   • Upload your raw data
-   • Compare against ancient samples (Yamnaya, WHG, Neolithic)
-   • Get percentage breakdown by ancient population
-
-2. Genetic Genealogy Tools
-   • MyTrueAncestry.com - compares to ancient genomes
-   • IllustrativeDNA.com - similar ancient population matching
-   • Eurogenes K15 (GEDmatch) - includes ancient components
-
-3. Academic Resources
-   • David Reich Lab ancient DNA database
-   • AADR (Allen Ancient DNA Resource)
-   • Published aDNA from Irish Bronze Age samples (match your ancestry)
-""")
+if __name__ == "__main__":
+    main()

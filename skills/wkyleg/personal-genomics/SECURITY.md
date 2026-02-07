@@ -13,7 +13,7 @@ This project is built with privacy as a core principle:
 
 If you discover a security issue, please report it by:
 
-1. **Email:** williamkylegraves@gmail.com
+1. **GitHub Issues:** Open an issue on this repository
 2. **Subject:** `[SECURITY] personal-genomics: <brief description>`
 
 Please include:

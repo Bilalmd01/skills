@@ -1,319 +1,361 @@
 #!/usr/bin/env python3
 """
-DNA Analysis Script for Ancestry Raw Data
-Analyzes health risks, pharmacogenomics, and traits from raw genotype data.
+Personal Genomics Analysis - Core Health, Pharmacogenomics & Traits
+Analyzes raw DNA data from consumer genetic testing services.
+Works with any ancestry/ethnic background.
+
+Privacy: All analysis runs locally. No network requests.
 """
 
 import json
-import os
 import sys
 from pathlib import Path
 from datetime import datetime
+from collections import defaultdict
 
-import pandas as pd
-import numpy as np
+# Output directory
+OUTPUT_DIR = Path.home() / "dna-analysis" / "reports"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Paths
-SCRIPT_DIR = Path(__file__).parent
-DB_DIR = SCRIPT_DIR / "snp_databases"
-OUTPUT_DIR = SCRIPT_DIR / "reports"
+# =============================================================================
+# SNP DATABASES - Comprehensive markers for all populations
+# =============================================================================
 
-def load_ancestry_data(filepath):
-    """Load Ancestry DNA raw data file."""
+HEALTH_MARKERS = {
+    # Cardiovascular
+    "rs429358": {"gene": "APOE", "name": "APOE ε4 marker 1", "risk": "C", "category": "alzheimers_cardiovascular", "impact": "high"},
+    "rs7412": {"gene": "APOE", "name": "APOE ε4 marker 2", "risk": "C", "category": "alzheimers_cardiovascular", "impact": "high"},
+    "rs1333049": {"gene": "9p21", "name": "CAD risk variant", "risk": "C", "category": "cardiovascular", "impact": "moderate"},
+    "rs10757274": {"gene": "9p21", "name": "CAD risk variant 2", "risk": "G", "category": "cardiovascular", "impact": "moderate"},
+    "rs4420638": {"gene": "APOC1", "name": "Lipid metabolism", "risk": "G", "category": "cardiovascular", "impact": "moderate"},
+    "rs6025": {"gene": "F5", "name": "Factor V Leiden", "risk": "A", "category": "clotting", "impact": "high"},
+    "rs1799963": {"gene": "F2", "name": "Prothrombin G20210A", "risk": "A", "category": "clotting", "impact": "high"},
+    
+    # Metabolic
+    "rs1801133": {"gene": "MTHFR", "name": "C677T", "risk": "A", "category": "methylation", "impact": "moderate"},
+    "rs1801131": {"gene": "MTHFR", "name": "A1298C", "risk": "G", "category": "methylation", "impact": "moderate"},
+    "rs1805087": {"gene": "MTR", "name": "A2756G", "risk": "G", "category": "methylation", "impact": "low"},
+    "rs1801394": {"gene": "MTRR", "name": "A66G", "risk": "G", "category": "methylation", "impact": "low"},
+    "rs1800562": {"gene": "HFE", "name": "C282Y", "risk": "A", "category": "iron_metabolism", "impact": "high"},
+    "rs1799945": {"gene": "HFE", "name": "H63D", "risk": "G", "category": "iron_metabolism", "impact": "moderate"},
+    "rs7903146": {"gene": "TCF7L2", "name": "Diabetes risk", "risk": "T", "category": "diabetes", "impact": "moderate"},
+    
+    # Cancer predisposition indicators (NOT diagnostic - common variants only)
+    "rs1042522": {"gene": "TP53", "name": "Arg72Pro", "risk": "C", "category": "cancer_related", "impact": "low"},
+    "rs2981582": {"gene": "FGFR2", "name": "Breast cancer risk", "risk": "A", "category": "cancer_related", "impact": "low"},
+    "rs6983267": {"gene": "8q24", "name": "Colorectal risk", "risk": "G", "category": "cancer_related", "impact": "low"},
+    
+    # Eye Health
+    "rs1061170": {"gene": "CFH", "name": "Macular degeneration", "risk": "C", "category": "eye_health", "impact": "moderate"},
+    "rs10490924": {"gene": "ARMS2", "name": "AMD risk", "risk": "T", "category": "eye_health", "impact": "moderate"},
+    
+    # Autoimmune
+    "rs2187668": {"gene": "HLA-DQ2.5", "name": "Celiac risk", "risk": "T", "category": "autoimmune", "impact": "moderate"},
+    "rs7454108": {"gene": "HLA-DQ8", "name": "Celiac risk 2", "risk": "C", "category": "autoimmune", "impact": "moderate"},
+    
+    # Neurological
+    "rs9939609": {"gene": "FTO", "name": "Obesity risk", "risk": "A", "category": "metabolic", "impact": "low"},
+    "rs4680": {"gene": "COMT", "name": "Val158Met", "risk": "G", "category": "neurological", "impact": "moderate"},
+    "rs6265": {"gene": "BDNF", "name": "Val66Met", "risk": "T", "category": "neurological", "impact": "moderate"},
+    "rs53576": {"gene": "OXTR", "name": "Oxytocin receptor", "risk": "A", "category": "neurological", "impact": "low"},
+    "rs1800497": {"gene": "DRD2", "name": "Taq1A", "risk": "A", "category": "neurological", "impact": "moderate"},
+}
+
+PHARMACOGENOMICS = {
+    # Warfarin
+    "rs9923231": {"gene": "VKORC1", "name": "Warfarin sensitivity", "effect_allele": "T", "effect": "Increased sensitivity - lower dose needed", "drugs": ["warfarin"]},
+    "rs1799853": {"gene": "CYP2C9", "name": "*2 variant", "effect_allele": "T", "effect": "Reduced metabolism", "drugs": ["warfarin", "NSAIDs"]},
+    "rs1057910": {"gene": "CYP2C9", "name": "*3 variant", "effect_allele": "C", "effect": "Significantly reduced metabolism", "drugs": ["warfarin", "NSAIDs"]},
+    
+    # Clopidogrel
+    "rs4244285": {"gene": "CYP2C19", "name": "*2 variant", "effect_allele": "A", "effect": "Poor metabolizer", "drugs": ["clopidogrel", "PPIs"]},
+    "rs4986893": {"gene": "CYP2C19", "name": "*3 variant", "effect_allele": "A", "effect": "Poor metabolizer", "drugs": ["clopidogrel"]},
+    "rs12248560": {"gene": "CYP2C19", "name": "*17 variant", "effect_allele": "T", "effect": "Ultra-rapid metabolizer", "drugs": ["clopidogrel"]},
+    
+    # Statins
+    "rs4149056": {"gene": "SLCO1B1", "name": "Statin myopathy risk", "effect_allele": "C", "effect": "Increased myopathy risk", "drugs": ["simvastatin", "atorvastatin"]},
+    
+    # Opioids
+    "rs1799971": {"gene": "OPRM1", "name": "Opioid receptor", "effect_allele": "G", "effect": "Reduced response to opioids", "drugs": ["morphine", "codeine"]},
+    
+    # Caffeine
+    "rs762551": {"gene": "CYP1A2", "name": "Caffeine metabolism", "effect_allele": "C", "effect": "Slow metabolizer", "drugs": ["caffeine"]},
+    
+    # Codeine
+    "rs3892097": {"gene": "CYP2D6", "name": "*4 variant", "effect_allele": "A", "effect": "Poor metabolizer", "drugs": ["codeine", "tramadol", "antidepressants"]},
+    
+    # Antidepressants
+    "rs25531": {"gene": "SLC6A4", "name": "Serotonin transporter", "effect_allele": "G", "effect": "May affect SSRI response", "drugs": ["SSRIs"]},
+}
+
+TRAITS = {
+    # Eye color
+    "rs12913832": {"name": "Eye color (primary)", "trait": "eye_color", "alleles": {"A": "brown tendency", "G": "blue/green tendency"}},
+    "rs1800407": {"name": "Eye color (OCA2)", "trait": "eye_color", "alleles": {"T": "blue/green tendency", "C": "brown tendency"}},
+    
+    # Hair
+    "rs1805007": {"name": "MC1R R151C", "trait": "red_hair", "alleles": {"T": "red hair variant"}},
+    "rs1805008": {"name": "MC1R R160W", "trait": "red_hair", "alleles": {"T": "red hair variant"}},
+    "rs1805009": {"name": "MC1R D294H", "trait": "red_hair", "alleles": {"C": "red hair variant"}},
+    "rs12203592": {"name": "IRF4", "trait": "freckling", "alleles": {"T": "increased freckling"}},
+    
+    # Muscle
+    "rs1815739": {"name": "ACTN3 R577X", "trait": "muscle_type", "alleles": {"T": "endurance tendency", "C": "power/sprint tendency"}},
+    
+    # Taste
+    "rs713598": {"name": "TAS2R38", "trait": "bitter_taste", "alleles": {"C": "taster", "G": "non-taster"}},
+    "rs1726866": {"name": "TAS2R38 (2)", "trait": "bitter_taste", "alleles": {"T": "taster", "C": "non-taster"}},
+    
+    # Metabolism
+    "rs4988235": {"name": "MCM6/LCT", "trait": "lactose", "alleles": {"A": "lactase persistent", "G": "lactose intolerant tendency"}},
+    "rs671": {"name": "ALDH2", "trait": "alcohol_flush", "alleles": {"A": "alcohol flush reaction"}},
+    
+    # Sleep
+    "rs1801260": {"name": "CLOCK", "trait": "chronotype", "alleles": {"C": "evening preference", "T": "morning preference"}},
+}
+
+def load_dna_file(filepath):
+    """Load DNA data from common formats (23andMe, AncestryDNA, etc.)"""
+    import pandas as pd
+    
     print(f"Loading DNA data from {filepath}...")
     
-    # Ancestry format: rsid, chromosome, position, allele1, allele2
-    # Skip comment lines starting with #, and use the header row
-    df = pd.read_csv(
-        filepath, 
-        sep='\t', 
-        comment='#',
-        dtype={'rsid': str, 'chromosome': str, 'position': str, 'allele1': str, 'allele2': str}
-    )
-    
-    # Create genotype column
-    df['genotype'] = df['allele1'] + df['allele2']
-    
-    # Index by rsid for fast lookup
-    df = df.set_index('rsid')
+    # Try different formats
+    try:
+        # AncestryDNA format
+        df = pd.read_csv(filepath, sep='\t', comment='#', 
+                        dtype=str, low_memory=False)
+        if 'rsid' in df.columns:
+            df['genotype'] = df['allele1'] + df['allele2']
+            df = df.set_index('rsid')
+        elif 'rsID' in df.columns:
+            df = df.rename(columns={'rsID': 'rsid'})
+            df['genotype'] = df['allele1'] + df['allele2']
+            df = df.set_index('rsid')
+    except:
+        try:
+            # 23andMe format
+            df = pd.read_csv(filepath, sep='\t', comment='#',
+                            names=['rsid', 'chromosome', 'position', 'genotype'],
+                            dtype=str, low_memory=False)
+            df = df.set_index('rsid')
+        except:
+            raise ValueError(f"Unable to parse DNA file format: {filepath}")
     
     print(f"Loaded {len(df):,} SNPs")
     return df
 
-def load_database(name):
-    """Load a SNP database JSON file."""
-    path = DB_DIR / f"{name}.json"
-    with open(path) as f:
-        return json.load(f)
-
 def get_genotype(df, rsid):
-    """Get genotype for a specific rsid, handling missing data."""
-    if rsid in df.index:
-        row = df.loc[rsid]
-        return row['genotype']
-    return None
-
-def analyze_apoe(df):
-    """Determine APOE status from rs429358 and rs7412."""
-    rs429358 = get_genotype(df, 'rs429358')
-    rs7412 = get_genotype(df, 'rs7412')
-    
-    if rs429358 is None or rs7412 is None:
-        return "Unable to determine (missing data)"
-    
-    # APOE haplotype determination
-    # rs429358: T=ε2/ε3, C=ε4
-    # rs7412: C=ε2, T=ε3/ε4
-    
-    # Count risk alleles
-    e4_count = rs429358.count('C')  # C at rs429358 = ε4
-    e2_count = rs7412.count('C')     # C at rs7412 = ε2
-    
-    # Determine status
-    if e4_count == 2:
-        return "ε4/ε4 (HIGHEST RISK - ~12x Alzheimer's risk)"
-    elif e4_count == 1 and e2_count == 0:
-        return "ε3/ε4 (ELEVATED RISK - ~3x Alzheimer's risk)"
-    elif e4_count == 1 and e2_count == 1:
-        return "ε2/ε4 (Moderate risk)"
-    elif e2_count == 2:
-        return "ε2/ε2 (Protective)"
-    elif e2_count == 1:
-        return "ε2/ε3 (Slightly protective)"
-    else:
-        return "ε3/ε3 (Average risk - most common)"
+    """Get genotype for a SNP, handling missing data."""
+    try:
+        return df.loc[rsid, 'genotype']
+    except:
+        return None
 
 def analyze_health(df):
-    """Analyze health-related SNPs."""
-    print("\n" + "="*60)
-    print("HEALTH RISK ANALYSIS")
-    print("="*60)
+    """Analyze health markers."""
+    results = defaultdict(dict)
     
-    health_db = load_database("health_snps")
-    results = {}
+    for rsid, info in HEALTH_MARKERS.items():
+        geno = get_genotype(df, rsid)
+        if geno:
+            risk_count = geno.count(info['risk'])
+            results[info['category']][rsid] = {
+                'gene': info['gene'],
+                'name': info['name'],
+                'genotype': geno,
+                'risk_allele': info['risk'],
+                'risk_alleles_present': risk_count,
+                'impact': info['impact'],
+                'status': 'homozygous_risk' if risk_count == 2 else 'heterozygous' if risk_count == 1 else 'normal'
+            }
     
-    # Special handling for APOE
-    apoe_status = analyze_apoe(df)
-    results['APOE Status'] = {
-        'result': apoe_status,
-        'category': 'Alzheimer\'s Disease',
-        'importance': 'HIGH'
-    }
-    print(f"\n🧠 APOE Status: {apoe_status}")
-    
-    for category, snps in health_db.items():
-        if category == 'alzheimers_apoe':
-            continue  # Already handled
-            
-        print(f"\n📋 {category.replace('_', ' ').title()}")
-        for rsid, info in snps.items():
-            genotype = get_genotype(df, rsid)
-            if genotype:
-                risk_allele = info.get('risk_allele', '')
-                risk_count = genotype.count(risk_allele)
-                
-                if risk_count == 2:
-                    status = "⚠️  HOMOZYGOUS RISK"
-                elif risk_count == 1:
-                    status = "⚡ Heterozygous (carrier)"
-                else:
-                    status = "✅ No risk alleles"
-                
-                print(f"  {info['name']} ({rsid}): {genotype} - {status}")
-                results[rsid] = {
-                    'name': info['name'],
-                    'genotype': genotype,
-                    'risk_count': risk_count,
-                    'description': info['description']
-                }
-            else:
-                print(f"  {info['name']} ({rsid}): Not in data")
-    
-    return results
+    return dict(results)
 
 def analyze_pharmacogenomics(df):
-    """Analyze drug metabolism SNPs."""
-    print("\n" + "="*60)
-    print("PHARMACOGENOMICS (Drug Response)")
-    print("="*60)
-    
-    pharma_db = load_database("pharmacogenomics")
+    """Analyze pharmacogenomic markers."""
     results = {}
     
-    for drug_class, snps in pharma_db.items():
-        print(f"\n💊 {drug_class.replace('_', ' ').title()}")
-        for rsid, info in snps.items():
-            genotype = get_genotype(df, rsid)
-            if genotype:
-                variant = info.get('variant_allele', '')
-                variant_count = genotype.count(variant)
-                
-                if variant_count > 0:
-                    print(f"  ⚠️  {info['name']} ({rsid}): {genotype}")
-                    print(f"      Effect: {info['effect']}")
-                    print(f"      Drugs: {', '.join(info['drugs'])}")
-                else:
-                    print(f"  ✅ {info['name']} ({rsid}): {genotype} - Normal metabolism")
-                
-                results[rsid] = {
-                    'name': info['name'],
-                    'genotype': genotype,
-                    'variant_count': variant_count,
-                    'effect': info['effect'] if variant_count > 0 else 'Normal',
-                    'drugs': info['drugs']
-                }
-            else:
-                print(f"  {info['name']} ({rsid}): Not in data")
+    for rsid, info in PHARMACOGENOMICS.items():
+        geno = get_genotype(df, rsid)
+        if geno:
+            effect_count = geno.count(info['effect_allele'])
+            results[rsid] = {
+                'gene': info['gene'],
+                'name': info['name'],
+                'genotype': geno,
+                'effect_allele': info['effect_allele'],
+                'effect_alleles_present': effect_count,
+                'effect': info['effect'] if effect_count > 0 else 'Normal metabolism',
+                'affected_drugs': info['drugs'],
+                'actionable': effect_count > 0
+            }
     
     return results
 
 def analyze_traits(df):
-    """Analyze trait-related SNPs."""
-    print("\n" + "="*60)
-    print("TRAITS & CHARACTERISTICS")
-    print("="*60)
-    
-    traits_db = load_database("traits")
+    """Analyze trait markers."""
     results = {}
     
-    for trait, snps in traits_db.items():
-        for rsid, info in snps.items():
-            genotype = get_genotype(df, rsid)
-            if genotype:
-                # Normalize genotype (sort alleles for matching)
-                norm_genotype = ''.join(sorted(genotype))
-                
-                # Check all possible representations
-                prediction = "Unknown"
-                for gt, desc in info.get('variants', {}).items():
-                    if norm_genotype == ''.join(sorted(gt)):
-                        prediction = desc
-                        break
-                
-                print(f"\n🔬 {trait.replace('_', ' ').title()}")
-                print(f"   {info['name']} ({rsid}): {genotype}")
-                print(f"   → {prediction}")
-                
-                results[trait] = {
-                    'rsid': rsid,
-                    'name': info['name'],
-                    'genotype': genotype,
-                    'prediction': prediction
-                }
+    for rsid, info in TRAITS.items():
+        geno = get_genotype(df, rsid)
+        if geno:
+            interpretations = []
+            for allele, meaning in info['alleles'].items():
+                if allele in geno:
+                    interpretations.append(meaning)
+            
+            results[rsid] = {
+                'name': info['name'],
+                'trait': info['trait'],
+                'genotype': geno,
+                'interpretation': interpretations
+            }
     
     return results
 
-def generate_ancestry_estimates(df):
-    """Basic ancestry composition based on informative SNPs."""
-    print("\n" + "="*60)
-    print("ANCESTRY INFORMATIVE MARKERS (Basic)")
-    print("="*60)
+def determine_apoe_status(health_results):
+    """Determine APOE genotype (ε2/ε3/ε4)."""
+    apoe_cat = health_results.get('alzheimers_cardiovascular', {})
+    rs429358 = apoe_cat.get('rs429358', {}).get('genotype', '')
+    rs7412 = apoe_cat.get('rs7412', {}).get('genotype', '')
     
-    # Note: Real ancestry analysis requires reference populations
-    # This is a simplified check of a few highly informative markers
+    if not rs429358 or not rs7412:
+        return "Unable to determine"
     
-    markers = {
-        'rs1426654': {
-            'name': 'SLC24A5 (skin pigmentation)',
-            'european': 'A',
-            'interpretation': {
-                'AA': 'European-associated variant (lighter skin)',
-                'AG': 'Mixed ancestry signal',
-                'GG': 'African/Asian-associated variant'
-            }
-        },
-        'rs16891982': {
-            'name': 'SLC45A2 (skin/hair pigmentation)', 
-            'european': 'G',
-            'interpretation': {
-                'GG': 'European-associated',
-                'GC': 'Mixed',
-                'CC': 'Non-European associated'
-            }
-        },
-        'rs3827760': {
-            'name': 'EDAR (hair thickness - East Asian marker)',
-            'east_asian': 'A',
-            'interpretation': {
-                'AA': 'East Asian-associated (thick straight hair)',
-                'AG': 'Mixed',
-                'GG': 'European/African-associated'
-            }
-        }
-    }
+    # Determine haplotypes
+    # ε2 = T-T (rs429358-rs7412)
+    # ε3 = T-C
+    # ε4 = C-C
     
-    for rsid, info in markers.items():
-        genotype = get_genotype(df, rsid)
-        if genotype:
-            norm_gt = ''.join(sorted(genotype))
-            interp = info['interpretation'].get(norm_gt, info['interpretation'].get(genotype, 'Unknown'))
-            print(f"\n  {info['name']}")
-            print(f"  {rsid}: {genotype} → {interp}")
+    c_429 = rs429358.count('C')
+    t_7412 = rs7412.count('T')
+    
+    if c_429 == 0 and t_7412 == 2:
+        return "ε2/ε2"
+    elif c_429 == 0 and t_7412 == 1:
+        return "ε2/ε3"
+    elif c_429 == 0 and t_7412 == 0:
+        return "ε3/ε3"
+    elif c_429 == 1 and t_7412 == 1:
+        return "ε2/ε4"
+    elif c_429 == 1 and t_7412 == 0:
+        return "ε3/ε4"
+    elif c_429 == 2 and t_7412 == 0:
+        return "ε4/ε4"
+    else:
+        return f"Complex ({rs429358}/{rs7412})"
 
-def main(dna_file):
-    """Run full DNA analysis."""
-    print("="*60)
-    print("DNA ANALYSIS REPORT")
-    print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*60)
+def generate_report(health, pharma, traits, apoe_status):
+    """Generate human-readable report."""
+    lines = []
+    lines.append("=" * 70)
+    lines.append("PERSONAL GENOMICS ANALYSIS REPORT")
+    lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append("=" * 70)
+    lines.append("")
+    lines.append("⚠️  DISCLAIMER: This is NOT medical advice. Consult healthcare")
+    lines.append("    professionals before making any health decisions.")
+    lines.append("")
+    
+    # APOE
+    lines.append("-" * 70)
+    lines.append("APOE STATUS")
+    lines.append("-" * 70)
+    lines.append(f"APOE Genotype: {apoe_status}")
+    if "ε4" in apoe_status:
+        lines.append("  → ε4 allele present - discuss with physician")
+    lines.append("")
+    
+    # Health by category
+    lines.append("-" * 70)
+    lines.append("HEALTH MARKERS BY CATEGORY")
+    lines.append("-" * 70)
+    
+    for category, markers in health.items():
+        lines.append(f"\n{category.upper().replace('_', ' ')}:")
+        for rsid, data in markers.items():
+            status_icon = "⚠️" if data['status'] != 'normal' else "✓"
+            lines.append(f"  {status_icon} {data['gene']} {data['name']}: {data['genotype']} ({data['status']})")
+    
+    # Pharmacogenomics
+    lines.append("")
+    lines.append("-" * 70)
+    lines.append("PHARMACOGENOMICS")
+    lines.append("-" * 70)
+    
+    actionable = [r for r in pharma.values() if r['actionable']]
+    if actionable:
+        for r in actionable:
+            lines.append(f"  ⚠️ {r['gene']} {r['name']}: {r['genotype']}")
+            lines.append(f"     Effect: {r['effect']}")
+            lines.append(f"     Drugs: {', '.join(r['affected_drugs'])}")
+    else:
+        lines.append("  No actionable pharmacogenomic variants detected.")
+    
+    # Traits
+    lines.append("")
+    lines.append("-" * 70)
+    lines.append("TRAITS")
+    lines.append("-" * 70)
+    
+    trait_groups = defaultdict(list)
+    for data in traits.values():
+        if data['interpretation']:
+            trait_groups[data['trait']].extend(data['interpretation'])
+    
+    for trait, interps in trait_groups.items():
+        lines.append(f"  {trait.replace('_', ' ').title()}: {', '.join(set(interps))}")
+    
+    lines.append("")
+    lines.append("=" * 70)
+    lines.append("END OF REPORT")
+    lines.append("=" * 70)
+    
+    return "\n".join(lines)
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python analyze_dna.py <path_to_dna_file>")
+        print("Supports: AncestryDNA, 23andMe, MyHeritage, FamilyTreeDNA, LivingDNA")
+        sys.exit(1)
+    
+    filepath = sys.argv[1]
     
     # Load data
-    df = load_ancestry_data(dna_file)
+    df = load_dna_file(filepath)
     
-    # Create output directory
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    # Analyze
+    print("Analyzing health markers...")
+    health = analyze_health(df)
     
-    # Run analyses
-    health_results = analyze_health(df)
-    pharma_results = analyze_pharmacogenomics(df)
-    trait_results = analyze_traits(df)
-    generate_ancestry_estimates(df)
+    print("Analyzing pharmacogenomics...")
+    pharma = analyze_pharmacogenomics(df)
     
-    # Summary
-    print("\n" + "="*60)
-    print("SUMMARY")
-    print("="*60)
-    print(f"Total SNPs analyzed: {len(df):,}")
-    print(f"Health markers checked: {len(health_results)}")
-    print(f"Pharmacogenomic markers: {len(pharma_results)}")
-    print(f"Trait markers: {len(trait_results)}")
+    print("Analyzing traits...")
+    traits = analyze_traits(df)
     
-    # Save results
-    results = {
-        'generated': datetime.now().isoformat(),
-        'total_snps': len(df),
-        'health': health_results,
-        'pharmacogenomics': pharma_results,
-        'traits': trait_results
-    }
+    # APOE status
+    apoe_status = determine_apoe_status(health)
     
-    output_file = OUTPUT_DIR / 'dna_analysis_results.json'
-    with open(output_file, 'w') as f:
-        json.dump(results, f, indent=2)
+    # Generate reports
+    print(f"\nSaving reports to {OUTPUT_DIR}/")
     
-    print(f"\nFull results saved to: {output_file}")
+    with open(OUTPUT_DIR / "health_report.json", 'w') as f:
+        json.dump({'apoe_status': apoe_status, 'markers': health}, f, indent=2)
     
-    return results
+    with open(OUTPUT_DIR / "pharma_report.json", 'w') as f:
+        json.dump(pharma, f, indent=2)
+    
+    with open(OUTPUT_DIR / "traits_report.json", 'w') as f:
+        json.dump(traits, f, indent=2)
+    
+    report = generate_report(health, pharma, traits, apoe_status)
+    with open(OUTPUT_DIR / "full_report.md", 'w') as f:
+        f.write(report)
+    
+    print(report)
+    print(f"\n✓ Reports saved to {OUTPUT_DIR}/")
 
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage: python analyze_dna.py <ancestry_dna_file.txt>")
-        print("\nLooking for DNA file in common locations...")
-        
-        # Check common locations
-        possible_paths = [
-            Path.home() / "Downloads" / "AncestryDNA.txt",
-            Path.home() / "Downloads" / "dna_data.txt",
-            Path.home() / "dna-analysis" / "raw_data.txt",
-        ]
-        
-        for p in possible_paths:
-            if p.exists():
-                print(f"Found: {p}")
-                main(p)
-                sys.exit(0)
-        
-        print("No DNA file found. Please provide path as argument.")
-        sys.exit(1)
-    else:
-        main(sys.argv[1])
+if __name__ == "__main__":
+    main()

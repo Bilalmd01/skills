@@ -1,147 +1,265 @@
+#!/usr/bin/env python3
+"""
+Parental Ancestry Inference
+Infer which genetic variants likely came from each parent.
+Works with any ancestry/ethnic background.
+
+Privacy: All analysis runs locally. No network requests.
+
+Note: Without parental DNA, this is inferential based on:
+- X chromosome (for males - all from mother)
+- mtDNA (maternal only)
+- Y-DNA (paternal only, for males)
+- Phasing heuristics for autosomal chromosomes
+"""
+
+import sys
 import json
+from pathlib import Path
+from collections import defaultdict
 
-# Load DNA data
-snp_data = {}
-with open('raw_data.txt', 'r') as f:
-    for line in f:
-        if line.startswith('#') or line.startswith('rsid'):
-            continue
-        parts = line.strip().split('\t')
-        if len(parts) >= 5:
-            rsid, chrom, pos, a1, a2 = parts[:5]
-            snp_data[rsid] = {'geno': a1 + a2, 'a1': a1, 'a2': a2}
+OUTPUT_DIR = Path.home() / "dna-analysis" / "reports"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-def get(rsid):
-    return snp_data.get(rsid, {})
-
-print("="*70)
-print("PARENTAL GENETIC INFERENCE")
-print("="*70)
-print("""
-From your diploid genome, we can infer what each parent contributed.
-You received one allele from your mother (Cheryl) and one from your father (Bill).
-
-For HETEROZYGOUS markers (e.g., AG), one parent gave A, one gave G.
-Using known ancestry (Mom = Irish, Dad = Ashkenazi via his mother), we can
-often infer which allele came from which parent.
-""")
-
-# Key markers to trace
-markers = {
-    'rs1801133': {'name': 'MTHFR C677T', 'risk': 'G', 'normal': 'A', 'ashkenazi_elevated': True},
-    'rs4680': {'name': 'COMT', 'warrior': 'G', 'worrier': 'A'},
-    'rs1805007': {'name': 'MC1R (red hair)', 'celtic': 'T', 'common': 'C'},
-    'rs1805008': {'name': 'MC1R R160W', 'celtic': 'T', 'common': 'C'},
-    'rs12203592': {'name': 'IRF4 (freckling)', 'celtic': 'T', 'common': 'C'},
-    'rs12913832': {'name': 'HERC2 (eye color)', 'blue_green': 'G', 'brown': 'A'},
-    'rs6265': {'name': 'BDNF', 'val': 'C', 'met': 'T'},
-    'rs1800497': {'name': 'DRD2', 'A1': 'A', 'A2': 'G'},
-    'rs53576': {'name': 'OXTR', 'empathic': 'G', 'independent': 'A'},
-    'rs762551': {'name': 'CYP1A2 (caffeine)', 'fast': 'A', 'slow': 'C'},
-    'rs4988235': {'name': 'LCT (lactase)', 'persistent': 'A', 'non': 'G'},
+# Markers useful for parental inference
+INFORMATIVE_MARKERS = {
+    # Ancestry-informative markers that can help trace parental contributions
+    # These are population-specific variants that may differ between parents
+    
+    "european": {
+        "rs16891982": {"name": "SLC45A2", "derived": "G", "ancestral": "C"},
+        "rs1426654": {"name": "SLC24A5", "derived": "A", "ancestral": "G"},
+        "rs12913832": {"name": "HERC2", "derived": "G", "ancestral": "A"},
+    },
+    
+    "east_asian": {
+        "rs3827760": {"name": "EDAR", "derived": "A", "ancestral": "G"},
+        "rs671": {"name": "ALDH2", "derived": "A", "ancestral": "G"},
+    },
+    
+    "african": {
+        "rs2814778": {"name": "DARC", "derived": "C", "ancestral": "T"},
+    },
+    
+    # Methylation markers (often population-stratified)
+    "methylation": {
+        "rs1801133": {"name": "MTHFR C677T", "risk": "A", "common": "G"},
+        "rs1801131": {"name": "MTHFR A1298C", "risk": "G", "common": "T"},
+    },
+    
+    # Pigmentation (informative for mixed ancestry)
+    "pigmentation": {
+        "rs1805007": {"name": "MC1R R151C", "red_hair": "T", "common": "C"},
+        "rs1805008": {"name": "MC1R R160W", "red_hair": "T", "common": "C"},
+        "rs12203592": {"name": "IRF4", "light": "T", "common": "C"},
+    },
 }
 
-print("\n📊 HETEROZYGOUS MARKERS (Different from each parent)")
-print("-"*60)
+# Y-DNA and mtDNA haplogroup markers
+HAPLOGROUP_MARKERS = {
+    "y_dna": {
+        "rs9786184": {"haplo": "R1b", "allele": "A"},
+        "rs17250804": {"haplo": "R1a", "allele": "G"},
+        "rs2032652": {"haplo": "I", "allele": "G"},
+        "rs2032631": {"haplo": "J", "allele": "A"},
+        "rs9341296": {"haplo": "E", "allele": "C"},
+    },
+    "mt_dna": {
+        "rs2853499": {"haplo": "H", "allele": "G"},
+        "rs28358571": {"haplo": "U", "allele": "A"},
+    }
+}
 
-mom_inferred = []
-dad_inferred = []
 
-for rsid, info in markers.items():
-    data = get(rsid)
-    if data:
-        geno = data['geno']
-        a1, a2 = data['a1'], data['a2']
-        
-        # Check if heterozygous
-        if a1 != a2:
-            print(f"\n{info['name']} ({rsid}): {geno} — HETEROZYGOUS")
-            
-            # Infer based on known ancestry patterns
-            if 'ashkenazi_elevated' in info:
-                print(f"   → {info['risk']} allele: Likely from Dad (Ashkenazi-elevated)")
-                print(f"   → {info['normal']} allele: Likely from Mom")
-                dad_inferred.append(f"{info['name']}: {info['risk']}")
-                mom_inferred.append(f"{info['name']}: {info['normal']}")
-            elif 'celtic' in info:
-                print(f"   → {info['celtic']} allele (Celtic): Could be either parent (both have Celtic)")
-            else:
-                print(f"   → Both parents contributed different alleles")
-                print(f"   → Cannot determine direction without their DNA")
+def load_dna_file(filepath):
+    """Load DNA data."""
+    import pandas as pd
+    
+    df = pd.read_csv(filepath, sep='\t', comment='#', dtype=str, low_memory=False)
+    
+    if 'rsid' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.set_index('rsid')
+    elif 'rsID' in df.columns:
+        df['genotype'] = df['allele1'].fillna('') + df['allele2'].fillna('')
+        df = df.rename(columns={'rsID': 'rsid'}).set_index('rsid')
+    else:
+        df.columns = ['rsid', 'chromosome', 'position', 'genotype'] + list(df.columns[4:])
+        df = df.set_index('rsid')
+    
+    return df
 
-print("\n\n" + "="*70)
-print("INFERRED PARENTAL PROFILES")
-print("="*70)
 
-print("""
-╔══════════════════════════════════════════════════════════════════════╗
-║                        👨 FATHER (Bill Graves)                        ║
-╠══════════════════════════════════════════════════════════════════════╣
-║  Ethnicity: ~25-30% Ashkenazi (from his mother Evelyn Greenberg)     ║
-║            ~70-75% Celtic/English (Graves line from Virginia)        ║
-║                                                                       ║
-║  Likely contributed:                                                  ║
-║  • MTHFR G allele (Ashkenazi-elevated)                               ║
-║  • MTR/MTRR variant alleles (methylation cluster)                    ║
-║  • One COMT G (Warrior) allele                                       ║
-║  • One DRD2 A1 allele (novelty-seeking)                              ║
-║  • Y-chromosome R1b (likely R1b-L21 via Graves patriline)            ║
-║                                                                       ║
-║  Predicted traits:                                                    ║
-║  • Warrior stress response (if also COMT GG)                         ║
-║  • Night owl tendency (CLOCK contribution)                           ║
-║  • Mixed or darker eye color gene contribution                       ║
-╚══════════════════════════════════════════════════════════════════════╝
+def get_genotype(df, rsid):
+    try:
+        return df.loc[rsid, 'genotype']
+    except:
+        return None
 
-╔══════════════════════════════════════════════════════════════════════╗
-║                        👩 MOTHER (Cheryl)                             ║
-╠══════════════════════════════════════════════════════════════════════╣
-║  Ethnicity: ~100% Celtic (Irish)                                     ║
-║                                                                       ║
-║  Likely contributed:                                                  ║
-║  • MTHFR A allele (normal)                                           ║
-║  • MC1R red hair variants (Celtic)                                   ║
-║  • IRF4 freckling variant (Celtic)                                   ║
-║  • One COMT G (Warrior) allele                                       ║
-║  • One DRD2 A1 allele                                                ║
-║  • mtDNA Haplogroup H (100% maternal inheritance)                    ║
-║                                                                       ║
-║  Predicted traits:                                                    ║
-║  • Red hair carrier (even if not expressed)                          ║
-║  • Freckling tendency                                                 ║
-║  • Light eye color genes (green/hazel)                               ║
-║  • High empathy (OXTR G contribution)                                ║
-║  • Lactase persistence (Celtic dairy farming ancestry)               ║
-╚══════════════════════════════════════════════════════════════════════╝
+
+def analyze_haplogroups(df):
+    """Identify Y-DNA and mtDNA haplogroups."""
+    results = {"y_dna": None, "mt_dna": None}
+    
+    # Y-DNA (only meaningful for males)
+    y_matches = []
+    for rsid, info in HAPLOGROUP_MARKERS["y_dna"].items():
+        geno = get_genotype(df, rsid)
+        if geno and info["allele"] in geno:
+            y_matches.append(info["haplo"])
+    
+    if y_matches:
+        results["y_dna"] = y_matches[0]  # Take first match
+    
+    # mtDNA
+    mt_matches = []
+    for rsid, info in HAPLOGROUP_MARKERS["mt_dna"].items():
+        geno = get_genotype(df, rsid)
+        if geno and info["allele"] in geno:
+            mt_matches.append(info["haplo"])
+    
+    if mt_matches:
+        results["mt_dna"] = mt_matches[0]
+    
+    return results
+
+
+def analyze_heterozygous_markers(df):
+    """Find heterozygous markers useful for parental inference."""
+    results = defaultdict(list)
+    
+    for category, markers in INFORMATIVE_MARKERS.items():
+        for rsid, info in markers.items():
+            geno = get_genotype(df, rsid)
+            if geno and len(set(geno)) == 2:  # Heterozygous
+                results[category].append({
+                    "rsid": rsid,
+                    "name": info["name"],
+                    "genotype": geno,
+                    "info": info
+                })
+    
+    return dict(results)
+
+
+def generate_report(haplogroups, het_markers):
+    """Generate human-readable report."""
+    lines = []
+    lines.append("=" * 70)
+    lines.append("PARENTAL ANCESTRY INFERENCE")
+    lines.append("=" * 70)
+    lines.append("")
+    lines.append("This analysis infers parental contributions based on:")
+    lines.append("• Y-DNA haplogroup (paternal line, males only)")
+    lines.append("• mtDNA haplogroup (maternal line)")
+    lines.append("• Heterozygous ancestry-informative markers")
+    lines.append("")
+    lines.append("⚠️  Note: Without parental DNA samples, these are inferences only.")
+    lines.append("")
+    
+    lines.append("-" * 70)
+    lines.append("UNIPARENTAL MARKERS")
+    lines.append("-" * 70)
+    lines.append("")
+    
+    lines.append("  Y-DNA HAPLOGROUP (Father's paternal line):")
+    if haplogroups["y_dna"]:
+        lines.append(f"    → {haplogroups['y_dna']}")
+        lines.append(f"    This Y-chromosome lineage traces your father's father's father's...")
+        lines.append(f"    line back thousands of years.")
+    else:
+        lines.append("    → Not determined (either female or markers not found)")
+    
+    lines.append("")
+    lines.append("  mtDNA HAPLOGROUP (Mother's maternal line):")
+    if haplogroups["mt_dna"]:
+        lines.append(f"    → {haplogroups['mt_dna']}")
+        lines.append(f"    This mitochondrial lineage traces your mother's mother's mother's...")
+        lines.append(f"    line back thousands of years.")
+    else:
+        lines.append("    → Not determined (markers not found)")
+    
+    lines.append("")
+    lines.append("-" * 70)
+    lines.append("HETEROZYGOUS ANCESTRY MARKERS")
+    lines.append("-" * 70)
+    lines.append("")
+    lines.append("  Heterozygous (mixed) markers suggest different parental ancestries:")
+    lines.append("")
+    
+    for category, markers in het_markers.items():
+        if markers:
+            lines.append(f"  {category.upper().replace('_', ' ')}:")
+            for m in markers:
+                lines.append(f"    • {m['name']} ({m['rsid']}): {m['genotype']}")
+                lines.append(f"      One allele from each parent")
+            lines.append("")
+    
+    if not any(het_markers.values()):
+        lines.append("  No informative heterozygous markers found.")
+    
+    lines.append("")
+    lines.append("-" * 70)
+    lines.append("INTERPRETATION")
+    lines.append("-" * 70)
+    lines.append("""
+HOW TO USE THIS INFORMATION:
+
+1. Y-DNA and mtDNA trace single lineages (father's father's... and 
+   mother's mother's...) but represent only 2 of your many ancestors.
+
+2. Heterozygous ancestry markers show where your parents differed.
+   If you have mixed ancestry, these markers can help identify which
+   ancestral components came from which parent.
+
+3. For definitive parental phasing, you would need:
+   - DNA from one or both parents, OR
+   - DNA from siblings or other relatives, OR
+   - Whole genome sequencing with statistical phasing
+
+LIMITATIONS:
+• This analysis uses a small subset of ancestry-informative markers
+• Homozygous markers cannot distinguish parental origin
+• Recombination means your autosomes are a mosaic of both parents
 """)
+    
+    return "\n".join(lines)
 
-print("\n📍 WHAT WE KNOW FOR CERTAIN")
-print("-"*60)
-print("""
-From mtDNA (100% maternal):
-  • Your Haplogroup H came entirely from your mother
-  • This traces her maternal line back ~20,000 years
-  • High frequency in Ireland suggests deep Celtic maternal ancestry
 
-From Y-DNA (100% paternal):
-  • Your Y-haplogroup (likely R1b-L21) came entirely from your father
-  • This traces the Graves patriline back to Celtic/European origins
-  • R1b-L21 is the "Celtic" Y-chromosome
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python parental_inference.py <dna_file>")
+        sys.exit(1)
+    
+    filepath = sys.argv[1]
+    print(f"Loading {filepath}...")
+    df = load_dna_file(filepath)
+    print(f"Loaded {len(df):,} SNPs")
+    
+    print("Analyzing haplogroups...")
+    haplogroups = analyze_haplogroups(df)
+    
+    print("Finding heterozygous ancestry markers...")
+    het_markers = analyze_heterozygous_markers(df)
+    
+    # Save results
+    results = {
+        "haplogroups": haplogroups,
+        "heterozygous_markers": het_markers
+    }
+    
+    with open(OUTPUT_DIR / "parental_inference.json", 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    # Generate report
+    report = generate_report(haplogroups, het_markers)
+    
+    with open(OUTPUT_DIR / "parental_inference.md", 'w') as f:
+        f.write(report)
+    
+    print(report)
+    print(f"\n✓ Reports saved to {OUTPUT_DIR}/")
 
-From Ashkenazi markers:
-  • All Ashkenazi ancestry flows through your father
-  • His mother (Evelyn Greenberg) was ~100% Ashkenazi
-  • Making him ~50% Ashkenazi and you ~25% (close to your 18% estimate)
-""")
 
-print("\n💡 TO CONFIRM PARENTAL CONTRIBUTIONS")
-print("-"*60)
-print("""
-If your parents did DNA tests, we could:
-  1. Phase your genome (assign each allele to correct parent)
-  2. Identify recombination breakpoints
-  3. Determine exact Ashkenazi segments you inherited
-  4. Trace specific disease risk alleles to source
-
-Ancestry and 23andMe both offer parent-child phasing if they test.
-""")
+if __name__ == "__main__":
+    main()

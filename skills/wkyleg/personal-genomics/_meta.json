@@ -3,9 +3,15 @@
   "slug": "personal-genomics",
   "displayName": "Personal Genomics",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1770422742311,
-    "commit": "https://github.com/openclaw/skills/commit/72db564b2744a6b9866a019e93588e946c25031c"
+    "version": "4.2.0",
+    "publishedAt": 1770441092039,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1770422742311,
+      "commit": "https://github.com/openclaw/skills/commit/72db564b2744a6b9866a019e93588e946c25031c"
+    }
+  ]
 }

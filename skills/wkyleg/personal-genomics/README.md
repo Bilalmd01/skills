@@ -1,202 +1,453 @@
-# 🧬 Personal Genomics
+# Personal Genomics v4.2.0
 
-[![ClawHub](https://img.shields.io/badge/ClawHub-personal--genomics-blue)](https://clawhub.ai/wkyleg/personal-genomics)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+Privacy-first local DNA analysis for AI agents. Comprehensive genetic analysis with **1600+ validated markers** across **30 categories** covering pharmacogenomics, disease risk, carrier status, haplogroups, ancestry, hereditary cancer, autoimmune conditions, pain sensitivity, lifestyle optimization, and more.
 
-**Analyze your raw DNA data locally and privately.** Extract health markers, pharmacogenomics, traits, ancestry, and ancient DNA comparisons from consumer genetic testing services — all without your data ever leaving your machine.
+**NEW in v4.2.0: Interactive HTML Dashboard!**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Privacy-100%25_Local-green?style=for-the-badge" alt="Privacy: 100% Local">
-  <img src="https://img.shields.io/badge/Network_Requests-Zero-green?style=for-the-badge" alt="Network Requests: Zero">
-</p>
-
----
-
-## ⚠️ Important Disclaimers
-
-> **This tool is for educational and research purposes only.**
->
-> - ❌ **NOT a medical diagnostic tool** — Results are not clinically validated
-> - 👨‍⚕️ **Consult healthcare professionals** — Do not make medical decisions based solely on these results
-> - 🔐 **You are responsible** for securing your genetic data
-> - ⚠️ **No warranties** — Results may contain errors; verify with clinical testing
-
----
+![Logo](logo.svg)
 
 ## Features
 
-### 🏥 Health Markers
-- Cardiovascular risk (APOE, LPA, PCSK9, Factor V Leiden)
-- Cancer predisposition indicators (BRCA1/2, TP53, MLH1)
-- Metabolic conditions (MTHFR, HFE, TCF7L2)
-- Neurological markers (APOE ε4, Parkinson's variants)
+### Core Analysis
+- **1600+ validated genetic markers** across 30 categories
+- **Polygenic Risk Scores (PRS)** for 10+ major conditions with population calibration
+- **Pharmacogenomics** with CPIC Level 1A drug-gene interactions
+- **Medication Interaction Checker** - cross-reference any medication list
+- **Carrier screening** for 35+ recessive diseases including rare diseases
+- **VCF support** for whole genome/exome sequencing
+- **Agent-friendly JSON output** with priority-sorted actionable items
+- **Zero network requests** - all analysis runs locally
+- **Universal ethnic coverage** - works for all ancestries worldwide
 
-### 💊 Pharmacogenomics
-- Drug metabolism (CYP2D6, CYP2C19, CYP3A4)
-- Warfarin sensitivity (VKORC1, CYP2C9)
-- Statin myopathy risk (SLCO1B1)
+### New in v4.0
+
+🧬 **Haplogroup Analysis**
+- Mitochondrial DNA (mtDNA) haplogroups for maternal lineage
+- Y-chromosome haplogroups for paternal lineage
+- Migration history context for each haplogroup
+- Based on PhyloTree and ISOGG standards
+
+🌍 **Ancestry Composition**
+- Reference population comparisons (EUR, AFR, EAS, SAS, AMR)
+- Admixture detection from SNP data
+- Ancestry informative markers (AIMs)
+- Sub-population resolution where data supports
+
+🎗️ **Expanded Hereditary Cancer Panel**
+- BRCA1/BRCA2 comprehensive coverage
+- Lynch syndrome genes (MLH1, MSH2, MSH6, PMS2)
+- Other hereditary cancer markers (APC, TP53, CHEK2, PALB2, ATM)
+- ACMG-style variant classification
+
+🔬 **Autoimmune HLA Associations**
+- Celiac disease (HLA-DQ2, DQ8) with rule-out capability
+- Type 1 Diabetes associations
+- Ankylosing spondylitis (HLA-B27)
+- Rheumatoid arthritis, lupus, multiple sclerosis markers
+
+💊 **Pain Sensitivity**
+- COMT Val158Met (pain perception, opioid response)
+- OPRM1 A118G (opioid receptor function)
+- SCN9A (pain signaling)
+- TRPV1 (capsaicin/thermal sensitivity)
+- Migraine susceptibility markers
+
+📄 **PDF Report Generation**
+- Professional, physician-shareable format
+- Executive summary section
+- Detailed findings by category
+- Actionable recommendations
+- Disclaimers and limitations
+
+📊 **Data Quality Metrics**
+- Call rate analysis
+- No-call position tracking
+- Chromosome coverage analysis
+- Platform/chip detection
+- Confidence scoring for variants
+
+🔗 **Integration & Export**
+- Genetic counselor clinical export (ACMG-style)
+- Apple Health compatible format
+- API-ready JSON structure
+- Integration hooks for health trackers
+
+### New in v4.1.0
+
+💊 **Medication Interaction Checker**
+- Input any list of medications (generic or brand names)
+- Cross-references with pharmacogenomics profile
+- Critical, serious, moderate, and minor severity levels
+- Dosing adjustments and alternative medication suggestions
+- PubMed citations for each interaction
+- FDA warning flags
+
+🌙 **Sleep Optimization Profile**
+- Chronotype determination (CLOCK, PER2, PER3 genes)
 - Caffeine metabolism speed (CYP1A2)
+- Adenosine receptor sensitivity (ADORA2A)
+- Personalized wake/sleep time recommendations
+- Coffee cutoff time based on genetics
+- Short sleeper gene detection
 
-### 🧬 Traits
-- Eye/hair/skin color prediction
-- Muscle fiber composition (ACTN3)
-- Lactose tolerance (MCM6)
-- Circadian rhythm tendencies
+🥗 **Dietary Interaction Matrix**
+- Caffeine tolerance (CYP1A2)
+- Alcohol metabolism (ADH1B, ALDH2 - flush detection)
+- Saturated fat response (APOE-specific recommendations)
+- Lactose tolerance (LCT)
+- Celiac disease risk (HLA-DQ2/DQ8)
+- Bitter taste perception (TAS2R38)
+- Omega-3 conversion efficiency (FADS1)
+- Iron overload risk (HFE)
 
-### 🌍 Ancestry & Ancient DNA
-- Y-DNA and mtDNA haplogroup prediction
-- Ancient population comparisons (AADR database compatible)
-- Neanderthal variant analysis
-- Parental ancestry inference
+### New in v4.2.0
 
----
+🖥️ **Interactive Web Dashboard**
+- Beautiful, responsive HTML visualization
+- Auto-generated with every analysis
+- No external dependencies - works offline
+- Dark mode support
+- Sections: Overview, Pharmacogenomics, Health Risks, Traits, Ancestry, Carrier Status, Sleep, Athletic, UV/Skin, Dietary
+- Export to PDF (print functionality)
+- Drag & drop JSON loading
 
-## Supported Services
+🛡️ **Code Quality Improvements**
+- Complete type hints throughout codebase
+- TypedDict for complex return types
+- Comprehensive docstrings (Google style)
+- Defensive programming with input validation
+- Graceful handling of malformed data
+- User-friendly error messages
+- 200+ automated tests
 
-| Service | File Format | SNPs |
-|---------|-------------|------|
-| AncestryDNA | `AncestryDNA.txt` | ~700K |
-| 23andMe | `genome_*.txt` | ~600K |
-| MyHeritage | CSV export | ~700K |
-| FamilyTreeDNA | CSV/TSV | ~700K |
-| LivingDNA | CSV export | ~600K |
+📊 **Enhanced Visualizations**
+- PRS percentile bars with color coding
+- Power vs Endurance athletic gauge
+- Sleep chronotype display
+- Skin type estimation visuals
+- Dietary interaction matrix
+- Collapsible sections
+- Search/filter functionality
 
----
+🏃 **Athletic Performance Profiling**
+- Endurance vs power composite score
+- Key markers: ACTN3, ACE, PPARGC1A
+- Recovery profile (TNF, IL6, BDNF)
+- Injury susceptibility (COL5A1, COL1A1, GDF5)
+- VO2max potential indicators
+- Sport suitability recommendations
+- Personalized training guidance
 
-## Quick Start
+☀️ **UV Sensitivity Calculator**
+- Estimated Fitzpatrick skin type from genetics
+- MC1R, SLC24A5, SLC45A2, IRF4, TYR markers
+- SPF recommendations by skin type
+- Melanoma risk assessment
+- Vitamin D synthesis capacity
+- Sun exposure guidelines
 
-### Installation
+📝 **Natural Language Explanations**
+- Plain-English interpretation of all findings
+- Jargon-free explanations
+- Calibrated uncertainty language
+- Practical implications for each finding
+- Context for relative risks
+
+🔬 **Research Variant Flagging**
+- Clear separation of "established" vs "emerging" findings
+- Evidence level classification for each marker
+- Research context for preliminary findings
+- Appropriate uncertainty communication
+
+📚 **PubMed References**
+- Direct links to source papers for major findings
+- Primary citations for CPIC guidelines
+- PMID references throughout
+
+🧬 **Runs of Homozygosity Detection**
+- Heterozygosity rate calculation
+- Sensitive handling of consanguinity findings
+- Genetic counselor referral recommendations
+
+⏳ **Telomere Length Estimation**
+- TERT, TERC, OBFC1 variants
+- Longevity-associated markers (FOXO3, APOE)
+- Clear caveats about limitations
+- Lifestyle factor context
+
+## Supported Formats
+
+- 23andMe (v3, v4, v5)
+- AncestryDNA
+- MyHeritage
+- FamilyTreeDNA
+- Nebula Genomics
+- VCF files (whole genome/exome, gzipped supported)
+- Any tab-delimited rsid format
+
+## Installation
 
 ```bash
-# Via ClawHub (for OpenClaw users)
+# Install via clawhub (recommended)
 clawhub install personal-genomics
 
 # Or clone directly
 git clone https://github.com/wkyleg/personal-genomics.git
 cd personal-genomics
-pip install pandas numpy scipy rich scikit-learn
+pip install -r requirements.txt
 ```
 
-### Basic Usage
+## Usage
+
+### Command Line
 
 ```bash
-# Set your DNA file path
-export DNA_FILE="/path/to/your/raw_data.txt"
-
-# Run comprehensive analysis
-python3 analyze_dna.py "$DNA_FILE"
+python comprehensive_analysis.py /path/to/dna_file.txt
 ```
 
-### Output
-
-Reports are generated in `~/dna-analysis/reports/`:
+### As OpenClaw Skill
 
 ```
-├── health_report.json      # Health marker analysis
-├── pharma_report.json      # Pharmacogenomics
-├── traits_report.json      # Physical traits
-├── ancestry_report.json    # Haplogroups & ancestry
-├── supplement_protocol.md  # Personalized suggestions
-└── full_report.md          # Human-readable summary
+Analyze my DNA file at ~/Downloads/genome.txt
 ```
 
----
+### Generate PDF Report
 
-## Analysis Scripts
+```bash
+python -c "
+from comprehensive_analysis import load_dna_file, main
+from pdf_report import generate_pdf_report
+# Run main analysis, then generate PDF from results
+"
+```
 
-| Script | Purpose |
-|--------|---------|
-| `analyze_dna.py` | Core health, pharma, and traits analysis |
-| `extended_analysis.py` | 600+ additional markers |
-| `advanced_analysis.py` | Polygenic risk scores, PCA |
-| `ancient_dna.py` | Ancient population markers |
-| `ancient_comparison.py` | AADR database comparison |
-| `neanderthal_analysis.py` | Archaic variant detection |
-| `parental_inference.py` | Maternal/paternal ancestry split |
-| `ethnicity_analysis.py` | Population composition |
-| `supplement_protocol.py` | Evidence-based supplement suggestions |
-| `convert_to_plink.py` | Convert to PLINK format |
+### Output Files
 
----
+Reports are saved to `~/dna-analysis/reports/`:
 
-## For AI Agents
+- `dashboard.html` - **NEW!** Interactive visualization dashboard
+- `agent_summary.json` - AI-optimized output with priority-sorted actionable items
+- `full_analysis.json` - Complete analysis data
+- `report.txt` - Human-readable report
+- `genetic_report.pdf` - Professional PDF report
 
-This skill outputs structured JSON designed for agent consumption:
+### Export Formats
 
 ```python
-import json
+from exports import export_all_formats, generate_genetic_counselor_export
 
-with open("~/dna-analysis/reports/health_report.json") as f:
-    health = json.load(f)
+# Export all formats
+paths = export_all_formats(analysis_results)
 
-# Each finding includes actionable metadata
-finding = health["cardiovascular"]["9p21_risk"]
-print(finding["actionable"])
-# {
-#   "priority": "medium",
-#   "action_type": "lifestyle",
-#   "evidence_level": "strong",
-#   "references": ["PMID:17634449"]
-# }
+# Clinical export for genetic counselors
+clinical = generate_genetic_counselor_export(analysis_results)
 ```
 
----
+## Marker Categories
 
-## Privacy & Security
+| Category | Markers | Description |
+|----------|---------|-------------|
+| Pharmacogenomics | 159 | Drug metabolism (CYP450, DPYD, TPMT, HLA) |
+| Polygenic Risk | 277 | Disease risk scores (CAD, T2D, cancer, etc.) |
+| Carrier Status | 181 | Recessive disease carriers (CF, sickle cell, Tay-Sachs) |
+| Health Risks | 233 | Disease susceptibility (APOE, Factor V, AMD) |
+| Traits | 163 | Physical, sensory, behavioral traits |
+| **Haplogroups** | 44 | mtDNA + Y-DNA lineage markers |
+| **Ancestry AIMs** | 124 | Ancestry informative markers |
+| **Hereditary Cancer** | 41 | BRCA, Lynch syndrome, other cancer genes |
+| **Autoimmune HLA** | 31 | HLA disease associations |
+| **Pain Sensitivity** | 20 | Pain perception, opioid response |
+| Rare Diseases | 29 | Rare genetic conditions |
+| Mental Health | 25 | Psychiatric genetics |
+| Dermatology | 37 | Skin conditions |
+| Vision & Hearing | 33 | Sensory conditions |
+| Fertility | 31 | Reproductive health |
+| Nutrition | 34 | Nutrigenomics |
+| Fitness | 30 | Athletic performance |
+| Neurogenetics | 28 | Cognition, behavior |
+| Longevity | 30 | Aging markers |
+| Immunity | 43 | HLA, autoimmunity |
 
-🔒 **Your genetic data never leaves your machine.**
+## Agent-Friendly Output
 
-- ✅ Zero network requests during analysis
-- ✅ All processing runs locally
-- ✅ No telemetry or analytics
-- ✅ You control your data completely
+The `agent_summary.json` is designed for AI agents to quickly identify what matters:
 
-### Recommendations
+```json
+{
+  "critical_alerts": [...],
+  "high_priority": [...],
+  "medium_priority": [...],
+  "pharmacogenomics_alerts": [...],
+  "apoe_status": {
+    "genotype": "ε3/ε4",
+    "risk_level": "elevated",
+    "recommendations": [...]
+  },
+  "polygenic_risk_scores": {
+    "cad": {"percentile_estimate": 75, "confidence": "moderate"},
+    "t2d": {"percentile_estimate": 42, "confidence": "moderate"}
+  },
+  "haplogroups": {
+    "mtDNA": {"haplogroup": "H", "confidence": "high", "lineage": "maternal"},
+    "Y_DNA": {"haplogroup": "R1b", "confidence": "high", "lineage": "paternal"}
+  },
+  "ancestry": {
+    "primary": "European",
+    "composition": {"European": 85, "Middle Eastern": 10, "Other": 5}
+  },
+  "lifestyle_recommendations": {
+    "diet": [...],
+    "exercise": [...],
+    "supplements": [...],
+    "avoid": [...]
+  },
+  "drug_interaction_matrix": {
+    "critical_interactions": [...],
+    "warnings": [...],
+    "dosing_adjustments": [...]
+  }
+}
+```
 
-- Store DNA files in encrypted volumes
-- Don't share raw genetic data publicly
-- Consider implications for family members
-- Be cautious about sharing detailed results
+## New Analysis Functions (v4.0)
 
----
+### Haplogroup Analysis
+```python
+from markers.haplogroups import analyze_haplogroups
+
+result = analyze_haplogroups(genotypes)
+# Returns maternal (mtDNA) and paternal (Y-DNA) lineage with history
+```
+
+### Ancestry Composition
+```python
+from markers.ancestry_composition import get_ancestry_summary
+
+result = get_ancestry_summary(genotypes)
+# Returns population composition estimates and admixture detection
+```
+
+### Hereditary Cancer Panel
+```python
+from markers.cancer_panel import analyze_cancer_panel
+
+result = analyze_cancer_panel(genotypes)
+# Returns pathogenic/likely pathogenic variants with ACMG classification
+```
+
+### Autoimmune Risk
+```python
+from markers.autoimmune_hla import analyze_autoimmune_risk
+
+result = analyze_autoimmune_risk(genotypes)
+# Returns HLA-based autoimmune disease susceptibility
+```
+
+### Pain Sensitivity
+```python
+from markers.pain_sensitivity import analyze_pain_sensitivity
+
+result = analyze_pain_sensitivity(genotypes)
+# Returns pain perception profile and opioid response expectations
+```
+
+### Data Quality
+```python
+from data_quality import generate_quality_report
+
+result = generate_quality_report(genotypes)
+# Returns call rate, platform detection, quality warnings
+```
+
+## Critical Pharmacogenomics
+
+| Gene | Drugs Affected | Clinical Impact |
+|------|----------------|-----------------|
+| DPYD | 5-FU, capecitabine | **Fatal toxicity risk** |
+| HLA-B*5701 | Abacavir | Hypersensitivity |
+| HLA-B*1502 | Carbamazepine | Stevens-Johnson Syndrome |
+| MT-RNR1 | Aminoglycosides | Irreversible deafness |
+| CYP2D6 | Codeine, tramadol | Prodrug activation |
+| CYP2C19 | Clopidogrel (Plavix) | Platelet inhibition |
+| SLCO1B1 | Simvastatin | Myopathy risk |
+
+## Hereditary Cancer Syndromes Covered
+
+| Syndrome | Genes | Key Cancers |
+|----------|-------|-------------|
+| HBOC | BRCA1, BRCA2 | Breast, ovarian, prostate, pancreatic |
+| Lynch | MLH1, MSH2, MSH6, PMS2 | Colorectal, endometrial |
+| FAP | APC | Colorectal (polyposis) |
+| Li-Fraumeni | TP53 | Multiple cancers |
+| Cowden | PTEN | Breast, thyroid, endometrial |
+
+## Autoimmune HLA Associations
+
+| Condition | Key HLA | Odds Ratio |
+|-----------|---------|------------|
+| Celiac disease | DQ2.5 | ~7.0 |
+| Ankylosing spondylitis | B27 | ~69 |
+| Type 1 diabetes | DR3-DQ2, DR4-DQ8 | 3-4 |
+| Rheumatoid arthritis | Shared epitope | ~2.5 |
+| Multiple sclerosis | DRB1*15:01 | ~3.0 |
+
+## Testing
+
+```bash
+# Install test dependencies
+pip install pytest
+
+# Run all tests
+pytest tests/ -v
+```
+
+119 comprehensive tests covering all marker modules, VCF parsing, new v4.0 features, and edge cases.
+
+## Privacy
+
+- **All analysis runs locally** - no data leaves your machine
+- **No network requests** - completely offline capable
+- **No tracking or telemetry**
+- **Your genetic data stays yours**
 
 ## Limitations
 
-1. **Consumer chips miss rare variants** — Only ~0.02% of your genome
-2. **Population bias** — Most research based on European populations
-3. **Penetrance varies** — Risk variant ≠ guaranteed condition
-4. **Science evolves** — Understanding changes over time
-
----
-
-## References
-
-- [SNPedia](https://www.snpedia.com) — SNP encyclopedia
-- [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) — Clinical variants
-- [PharmGKB](https://www.pharmgkb.org) — Pharmacogenomics
-- [AADR](https://reich.hms.harvard.edu/allen-ancient-dna-resource-aadr-downloadable-genotypes-present-day-and-ancient-dna-data) — Ancient DNA
-- [gnomAD](https://gnomad.broadinstitute.org/) — Population frequencies
-
----
-
-## License
-
-MIT License — see [LICENSE](LICENSE)
-
-**You accept all responsibility for how you use these results.**
-
----
+1. **Not diagnostic** - Results are informational, not medical diagnoses
+2. **Array limitations** - Consumer arrays capture ~0.1% of genome; rare variants often missed
+3. **Probabilistic** - Polygenic scores indicate risk, not certainty
+4. **Environment matters** - Most conditions are 50-80% non-genetic
+5. **Population effects** - Some markers better validated in European ancestry
+6. **No structural variants** - CNVs and large deletions not detected
+7. **Haplogroups** - Full resolution requires specialized testing or WGS
+8. **Cancer panel** - Negative result does NOT rule out hereditary cancer
 
 ## Contributing
 
-Issues and PRs welcome. Please ensure any additions:
-- Include proper citations
-- Don't make unsubstantiated health claims
-- Maintain privacy-first design (no external calls)
+Contributions welcome! Please ensure new markers include:
+
+- rsID
+- Gene name
+- Risk/effect allele
+- Evidence level (strong/moderate/preliminary)
+- Source citation (PMID or ClinVar ID)
+- Actionable recommendations (if applicable)
+
+## Data Sources
+
+- **PharmGKB** - Pharmacogenomics annotations
+- **ClinVar** - Clinical variant interpretations
+- **NHGRI-EBI GWAS Catalog** - Genome-wide associations
+- **CPIC** - Clinical Pharmacogenetics Implementation Consortium
+- **PGS Catalog** - Polygenic Score database
+- **OMIM** - Rare disease genetics
+- **PhyloTree** - mtDNA haplogroup tree
+- **ISOGG** - Y-DNA haplogroup tree
+- **1000 Genomes** - Ancestry reference populations
+
+## License
+
+MIT License - See LICENSE file for details.
 
 ---
 
-<p align="center">
-  <i>Built for personal exploration of your own genetics. Use wisely.</i> 🧬
-</p>
+**Disclaimer**: This tool is for educational and research purposes. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult qualified healthcare providers for medical decisions. Critical pharmacogenomic findings and hereditary cancer results should be confirmed with clinical-grade testing before making treatment decisions. Genetic counseling is strongly recommended for any significant findings.
