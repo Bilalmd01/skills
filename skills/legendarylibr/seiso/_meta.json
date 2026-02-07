@@ -3,11 +3,16 @@
   "slug": "seiso",
   "displayName": "seisoai",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770151054718,
-    "commit": "https://github.com/clawdbot/skills/commit/17a7a5a44803a355bc70dfc712a208618a29460c"
+    "version": "1.0.5",
+    "publishedAt": 1770433175909,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770151054718,
+      "commit": "https://github.com/clawdbot/skills/commit/17a7a5a44803a355bc70dfc712a208618a29460c"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770079017850,

@@ -1,79 +1,147 @@
 ---
 name: seisoai
-description: AI image, music, video, and sound effects generation with x402 pay-per-request.
+description: AI image, video, music, audio, 3D, and LLM inference with x402 pay-per-request. Generate images with FLUX/FLUX-2, videos with Veo 3.1/LTX-2, music with CassetteAI, voice clone, lip sync, transcription, and Claude LLM inference. Create custom AI agents. Use when the user wants AI generation, creative content, chat completions, or agentic workflows.
 metadata: {"openclaw":{"homepage":"https://seisoai.com","emoji":"🎨"}}
 ---
 
 # Seisoai
 
-Generate AI images, music, videos, and sound effects. Pay per request with USDC on Base — no account needed.
+Generate AI images, videos, music, audio, 3D models, and run LLM inference. Pay per request with USDC on Base — no account needed.
 
-## When to use
-
-- **Image generation**: User wants pictures from a text prompt or image editing
-- **Music generation**: User wants music or audio from a description
-- **Video generation**: User wants short video from a prompt or image
-- **Sound effects**: User wants audio effects from a description
-- **Image upscaling**: User wants to upscale/enhance an image
-- **Prompt help**: User wants help brainstorming or refining prompts
-
-## Base URL
-
-Default: `https://seisoai.com`
-
-Override via config: `SEISOAI_API_URL` or `skills.entries.seisoai.config.apiUrl`
-
-## x402 Payment Flow
-
-All endpoints require x402 payment. No account or API key needed.
-
-1. Make request to endpoint
-2. Server returns `HTTP 402` with `PAYMENT-REQUIRED` header
-3. Decode base64 header to get payment requirements
-4. Sign USDC payment on Base (eip155:8453) using wallet
-5. Retry same request with `PAYMENT-SIGNATURE` header
-6. Server verifies, executes, settles payment onchain
-7. Response includes `x402.transactionHash` as proof
-
-### Payment requirements (decoded from PAYMENT-REQUIRED header)
-
-```json
-{
-  "x402Version": 2,
-  "resource": {
-    "url": "https://seisoai.com/api/generate/image",
-    "description": "Generate an AI image"
-  },
-  "accepts": [{
-    "scheme": "exact",
-    "network": "eip155:8453",
-    "maxAmountRequired": "65000",
-    "asset": "USDC",
-    "payTo": "0x..."
-  }]
-}
-```
-
-Note: `maxAmountRequired` is in USDC smallest units (6 decimals). 65000 = $0.065
-
-## Endpoints
-
-| Endpoint | Description | USDC Units | USD |
-|----------|-------------|------------|-----|
-| `POST /api/generate/image` | Generate image | 32500-325000 | $0.03-$0.33 |
-| `POST /api/generate/video` | Generate video | ~650000 | ~$0.65 |
-| `POST /api/generate/music` | Generate music | ~26000 | ~$0.026 |
-| `POST /api/generate/upscale` | Upscale image | 39000 | $0.039 |
-| `POST /api/audio/sfx` | Sound effects | 39000 | $0.039 |
-| `POST /api/prompt-lab/chat` | Prompt help | 1300 | $0.0013 |
+**Base URL:** `https://seisoai.com`
 
 ---
 
-## Image Generation
+## Quick Start (Recommended for Agents)
 
-**Endpoint:** `POST /api/generate/image`
+The fastest way to use Seisoai is through the **Gateway API**. One endpoint for everything.
 
-### Request
+### 1. Discover Available Tools
+
+```
+GET /api/gateway/tools
+```
+
+Returns all tools with pricing and input schemas.
+
+### 2. Invoke Any Tool
+
+```
+POST /api/gateway/invoke/{toolId}
+Content-Type: application/json
+
+{
+  "prompt": "a sunset over mountains",
+  ...tool-specific params
+}
+```
+
+### 3. Handle x402 Payment
+
+First request returns `HTTP 402`. Decode `PAYMENT-REQUIRED` header, sign payment, retry with `PAYMENT-SIGNATURE` header.
+
+### Common Tool IDs
+
+| Task | Tool ID | Price |
+|------|---------|-------|
+| Image (fast) | `image.generate.flux-pro-kontext` | $0.065 |
+| Image (photorealistic) | `image.generate.flux-2` | $0.0325 |
+| Image (premium) | `image.generate.nano-banana-pro` | $0.325 |
+| Video (quality) | `video.generate.veo3` | $0.13/sec |
+| Video (fast) | `video.generate.ltx-text` | $0.052/sec |
+| Music | `music.generate` | $0.026/min |
+| Voice clone | `audio.tts` | $0.026 |
+| Transcribe | `audio.transcribe` | $0.013 |
+| Image to 3D | `3d.image-to-3d` | $0.195 |
+
+---
+
+## When to Use Which Tool
+
+```
+User wants an image?
+├─ Photorealistic / text in image → flux-2
+├─ Fast general purpose → flux-pro-kontext  
+├─ 360° panorama → nano-banana-pro
+└─ Edit existing image → flux-pro-kontext-edit
+
+User wants a video?
+├─ High quality / complex scene → veo3
+├─ Fast / simple scene → ltx-text
+├─ Animate an image → veo3-image-to-video or ltx-image
+└─ First + last frame → veo3-first-last-frame
+
+User wants audio?
+├─ Music from description → music.generate
+├─ Sound effect → audio.sfx
+├─ Clone voice / TTS → audio.tts
+├─ Transcribe speech → audio.transcribe
+└─ Separate stems → audio.stem-separation
+
+User wants to edit an image?
+├─ Swap faces → image.face-swap
+├─ Fill in area → image.inpaint
+├─ Extend image → image.outpaint
+├─ Remove background → image.extract-layer
+└─ Upscale → image.upscale
+
+User wants 3D?
+└─ Image to GLB model → 3d.image-to-3d
+
+User wants multi-step workflow?
+└─ Use /api/gateway/orchestrate with goal description
+```
+
+---
+
+## x402 Payment Flow
+
+All endpoints support x402 pay-per-request. No account needed.
+
+```
+1. POST /api/gateway/invoke/image.generate.flux-2
+   → 402 Payment Required + PAYMENT-REQUIRED header
+
+2. Decode header (base64 JSON):
+   {
+     "accepts": [{
+       "scheme": "exact",
+       "network": "eip155:8453",
+       "maxAmountRequired": "32500",
+       "asset": "USDC",
+       "payTo": "0x..."
+     }]
+   }
+
+3. Sign USDC payment with wallet
+
+4. Retry with header:
+   PAYMENT-SIGNATURE: <signed payload>
+
+5. Success response includes:
+   { "x402": { "settled": true, "transactionHash": "0x..." } }
+```
+
+### User Confirmation Required
+
+Before signing any payment, agents MUST:
+- Show amount (e.g., "$0.065 USDC")
+- Show what's being purchased
+- Get explicit user approval
+
+```
+Agent: Generate image of sunset? Cost: $0.065 USDC on Base. [Confirm/Cancel]
+User: Confirm
+Agent: [signs, generates, returns image]
+```
+
+---
+
+## Core Endpoints
+
+### Image Generation
+
+**POST /api/generate/image**
 
 ```json
 {
@@ -84,134 +152,115 @@ Note: `maxAmountRequired` is in USDC smallest units (6 decimals). 65000 = $0.065
 }
 ```
 
-### Parameters
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `prompt` | string | required | Image description |
+| `model` | string | `flux-pro` | `flux-pro`, `flux-2`, `nano-banana-pro` |
+| `aspect_ratio` | string | `1:1` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4` |
+| `num_images` | int | 1 | 1-4 |
+| `image_url` | string | - | Reference image for editing |
+| `seed` | int | - | Reproducibility seed |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | string | Yes | Text description of the image |
-| `model` | string | No | See model table below |
-| `aspect_ratio` | string | No | `1:1`, `16:9`, `9:16`, `4:3`, `3:4` |
-| `num_images` | number | No | Number of images (1-4, default 1) |
-| `image_url` | string | No | Reference image URL for img2img editing |
-| `image_urls` | array | No | Multiple reference images (for multi-image editing) |
-| `seed` | number | No | Seed for reproducibility |
-| `is_360` | boolean | No | Generate 360° panorama (uses nano-banana-pro) |
-
-### Image Models
-
-| Model | USDC Units | USD | Best for |
-|-------|------------|-----|----------|
-| `flux-pro` | 65000 | $0.065 | General purpose, fast, default |
-| `flux-2` | 32500 | $0.0325 | Photorealism, text/logos in images |
-| `nano-banana-pro` | 325000 | $0.325 | Premium quality, 360° panoramas |
-
-### Model Selection Guide
-
-- **`flux-pro`** (default): Fast, general-purpose. Good for portraits, landscapes, concepts.
-- **`flux-2`**: Best for photorealistic images and when you need text rendered in the image.
-- **`nano-banana-pro`**: Highest quality. Use for final production images or 360° panoramas.
-
-### Response
-
+**Response:**
 ```json
 {
   "success": true,
   "images": ["https://fal.media/files/..."],
-  "remainingCredits": 0,
-  "creditsDeducted": 0,
-  "freeAccess": true,
-  "x402": {
-    "settled": true,
-    "transactionHash": "0x..."
-  }
+  "x402": { "settled": true, "transactionHash": "0x..." }
 }
 ```
 
 ---
 
-## Video Generation
+### Video Generation
 
-**Endpoint:** `POST /api/generate/video`
-
-### Request
+**POST /api/generate/video**
 
 ```json
 {
   "prompt": "a cat walking through a garden",
-  "duration": 5
+  "model": "veo",
+  "duration": "6s",
+  "generate_audio": true
 }
 ```
 
-### Parameters
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `prompt` | string | required | Video description |
+| `model` | string | `veo` | `veo` (quality) or `ltx` (fast) |
+| `duration` | string | `6s` | `4s`, `6s`, `8s` for Veo; 1-10s for LTX |
+| `generate_audio` | bool | true | Generate synchronized audio |
+| `first_frame_url` | string | - | Starting frame image |
+| `last_frame_url` | string | - | Ending frame image |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | string | Yes | Text description of the video |
-| `duration` | string | No | `4s`, `6s`, or `8s` (default `5s`) |
-| `image_url` | string | No | Starting frame image URL |
-| `generate_audio` | boolean | No | Generate synchronized audio |
-
-### Response
-
+**Response:**
 ```json
 {
   "success": true,
-  "video": {
-    "url": "https://fal.media/files/...",
-    "content_type": "video/mp4"
-  },
-  "x402": {
-    "settled": true,
-    "transactionHash": "0x..."
-  }
+  "video": { "url": "https://fal.media/files/...", "content_type": "video/mp4" },
+  "x402": { "settled": true, "transactionHash": "0x..." }
 }
 ```
 
 ---
 
-## Music Generation
+### Music Generation
 
-**Endpoint:** `POST /api/generate/music`
-
-### Request
+**POST /api/generate/music**
 
 ```json
 {
-  "prompt": "upbeat jazz with piano and drums",
-  "duration": 60
+  "prompt": "upbeat jazz with piano and drums, 120 BPM",
+  "duration": 60,
+  "selectedGenre": "jazz"
 }
 ```
 
-### Parameters
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `prompt` | string | required | Music description (include genre, instruments, mood, tempo) |
+| `duration` | int | 60 | Duration in seconds (10-180) |
+| `selectedGenre` | string | - | `lo-fi`, `electronic`, `orchestral`, `rock`, `jazz` |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | string | Yes | Description of the music |
-| `duration` | number | No | Duration in seconds (10-180, default 60) |
+---
 
-### Response
+### Voice Clone / TTS
+
+**POST /api/audio/voice-clone**
 
 ```json
 {
-  "success": true,
-  "audio_file": {
-    "url": "https://fal.media/files/...",
-    "content_type": "audio/wav"
-  },
-  "x402": {
-    "settled": true,
-    "transactionHash": "0x..."
-  }
+  "text": "Hello, this is a test of voice cloning.",
+  "voice_url": "https://example.com/reference-voice.wav",
+  "language": "en"
 }
 ```
 
 ---
 
-## Sound Effects
+### Speech-to-Text
 
-**Endpoint:** `POST /api/audio/sfx`
+**POST /api/audio/transcribe**
 
-### Request
+```json
+{
+  "audio_url": "https://example.com/speech.mp3",
+  "task": "transcribe"
+}
+```
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `audio_url` | string | required | Audio/video URL |
+| `task` | string | `transcribe` | `transcribe` or `translate` (to English) |
+| `chunk_level` | string | `segment` | `segment` or `word` for timestamps |
+
+---
+
+### Sound Effects
+
+**POST /api/audio/sfx**
 
 ```json
 {
@@ -220,132 +269,202 @@ Note: `maxAmountRequired` is in USDC smallest units (6 decimals). 65000 = $0.065
 }
 ```
 
-### Parameters
+---
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | string | Yes | Description of sound effect |
-| `duration` | number | No | Duration in seconds (1-30, default 5) |
+### Image to 3D
 
-### Response
+**POST /api/model3d/generate**
 
 ```json
 {
-  "success": true,
-  "audio_url": "https://fal.media/files/...",
-  "duration": 5,
-  "x402": {
-    "settled": true,
-    "transactionHash": "0x..."
-  }
+  "image_url": "https://example.com/object.jpg",
+  "generate_type": "Normal"
 }
+```
+
+| Type | Price | Output |
+|------|-------|--------|
+| `Normal` | $0.195 | Full textured GLB |
+| `Geometry` | $0.13 | Geometry only |
+| `LowPoly` | $0.104 | Low-poly mesh |
+
+---
+
+## Image Tools
+
+### Face Swap
+```
+POST /api/image-tools/face-swap
+{ "source_image_url": "...", "target_image_url": "..." }
+Price: $0.026
+```
+
+### Inpainting
+```
+POST /api/image-tools/inpaint
+{ "image_url": "...", "mask_url": "...", "prompt": "a red sports car" }
+Price: $0.026
+```
+
+### Outpainting
+```
+POST /api/image-tools/outpaint
+{ "image_url": "...", "prompt": "extend the landscape", "direction": "all" }
+Price: $0.026
+```
+
+### Background Removal
+```
+POST /api/extract/layers
+{ "image_url": "..." }
+Price: $0.039
+```
+
+### Upscale
+```
+POST /api/generate/upscale
+{ "image_url": "..." }
+Price: $0.039
+```
+
+### Describe Image
+```
+POST /api/image-tools/describe
+{ "image_url": "...", "detail_level": "detailed" }
+Price: $0.013
 ```
 
 ---
 
-## Image Upscaling
+## Multi-Step Orchestration
 
-**Endpoint:** `POST /api/generate/upscale`
+Let Seisoai plan and execute complex workflows automatically.
 
-### Request
-
-```json
-{
-  "image_url": "https://example.com/image.jpg",
-  "scale": 2
-}
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `image_url` | string | Yes | URL of image to upscale |
-| `scale` | number | No | 2 (default) or 4 |
-
-### Response
+**POST /api/gateway/orchestrate**
 
 ```json
 {
-  "success": true,
-  "image_url": "https://fal.media/files/...",
-  "scale": 2,
-  "x402": {
-    "settled": true,
-    "transactionHash": "0x..."
-  }
+  "goal": "Create a music video: generate an image of a sunset, animate it to video, add jazz music",
+  "planOnly": false
 }
 ```
+
+The orchestrator will:
+1. Generate the sunset image
+2. Convert to video with Veo
+3. Generate jazz music
+4. Combine audio + video
+
+**Response includes step-by-step results with all generated assets.**
 
 ---
 
-## Prompt Lab (Chat)
+## Pre-built Workflows
 
-**Endpoint:** `POST /api/prompt-lab/chat`
+| Workflow | Endpoint | Description | Est. Cost |
+|----------|----------|-------------|-----------|
+| AI Influencer | `POST /api/workflows/ai-influencer` | Portrait → Voice → Lip Sync | ~$0.15 |
+| Music Video | `POST /api/workflows/music-video` | Image → Video → Music | ~$1.00 |
+| Avatar Creator | `POST /api/workflows/avatar-creator` | Description → Variations | ~$0.20 |
+| Stem Separator | `POST /api/workflows/remix-visualizer` | Audio → Separated Stems | ~$0.05 |
 
-Get AI assistance for crafting better prompts.
+---
 
-### Request
+## LLM Chat
+
+**POST /api/chat-assistant/message**
 
 ```json
 {
   "message": "Help me create a prompt for a fantasy landscape",
-  "context": {
-    "mode": "image",
-    "selectedModel": "flux-pro"
-  }
+  "model": "claude-sonnet-4-5"
 }
 ```
 
-### Parameters
+| Model | Best for |
+|-------|----------|
+| `claude-haiku-4-5` | Fast, simple tasks |
+| `claude-sonnet-4-5` | Balanced (default) |
+| `claude-opus-4-6` | Complex reasoning |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `message` | string | Yes | Your question or request |
-| `history` | array | No | Previous messages for context |
-| `context.mode` | string | No | `image`, `video`, `music` |
-| `context.selectedModel` | string | No | Model being used |
+---
 
-### Response
+## Pricing Summary
 
-```json
-{
-  "success": true,
-  "response": "Here's a prompt for a fantasy landscape: [PROMPT]Mystical floating islands...[/PROMPT]",
-  "timestamp": "2025-02-03T12:00:00.000Z",
-  "x402": {
-    "settled": true,
-    "transactionHash": "0x..."
-  }
-}
-```
+| Category | Tool | Price |
+|----------|------|-------|
+| **Image** | FLUX Pro | $0.065 |
+| | FLUX-2 | $0.0325 |
+| | Nano Banana Pro | $0.325 |
+| **Video** | Veo 3.1 | $0.13/sec |
+| | LTX-2 | $0.052/sec |
+| **Audio** | Music | $0.026/min |
+| | SFX | $0.039 |
+| | Voice Clone | $0.026 |
+| | Transcribe | $0.013 |
+| **Image Tools** | Face Swap | $0.026 |
+| | Inpaint/Outpaint | $0.026 |
+| | Upscale | $0.039 |
+| | Background Remove | $0.039 |
+| | Describe | $0.013 |
+| **3D** | Image to 3D | $0.13-$0.195 |
+| **Training** | LoRA | $0.0026/step |
+
+All prices are final (include 30% markup over API costs).
 
 ---
 
 ## Error Handling
 
-### HTTP 402 - Payment Required
+| Code | Meaning | Action |
+|------|---------|--------|
+| 402 | Payment required | Decode `PAYMENT-REQUIRED` header, sign, retry |
+| 400 | Bad request | Check required params in error message |
+| 500 | Server error | Retry or report issue |
 
-Normal response when payment is needed. Decode `PAYMENT-REQUIRED` header and retry with payment.
+---
 
-### HTTP 400 - Bad Request
+## For Agent Developers
 
-```json
-{
-  "success": false,
-  "error": "prompt is required"
-}
+### Minimal Integration
+
+```python
+import requests
+import base64
+import json
+
+BASE = "https://seisoai.com"
+
+def generate_image(prompt, wallet_sign_fn):
+    # First request gets 402
+    r = requests.post(f"{BASE}/api/gateway/invoke/image.generate.flux-2", 
+                      json={"prompt": prompt})
+    
+    if r.status_code == 402:
+        # Decode payment requirements
+        payment_req = json.loads(base64.b64decode(r.headers["PAYMENT-REQUIRED"]))
+        amount = payment_req["accepts"][0]["maxAmountRequired"]
+        
+        # Get user confirmation
+        if not confirm_with_user(f"Generate image for ${int(amount)/1e6:.4f} USDC?"):
+            return None
+        
+        # Sign and retry
+        signature = wallet_sign_fn(payment_req)
+        r = requests.post(f"{BASE}/api/gateway/invoke/image.generate.flux-2",
+                          json={"prompt": prompt},
+                          headers={"PAYMENT-SIGNATURE": signature})
+    
+    return r.json()["images"][0] if r.ok else None
 ```
 
-### HTTP 500 - Server Error
+### Best Practices
 
-```json
-{
-  "success": false,
-  "error": "Image generation failed",
-  "creditsRefunded": 0
-}
-```
+1. **Use Gateway API** - One interface for all tools
+2. **Cache tool list** - `GET /api/gateway/tools` doesn't change often
+3. **Handle 402 gracefully** - It's expected, not an error
+4. **Always confirm payments** - Never auto-sign without user approval
+5. **Use orchestrate for complex tasks** - Let Seisoai plan multi-step workflows
 
 ---
 
