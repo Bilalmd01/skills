@@ -3,11 +3,16 @@
   "slug": "mlx-stt",
   "displayName": "MLX STT",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770186070036,
-    "commit": "https://github.com/clawdbot/skills/commit/7363165d3c02da6b02ad0f2d545c714f1014e35e"
+    "version": "1.0.6",
+    "publishedAt": 1770462332671,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770186070036,
+      "commit": "https://github.com/clawdbot/skills/commit/7363165d3c02da6b02ad0f2d545c714f1014e35e"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1770075648517,

@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 DEFAULT_MODEL = "mlx-community/GLM-ASR-Nano-2512-8bit"
-MODEL_URL="https://github.com/Blaizzy/mlx-audio?tab=readme-ov-file#speech-to-text-stt"
+MODEL_URL = "https://github.com/Blaizzy/mlx-audio?tab=readme-ov-file#speech-to-text-stt"
 
 CLI_TOOLS = [
     "brew",
@@ -17,6 +17,7 @@ CLI_TOOLS = [
     "uv",
     "mlx_audio.stt.generate",
 ]
+
 
 def check_deps() -> None:
     """Check if all dependencies are installed."""
