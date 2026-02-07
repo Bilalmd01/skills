@@ -1,5 +1,5 @@
 ---
-name: zohocalendar
+name: zoho-calendar
 description: |
   Zoho Calendar API integration with managed OAuth. Manage calendars and events with full scheduling capabilities.
   Use this skill when users want to read, create, update, or delete calendar events, manage calendars, or schedule meetings.
