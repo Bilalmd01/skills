@@ -3,11 +3,16 @@
   "slug": "x-platform-agent-teneo",
   "displayName": "X Platform Agent - powered by Teneo Protocol",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1770302217457,
-    "commit": "https://github.com/clawdbot/skills/commit/d2c1783680440ebae9f0bb089dc740912fcc7b11"
+    "version": "1.0.9",
+    "publishedAt": 1770448430592,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1770302217457,
+      "commit": "https://github.com/clawdbot/skills/commit/d2c1783680440ebae9f0bb089dc740912fcc7b11"
+    },
     {
       "version": "1.0.7",
       "publishedAt": 1770216681030,
