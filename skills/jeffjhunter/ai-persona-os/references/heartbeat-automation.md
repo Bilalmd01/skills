@@ -44,7 +44,7 @@ HEARTBEAT_OK
 
 **Checkpoint written:**
 ```
-🫀 HEARTBEAT — Feb 5, 2:30 PM PT
+🫀 Feb 5, 2:30 PM PT | anthropic/claude-haiku-4-5 | AI Persona OS v1.3.3
 
 🟢 Context: 31% — Healthy
 🟡 Memory: Stale — last checkpoint 47m ago
@@ -118,7 +118,8 @@ Override the default OpenClaw heartbeat prompt. This is **strongly recommended**
       "heartbeat": {
         "every": "30m",
         "target": "last",
-        "prompt": "Read HEARTBEAT.md and execute every instruction. Report using 🟢🟡🔴 indicators — one per line with a blank line between each: Context, Memory, Workspace, Tasks. If you took action, state what with → prefix. Only reply HEARTBEAT_OK if all 🟢 and no action taken. Do NOT use Step 0/1/2/3/4 format. Do NOT use markdown tables. Do NOT use headers. Under 8 lines."
+        "ackMaxChars": 20,
+        "prompt": "Read HEARTBEAT.md and execute every instruction. On the first line show: 🫀 [current date/time] | [your model name] | AI Persona OS v[VERSION from workspace VERSION.md file]. Then report using 🟢🟡🔴 indicators — one per line with a blank line between each: Context, Memory, Workspace, Tasks. If you took action, state what with → prefix. Only reply HEARTBEAT_OK if all 🟢 and no action taken. Do NOT use Step 0/1/2/3/4 format. Do NOT use markdown tables. Do NOT use headers."
       }
     }
   }
@@ -126,11 +127,12 @@ Override the default OpenClaw heartbeat prompt. This is **strongly recommended**
 ```
 
 This replaces the default prompt ("Read HEARTBEAT.md if it exists...") with one that:
+- Shows model name and OS version on the first line (instant visibility)
 - Explicitly requires 🟢🟡🔴 indicators
 - Forces line breaks between indicators (blank line between each)
 - Blocks the old Step format that v1.2.0 agents may have learned
 - Blocks markdown tables (garbled on WhatsApp/Telegram)
-- Sets a length limit to prevent verbose output
+- Suppresses HEARTBEAT_OK via ackMaxChars (your phone stays silent when all green)
 
 ---
 
@@ -146,7 +148,7 @@ openclaw cron add \
   --cron "0 8 * * *" \
   --tz "America/Los_Angeles" \
   --session isolated \
-  --message "Execute the full AI Persona OS daily protocol:
+  --message "Run the AI Persona OS daily protocol:
 
 Step 1: Load previous context — Read memory/$(date +%Y-%m-%d).md and yesterday's log. Summarize key state.
 
@@ -235,7 +237,8 @@ Just uses HEARTBEAT.md as-is. Good starting point.
       "heartbeat": {
         "every": "30m",
         "target": "last",
-        "prompt": "Read HEARTBEAT.md and execute every instruction. Report using 🟢🟡🔴 indicators — one per line with a blank line between each: Context, Memory, Workspace, Tasks. If you took action, state what with → prefix. Only reply HEARTBEAT_OK if all 🟢 and no action taken. Do NOT use Step 0/1/2/3/4 format. Do NOT use markdown tables. Do NOT use headers. Under 8 lines.",
+        "ackMaxChars": 20,
+        "prompt": "Read HEARTBEAT.md and execute every instruction. On the first line show: 🫀 [current date/time] | [your model name] | AI Persona OS v[VERSION from workspace VERSION.md file]. Then report using 🟢🟡🔴 indicators — one per line with a blank line between each: Context, Memory, Workspace, Tasks. If you took action, state what with → prefix. Only reply HEARTBEAT_OK if all 🟢 and no action taken. Do NOT use Step 0/1/2/3/4 format. Do NOT use markdown tables. Do NOT use headers.",
         "activeHours": {
           "start": "07:00",
           "end": "23:00"
@@ -277,7 +280,7 @@ If you're upgrading from v1.2.0 or v1.2.1:
 
 ### Automatic Migration (v1.3.1+)
 
-The new HEARTBEAT.md template includes a migration check at the top. If the agent detects it's running an old template (>30 lines), it will self-replace from the skill's assets folder. This happens automatically on the first heartbeat after upgrade.
+The new HEARTBEAT.md template includes a migration check at the top. If the agent detects it's running an old template (>30 lines), it will update from the current skill template. This happens automatically on the first heartbeat after upgrade.
 
 ### Manual Migration
 
@@ -291,7 +294,7 @@ If auto-migration doesn't trigger, tell your agent:
 
 Tell your agent:
 
-> "Update your openclaw.json heartbeat prompt to this exact value: Read HEARTBEAT.md and execute every instruction. Report using 🟢🟡🔴 indicators — one per line with a blank line between each: Context, Memory, Workspace, Tasks. If you took action, state what with → prefix. Only reply HEARTBEAT_OK if all 🟢 and no action taken. Do NOT use Step 0/1/2/3/4 format. Do NOT use markdown tables. Do NOT use headers. Under 8 lines."
+> "Update your openclaw.json heartbeat to: `{ "every": "30m", "target": "last", "ackMaxChars": 20, "prompt": "Read HEARTBEAT.md and execute every instruction. On the first line show: 🫀 [current date/time] | [your model name] | AI Persona OS v[VERSION from workspace VERSION.md file]. Then report using 🟢🟡🔴 indicators — one per line with a blank line between each: Context, Memory, Workspace, Tasks. If you took action, state what with → prefix. Only reply HEARTBEAT_OK if all 🟢 and no action taken. Do NOT use Step 0/1/2/3/4 format. Do NOT use markdown tables. Do NOT use headers." }`"
 
 ### Shared Channel Fix
 
@@ -341,8 +344,26 @@ Your existing memory files, SOUL.md, USER.md, AGENTS.md, WORKFLOWS.md, and all w
 
 **Heartbeats not firing:**
 - Run `openclaw heartbeat last` to check status
+- Run `./scripts/config-validator.sh` to audit all required settings at once (NEW v1.3.2)
 - Verify `agents.defaults.heartbeat.every` isn't "0m"
+- Check that `every` and `target` exist in your heartbeat config — without them, heartbeats don't auto-fire
 - Check activeHours timezone
+
+**MEMORY.md too large (burning tokens):**
+- v1.3.2 heartbeat auto-prunes MEMORY.md when it exceeds 4KB
+- If auto-pruning hasn't triggered: manually tell your agent to prune
+- Facts older than 30 days should be archived to memory/archive/
+- MEMORY.md should stay under 4KB — it's read every session start
+
+**Don't know what config settings are missing:**
+- Run `./scripts/config-validator.sh` (NEW v1.3.2)
+- Checks: heartbeat (every, target, ackMaxChars, prompt), Discord (requireMention per guild), workspace files (SOUL.md, USER.md, MEMORY.md size, HEARTBEAT.md template version), VERSION.md file, ESCALATION.md
+- Reports 🟢 all clear / 🟡 warnings / 🔴 critical issues
+
+**Agent's config file is clawdbot-mac.json or clawdbot.json (not openclaw.json):**
+- Older installs may use the pre-rename config file
+- All heartbeat and guild settings work the same regardless of filename
+- Tell the agent to check its actual config file name: "What config file are you using?"
 
 ---
 
