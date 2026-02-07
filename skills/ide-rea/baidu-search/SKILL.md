@@ -1,7 +1,7 @@
 ---
 name: baidu-search
 description: Search the web using Baidu AI Search Engine (BDSE). Use this when you need live information, documentation, or to research topics and the built-in web_search is unavailable.
-metadata: { "openclaw": { "emoji": "🔍︎",  "requires": { "bins": ["python"], "env":["BAIDU_API_KEY"]},"primaryEnv":"BAIDU_API_KEY" } }
+metadata: { "openclaw": { "emoji": "🔍︎",  "requires": { "bins": ["python3"], "env":["BAIDU_API_KEY"]},"primaryEnv":"BAIDU_API_KEY" } }
 ---
 
 # Baidu Search Skill
