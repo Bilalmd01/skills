@@ -1,11 +1,17 @@
 {
   "owner": "makoto-isback",
   "slug": "chumcloud",
-  "displayName": "Chum Cloud",
+  "displayName": "Chumcloud",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770262042956,
-    "commit": "https://github.com/clawdbot/skills/commit/66730404d999850c0ab2c0a378ed6317a8215712"
+    "version": "1.5.0",
+    "publishedAt": 1770440687171,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770262042956,
+      "commit": "https://github.com/clawdbot/skills/commit/66730404d999850c0ab2c0a378ed6317a8215712"
+    }
+  ]
 }
