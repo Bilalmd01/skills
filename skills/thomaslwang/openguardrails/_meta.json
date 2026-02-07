@@ -3,11 +3,16 @@
   "slug": "openguardrails",
   "displayName": "OpenGuardrails",
   "latest": {
-    "version": "3.0.0",
-    "publishedAt": 1770418302793,
-    "commit": "https://github.com/openclaw/skills/commit/ca8653f5b02eeb3a66e489c3f153fbdfb7054047"
+    "version": "3.0.2",
+    "publishedAt": 1770419377205,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.0.0",
+      "publishedAt": 1770418302793,
+      "commit": "https://github.com/openclaw/skills/commit/ca8653f5b02eeb3a66e489c3f153fbdfb7054047"
+    },
     {
       "version": "2.0.0",
       "publishedAt": 1770337384991,
