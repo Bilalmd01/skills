@@ -1,0 +1,11 @@
+{
+  "owner": "killgfat",
+  "slug": "pubmed-edirect",
+  "displayName": "Pubmed Edirect",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1770476095178,
+    "commit": null
+  },
+  "history": []
+}
