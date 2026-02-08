@@ -18,7 +18,9 @@ except ImportError:
 # Configuration
 BASE_URL = os.getenv("LNBITS_BASE_URL", "https://legend.lnbits.com").rstrip("/")
 API_KEY = os.getenv("LNBITS_API_KEY")
-QR_DIR = "/tmp/lnbits_qr"
+# Save QR codes relative to CWD so the path can be expressed as ./ for media parsers.
+# The CWD is shared between the Python subprocess and the parent Node.js process.
+QR_DIR = os.path.join(os.getcwd(), ".lnbits_qr")
 QR_MAX_AGE_SECONDS = 300  # 5 minutes
 
 # --- Helpers ---
@@ -43,10 +45,17 @@ def cleanup_old_qr_files():
             pass
 
 def get_qr_path():
-    """Get a unique path for a new QR code file."""
+    """Get a unique path for a new QR code file. Returns (absolute_path, media_path).
+
+    The media_path is a ./ relative path resolved from the gateway's CWD (home dir)
+    since OpenClaw's MEDIA: parser only accepts ./relative paths.
+    """
     os.makedirs(QR_DIR, exist_ok=True)
     cleanup_old_qr_files()
-    return os.path.join(QR_DIR, f"invoice_{int(time.time() * 1000)}.png")
+    filename = f"invoice_{int(time.time() * 1000)}.png"
+    abs_path = os.path.join(QR_DIR, filename)
+    media_path = "./" + os.path.relpath(abs_path, os.path.expanduser("~"))
+    return abs_path, media_path
 
 def generate_qr(data, output_path=None):
     """Generate a QR code. If output_path provided, saves to file and returns path. Otherwise returns base64."""
@@ -108,12 +117,12 @@ def create_invoice(amount, memo, include_qr=True):
         "out": False, "amount": amount, "memo": memo, "unit": "sat"
     })
     if include_qr and result.get("payment_request"):
-        qr_path = get_qr_path()
-        qr_result = generate_qr(result["payment_request"], qr_path)
+        abs_path, rel_path = get_qr_path()
+        qr_result = generate_qr(result["payment_request"], abs_path)
         if qr_result:
-            result["qr_file"] = qr_result
+            result["qr_file"] = rel_path
             # Also include base64 for direct embedding
-            with open(qr_path, "rb") as f:
+            with open(abs_path, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode("utf-8")
                 result["qr_base64"] = f"image/png;base64,{b64}"
         else:
@@ -156,11 +165,15 @@ def cmd_decode(args):
 
 def cmd_qr(args):
     """Generate QR code from a BOLT11 string."""
-    output_path = args.output if args.output else get_qr_path()
-    qr_result = generate_qr(args.bolt11, output_path)
+    if args.output:
+        abs_path = args.output
+        rel_path = args.output
+    else:
+        abs_path, rel_path = get_qr_path()
+    qr_result = generate_qr(args.bolt11, abs_path)
     if qr_result:
-        result = {"qr_file": qr_result, "bolt11": args.bolt11}
-        with open(output_path, "rb") as f:
+        result = {"qr_file": rel_path, "bolt11": args.bolt11}
+        with open(abs_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
             result["qr_base64"] = f"image/png;base64,{b64}"
         print(json.dumps(result, indent=2))

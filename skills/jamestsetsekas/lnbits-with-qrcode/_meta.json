@@ -3,9 +3,15 @@
   "slug": "lnbits-with-qrcode",
   "displayName": "LNBits Wallet wtih QR Code",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770439395173,
-    "commit": "https://github.com/openclaw/skills/commit/e75c7d3d2bf775549d5cff0a6178d5bb99e8ab15"
+    "version": "1.0.2",
+    "publishedAt": 1770509935863,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770439395173,
+      "commit": "https://github.com/openclaw/skills/commit/e75c7d3d2bf775549d5cff0a6178d5bb99e8ab15"
+    }
+  ]
 }

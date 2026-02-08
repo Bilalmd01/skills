@@ -15,7 +15,7 @@ Enable the assistant to safely and effectively manage an LNbits Lightning Networ
 2.  **Explicit Confirmation**: You MUST ask for "Yes/No" confirmation before paying.
     *   *Format*: "I am about to send **[Amount] sats** to **[Memo/Dest]**. Proceed? (y/n)"
 3.  **Check Balance First**: Always call `balance` before `pay` to prevent errors.
-4.  **ALWAYS Include Invoice + QR**: When generating an invoice, you MUST: (a) show the `payment_request` text for copying, and (b) output `IMAGE:` followed by the `qr_file` path on ONE line. NEVER skip this.
+4.  **ALWAYS Include Invoice + QR**: When generating an invoice, you MUST: (a) show the `payment_request` text for copying, and (b) output `MEDIA:` followed by the `qr_file` path on ONE line. NEVER skip this.
 
 ## Usage
 
@@ -56,7 +56,7 @@ python3 {baseDir}/scripts/lnbits_cli.py invoice --amount 1000 --memo "Pizza" --n
 **⚠️ MANDATORY RESPONSE FORMAT**: When generating an invoice, your response MUST include:
 
 1. **Invoice text for copying**: Show the full `payment_request` string so user can copy it
-2. **QR code image**: Output `IMAGE:` followed by the `qr_file` path on ONE line
+2. **QR code image**: Output `MEDIA:` followed by the `qr_file` path on ONE line
 
 **EXACT FORMAT** (follow precisely):
 ```
@@ -64,10 +64,10 @@ Here is your 100 sat invoice:
 
 lnbc1u1p5abc123...
 
-IMAGE:/tmp/lnbits_qr/invoice_xxx.png
+MEDIA:./clawd/.lnbits_qr/invoice_xxx.png
 ```
 
-**CRITICAL**: The `IMAGE:` and file path MUST be on the SAME LINE. This sends the QR code image to the user.
+**CRITICAL**: The `MEDIA:` and file path MUST be on the SAME LINE. This sends the QR code image to the user.
 
 ### 2b. Generate QR Code from Existing Invoice
 Convert any Bolt11 string to a QR code image file.
@@ -76,7 +76,7 @@ Convert any Bolt11 string to a QR code image file.
 python3 {baseDir}/scripts/lnbits_cli.py qr <bolt11_string>
 ```
 
-Returns: `{"qr_file": "/tmp/lnbits_qr/invoice_xxx.png", "bolt11": "..."}`
+Returns: `{"qr_file": "./.lnbits_qr/invoice_xxx.png", "bolt11": "..."}`
 
 ### 3. Pay Invoice (Send)
 **⚠️ REQUIRES CONFIRMATION**: Decode first, verify balance, ask user, then execute.
