@@ -1,0 +1,11 @@
+{
+  "owner": "thejorgeschmidt",
+  "slug": "pandoc-convert-openclaw",
+  "displayName": "Pandoc Convert",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770565712365,
+    "commit": null
+  },
+  "history": []
+}
