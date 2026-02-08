@@ -3,11 +3,16 @@
   "slug": "moltopia",
   "displayName": "Openclaw Skill",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1770441702372,
-    "commit": "https://github.com/openclaw/skills/commit/6f20038ba544a15b86981f32759e4492c6596878"
+    "version": "1.4.3",
+    "publishedAt": 1770511120520,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1770441702372,
+      "commit": "https://github.com/openclaw/skills/commit/6f20038ba544a15b86981f32759e4492c6596878"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770326251733,
