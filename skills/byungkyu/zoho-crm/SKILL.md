@@ -1,5 +1,5 @@
 ---
-name: zohocrm
+name: zoho-crm
 description: |
   Zoho CRM API integration with managed OAuth. Manage leads, contacts, accounts, deals, and other CRM records.
   Use this skill when users want to read, create, update, or delete CRM records, search contacts, or manage sales pipelines in Zoho CRM.
