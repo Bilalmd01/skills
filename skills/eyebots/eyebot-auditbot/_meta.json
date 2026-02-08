@@ -1,11 +1,17 @@
 {
   "owner": "eyebots",
   "slug": "eyebot-auditbot",
-  "displayName": "Eyebot AuditBot",
+  "displayName": "AuditBot",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770580315286,
-    "commit": "https://github.com/openclaw/skills/commit/65102e50c0504e7c1c9108c582ead0ddeabeb756"
+    "version": "1.0.3",
+    "publishedAt": 1770580783325,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770580315286,
+      "commit": "https://github.com/openclaw/skills/commit/65102e50c0504e7c1c9108c582ead0ddeabeb756"
+    }
+  ]
 }
