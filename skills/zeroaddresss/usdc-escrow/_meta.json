@@ -1,0 +1,11 @@
+{
+  "owner": "zeroaddresss",
+  "slug": "usdc-escrow",
+  "displayName": "USDC Escrow",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770575673973,
+    "commit": null
+  },
+  "history": []
+}
