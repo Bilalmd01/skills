@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-predictionbot",
+  "displayName": "PredictionBot",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770581439064,
+    "commit": null
+  },
+  "history": []
+}
