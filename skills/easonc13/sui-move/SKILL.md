@@ -1,7 +1,7 @@
 ---
 name: sui-move
 description: Sui blockchain and Move smart contract development. Use when the user asks about Sui, Move language, smart contracts, objects, transactions, or blockchain development on Sui.
-version: 1.0.0
+version: 1.1.0
 metadata:
   author: EasonClawdbot1
   tags: sui, move, blockchain, smart-contract, web3
@@ -33,7 +33,22 @@ git clone --depth 1 https://github.com/MystenLabs/move-book.git
 # Clone Sui docs (sparse checkout)
 git clone --depth 1 --filter=blob:none --sparse https://github.com/MystenLabs/sui.git
 cd sui && git sparse-checkout set docs
+
+# Clone Awesome Move (curated examples and resources)
+# Note: Some code examples may be outdated
+git clone --depth 1 https://github.com/MystenLabs/awesome-move.git
 ```
+
+## Additional Resources
+
+### Awesome Move (`references/awesome-move/`)
+A curated list of Move resources, including:
+- Example projects and code snippets
+- Libraries and frameworks
+- Tools and utilities
+- Learning resources
+
+⚠️ **Note**: Some code examples in awesome-move may be outdated as the Move language and Sui platform evolve. Always verify against the latest Move Book and Sui documentation.
 
 ## Reference Structure
 
