@@ -3,9 +3,15 @@
   "slug": "emergence-codex-openclaw",
   "displayName": "Emergence Codex",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770206229487,
-    "commit": "https://github.com/clawdbot/skills/commit/37a6bf6160fb4a8efdbd6d202d7c559f2e6be6d8"
+    "version": "1.0.2",
+    "publishedAt": 1770486654420,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770206229487,
+      "commit": "https://github.com/clawdbot/skills/commit/37a6bf6160fb4a8efdbd6d202d7c559f2e6be6d8"
+    }
+  ]
 }
