@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TABLE_CMD = join(__dirname, 'table.mjs');
+const TABLE_CMD = join(__dirname, '..', 'scripts', 'table.mjs');
 const OUT_DIR = '/tmp/table-test-output';
 
 let passed = 0;
@@ -229,6 +229,126 @@ console.log('18. Numeric data alignment');
   cleanup(out);
   run(`--data '[{"Value":100},{"Value":200},{"Value":300}]' --output ${out}`);
   assert(existsSync(out), 'Numeric-only table generates');
+}
+
+// 19. Word wrapping
+console.log('19. Word wrapping (long text)');
+{
+  const dataFile = `${OUT_DIR}/longtext.json`;
+  const out = `${OUT_DIR}/wrap.png`;
+  writeFileSync(dataFile, JSON.stringify([
+    {"Feature":"Auto-Detection","Description":"Scans Unicode ranges for Hebrew, Arabic, and Syriac characters to automatically detect right-to-left text layout"}
+  ]));
+  cleanup(out);
+  run(`--data-file ${dataFile} --output ${out}`);
+  assert(existsSync(out), 'Wrapped table generates');
+  const size = readFileSync(out).length;
+  assert(size > 1000, `Wrapped table has content (${size} bytes)`);
+}
+
+// 20. Word wrapping disabled
+console.log('20. Word wrapping disabled (--no-wrap)');
+{
+  const dataFile = `${OUT_DIR}/longtext2.json`;
+  const outWrap = `${OUT_DIR}/wrap-on.png`;
+  const outNoWrap = `${OUT_DIR}/wrap-off.png`;
+  writeFileSync(dataFile, JSON.stringify([
+    {"Col":"This is a very long text that should definitely wrap to multiple lines when wrapping is enabled because it contains many words that exceed the column width significantly and keeps going on and on"}
+  ]));
+  cleanup(outWrap); cleanup(outNoWrap);
+  run(`--data-file ${dataFile} --max-width 300 --output ${outWrap}`);
+  run(`--data-file ${dataFile} --max-width 300 --no-wrap --output ${outNoWrap}`);
+  assert(existsSync(outWrap), 'Wrap mode generates');
+  assert(existsSync(outNoWrap), 'No-wrap mode generates');
+}
+
+// 21. Max lines option
+console.log('21. Max lines (--max-lines)');
+{
+  const dataFile = `${OUT_DIR}/maxlines.json`;
+  const out2 = `${OUT_DIR}/maxlines-2.png`;
+  const out5 = `${OUT_DIR}/maxlines-5.png`;
+  writeFileSync(dataFile, JSON.stringify([
+    {"Text":"Word one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty"}
+  ]));
+  cleanup(out2); cleanup(out5);
+  run(`--data-file ${dataFile} --max-lines 2 --output ${out2}`);
+  run(`--data-file ${dataFile} --max-lines 5 --output ${out5}`);
+  assert(existsSync(out2), '--max-lines 2 generates');
+  assert(existsSync(out5), '--max-lines 5 generates');
+}
+
+// 22. Emoji rendering
+console.log('22. Emoji in cells');
+{
+  const dataFile = `${OUT_DIR}/emoji.json`;
+  const out = `${OUT_DIR}/emoji.png`;
+  writeFileSync(dataFile, JSON.stringify([
+    {"Status":"✅ Live","Rating":"🔥🔥🔥"},
+    {"Status":"❌ Down","Rating":"😩"}
+  ]));
+  cleanup(out);
+  run(`--data-file ${dataFile} --dark --output ${out}`);
+  assert(existsSync(out), 'Emoji table generates');
+  const size = readFileSync(out).length;
+  assert(size > 2000, `Emoji table has substantial content (${size} bytes)`);
+}
+
+// 23. Mixed emoji + text + RTL
+console.log('23. Mixed emoji + Hebrew RTL');
+{
+  const dataFile = `${OUT_DIR}/emoji-rtl.json`;
+  const out = `${OUT_DIR}/emoji-rtl.png`;
+  writeFileSync(dataFile, JSON.stringify([
+    {"שם":"דני","סטטוס":"✅ פעיל","דירוג":"🔥🔥"}
+  ]));
+  cleanup(out);
+  run(`--data-file ${dataFile} --dark --output ${out}`);
+  assert(existsSync(out), 'Emoji + RTL generates');
+}
+
+// 24. Title with emoji
+console.log('24. Title with emoji');
+{
+  const out = `${OUT_DIR}/emoji-title.png`;
+  cleanup(out);
+  run(`--data '[{"A":"1"}]' --title "🏆 Leaderboard" --dark --output ${out}`);
+  assert(existsSync(out), 'Emoji title generates');
+}
+
+// 25. Empty string values
+console.log('25. Empty string values');
+{
+  const out = `${OUT_DIR}/empty.png`;
+  cleanup(out);
+  run(`--data '[{"Name":"Alice","Notes":""},{"Name":"Bob","Notes":"has notes"}]' --output ${out}`);
+  assert(existsSync(out), 'Handles empty values');
+}
+
+// 26. Many columns
+console.log('26. Many columns (8+)');
+{
+  const dataFile = `${OUT_DIR}/manycols.json`;
+  const out = `${OUT_DIR}/manycols.png`;
+  writeFileSync(dataFile, JSON.stringify([
+    {"A":"1","B":"2","C":"3","D":"4","E":"5","F":"6","G":"7","H":"8"}
+  ]));
+  cleanup(out);
+  run(`--data-file ${dataFile} --output ${out}`);
+  assert(existsSync(out), '8-column table generates');
+}
+
+// 27. Single row with wrapping
+console.log('27. Single row with long wrapped text');
+{
+  const dataFile = `${OUT_DIR}/singlelong.json`;
+  const out = `${OUT_DIR}/singlelong.png`;
+  writeFileSync(dataFile, JSON.stringify([
+    {"Question":"What is the meaning of life, the universe, and everything?","Answer":"42"}
+  ]));
+  cleanup(out);
+  run(`--data-file ${dataFile} --dark --output ${out}`);
+  assert(existsSync(out), 'Single row with wrap generates');
 }
 
 // ─── Summary ──────────────────────────────────────────
