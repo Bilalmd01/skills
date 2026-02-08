@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-cronbot",
+  "displayName": "CronBot",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770580815780,
+    "commit": null
+  },
+  "history": []
+}
