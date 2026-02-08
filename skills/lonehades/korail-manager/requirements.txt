@@ -1,3 +1,4 @@
 pycryptodome
+python-dotenv
 requests
 six
