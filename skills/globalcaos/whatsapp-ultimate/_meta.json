@@ -1,13 +1,18 @@
 {
   "owner": "globalcaos",
   "slug": "whatsapp-ultimate",
-  "displayName": "WhatsApp Ultimate",
+  "displayName": "Whatsapp Ultimate",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1770411775646,
-    "commit": "https://github.com/openclaw/skills/commit/eea378c636a93fea899286268c833c48d37ef261"
+    "version": "1.1.1",
+    "publishedAt": 1770527438632,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1770411775646,
+      "commit": "https://github.com/openclaw/skills/commit/eea378c636a93fea899286268c833c48d37ef261"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1770408150416,
