@@ -1,11 +1,17 @@
 {
   "owner": "eyebots",
   "slug": "eyebot-vaultbot",
-  "displayName": "Eyebot VaultBot",
+  "displayName": "VaultBot",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770580334596,
-    "commit": "https://github.com/openclaw/skills/commit/843c21999e7d163109ecc455fd0a41afcaf9e199"
+    "version": "1.0.3",
+    "publishedAt": 1770580805962,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770580334596,
+      "commit": "https://github.com/openclaw/skills/commit/843c21999e7d163109ecc455fd0a41afcaf9e199"
+    }
+  ]
 }
