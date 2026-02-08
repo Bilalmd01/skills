@@ -1,0 +1,11 @@
+{
+  "owner": "0x7466",
+  "slug": "open-webui",
+  "displayName": "Open WebUI",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770578753553,
+    "commit": null
+  },
+  "history": []
+}
