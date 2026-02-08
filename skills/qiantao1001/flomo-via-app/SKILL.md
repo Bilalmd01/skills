@@ -20,7 +20,9 @@ Send notes to flomo using URL Scheme, with automatic webhook fallback for reliab
 运行后会交互式询问：
 1. 是否有 flomo PRO 账户
 2. Webhook token/URL
-3. 保存位置（shell 配置或 .env 文件）
+3. 保存位置（默认保存到 skill 目录的 `.env` 文件）
+
+配置默认保存到 `.env` 文件，这样更便于管理和隔离。
 
 ### 2. 发送笔记
 

@@ -52,7 +52,7 @@ case "$HAS_PRO" in
             echo "✅ Webhook token configured"
         fi
         
-        # Determine shell config file
+        # Determine shell config file for display
         SHELL_CONFIG=""
         if [ -n "$ZSH_VERSION" ] || [ -f "$HOME/.zshrc" ]; then
             SHELL_CONFIG="$HOME/.zshrc"
@@ -66,23 +66,15 @@ case "$HAS_PRO" in
         
         echo ""
         echo "Where would you like to save the configuration?"
-        echo "1) Shell config file ($SHELL_CONFIG)"
-        echo "2) Create a local .env file in skill directory"
-        read -rp "Choice [1-2]: " CONFIG_CHOICE
+        echo "1) Create a local .env file in skill directory (default - recommended)"
+        echo "2) Shell config file ($SHELL_CONFIG)"
+        read -rp "Choice [1-2] (default: 1): " CONFIG_CHOICE
+        
+        # Default to option 1 if empty
+        CONFIG_CHOICE=${CONFIG_CHOICE:-1}
         
         case "$CONFIG_CHOICE" in
             2)
-                # Save to .env file
-                ENV_FILE="$(dirname "$0")/../.env"
-                echo "# Flomo Skill Configuration" > "$ENV_FILE"
-                echo "FLOMO_WEBHOOK_TOKEN=$WEBHOOK_TOKEN" >> "$ENV_FILE"
-                echo "# FLOMO_WEBHOOK_URL=$WEBHOOK_URL" >> "$ENV_FILE"
-                chmod 600 "$ENV_FILE"
-                echo ""
-                echo "✅ Configuration saved to: $ENV_FILE"
-                echo "   The .env file has been created with restricted permissions (600)"
-                ;;
-            *)
                 # Save to shell config
                 if [ -n "$SHELL_CONFIG" ]; then
                     echo "" >> "$SHELL_CONFIG"
@@ -96,6 +88,18 @@ case "$HAS_PRO" in
                     echo "   Please manually add to your shell config:"
                     echo "   export FLOMO_WEBHOOK_TOKEN=$WEBHOOK_TOKEN"
                 fi
+                ;;
+            *)
+                # Save to .env file (default)
+                ENV_FILE="$(dirname "$0")/../.env"
+                echo "# Flomo Skill Configuration" > "$ENV_FILE"
+                echo "FLOMO_WEBHOOK_TOKEN=$WEBHOOK_TOKEN" >> "$ENV_FILE"
+                echo "# FLOMO_WEBHOOK_URL=$WEBHOOK_URL" >> "$ENV_FILE"
+                chmod 600 "$ENV_FILE"
+                echo ""
+                echo "✅ Configuration saved to: $ENV_FILE"
+                echo "   The .env file has been created with restricted permissions (600)"
+                echo "   This is the recommended option - keeps config isolated to this skill."
                 ;;
         esac
         

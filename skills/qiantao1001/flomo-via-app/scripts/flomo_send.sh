@@ -10,18 +10,35 @@
 
 set -e
 
-# Get content from argument or stdin
-if [ $# -ge 1 ]; then
-    CONTENT="$1"
-else
-    # Read from stdin
-    CONTENT=$(cat)
+# Load local .env if present (export variables so they're available to curl/python)
+ENV_FILE="$(dirname "$0")/../.env"
+if [ -f "$ENV_FILE" ]; then
+    set -o allexport
+    # shellcheck disable=SC1090
+    source "$ENV_FILE"
+    set +o allexport
 fi
 
-# Get tags from second argument
+# Get content from arguments or stdin.
+# If the last positional argument starts with '#', treat it as TAGS and
+# join the remaining arguments as CONTENT. Otherwise join all positional
+# args as CONTENT. If no positional args are given, read from stdin.
 TAGS=""
-if [ $# -ge 2 ]; then
-    TAGS="$2"
+if [ $# -ge 1 ]; then
+    LAST_ARG="${@: -1}"
+    if [[ "$LAST_ARG" == \#* ]]; then
+        TAGS="$LAST_ARG"
+        if [ $# -ge 2 ]; then
+            CONTENT="${@:1:$(($#-1))}"
+        else
+            # single arg which is a tag -> read content from stdin
+            CONTENT=$(cat)
+        fi
+    else
+        CONTENT="$*"
+    fi
+else
+    CONTENT=$(cat)
 fi
 
 # Combine content and tags
@@ -47,40 +64,23 @@ if [ "${#FULL_CONTENT}" -gt 5000 ]; then
     exit 1
 fi
 
-# URL encode the content using Python
-# Use environment variable to safely pass content with special characters
-export FLOMO_CONTENT="$FULL_CONTENT"
-URL_ENCODED=$(python3 -c 'import urllib.parse,os; print(urllib.parse.quote(os.environ.get("FLOMO_CONTENT","")))' 2>/dev/null || \
-    python -c 'import urllib,os; print(urllib.quote(os.environ.get("FLOMO_CONTENT","")))' 2>/dev/null)
-
-# Check if URL encoding succeeded
-if [ -z "$URL_ENCODED" ]; then
-    echo "Error: URL encoding failed. Python is required." >&2
-    exit 1
-fi
-
-# Build flomo URL
-FLOMO_URL="flomo://create?content=${URL_ENCODED}"
-
-# Function: send via webhook fallback
+# Function: send via webhook. Returns 0 on success, non-zero on failure.
 send_webhook() {
     if [ -n "$FLOMO_WEBHOOK_URL" ]; then
         WEBHOOK_URL="$FLOMO_WEBHOOK_URL"
     elif [ -n "$FLOMO_WEBHOOK_TOKEN" ]; then
         WEBHOOK_URL="https://flomoapp.com/iwh/$FLOMO_WEBHOOK_TOKEN"
     else
-        echo "Error: Webhook not configured. Set FLOMO_WEBHOOK_URL or FLOMO_WEBHOOK_TOKEN." >&2
-        echo "URL: $FLOMO_URL" >&2
-        exit 1
+        return 2
     fi
 
-    # Build JSON payload using Python for safety
-    PAYLOAD=$(python3 -c 'import json,os; print(json.dumps({"content": os.environ.get("FLOMO_CONTENT","")}))' 2>/dev/null || \
-            python -c 'import json,os; print(json.dumps({"content": os.environ.get("FLOMO_CONTENT","")}))' 2>/dev/null)
-
-    if [ -z "$PAYLOAD" ]; then
-        echo "Error: Failed to build JSON payload" >&2
-        exit 1
+    # Build JSON payload safely (handles quotes/newlines in content).
+    if command -v python3 >/dev/null 2>&1; then
+        PAYLOAD=$(printf '%s' "$FULL_CONTENT" | python3 -c 'import sys,json;print(json.dumps({"content": sys.stdin.read()}))')
+    else
+        # Fallback: escape simple cases (less safe for arbitrary input)
+        ESCAPED=$(printf '%s' "$FULL_CONTENT" | sed -e 's/\\/\\\\/g' -e 's/"/\\\"/g' -e ':a;N;$!ba;s/\n/\\n/g')
+        PAYLOAD="{\"content\": \"$ESCAPED\"}"
     fi
 
     RESP=$(curl -sS -w "\n%{http_code}" -X POST "$WEBHOOK_URL" -H "Content-Type: application/json" -d "$PAYLOAD" || true)
@@ -89,23 +89,22 @@ send_webhook() {
 
     if echo "$HTTP_STATUS" | grep -q "^2"; then
         echo "✓ Sent to flomo webhook: ${FULL_CONTENT:0:50}..."
-        exit 0
+        return 0
     else
-        echo "Error: Webhook request failed (HTTP $HTTP_STATUS): $BODY" >&2
-        exit 1
+        echo "Warning: Webhook request failed (HTTP $HTTP_STATUS): $BODY" >&2
+        return 1
     fi
 }
 
-# Open flomo app via URL scheme. If it fails, fallback to webhook.
-if command -v open &> /dev/null; then
-    if open "$FLOMO_URL" 2>/dev/null; then
-        echo "✓ Sent to flomo: ${FULL_CONTENT:0:50}..."
+# Main: webhook-only delivery
+if [ -n "$FLOMO_WEBHOOK_URL" ] || [ -n "$FLOMO_WEBHOOK_TOKEN" ]; then
+    if send_webhook; then
         exit 0
     else
-        echo "Warning: flomo URL scheme failed, attempting webhook..." >&2
-        send_webhook
+        echo "Error: webhook delivery failed. Check FLOMO_WEBHOOK_URL/FLOMO_WEBHOOK_TOKEN and network." >&2
+        exit 1
     fi
 else
-    echo "Warning: 'open' command not found. Attempting webhook..." >&2
-    send_webhook
+    echo "Error: Webhook not configured. Set FLOMO_WEBHOOK_URL or FLOMO_WEBHOOK_TOKEN or run ./scripts/configure.sh" >&2
+    exit 1
 fi

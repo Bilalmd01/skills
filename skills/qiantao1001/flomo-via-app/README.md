@@ -1,10 +1,13 @@
 # Flomo via App
 
-通过 URL Scheme 和 Webhook API 发送笔记到 flomo（浮墨笔记）的 OpenClaw Skill。
+通过 Webhook API 发送笔记到 flomo（浮墨笔记）的 OpenClaw Skill。
+
+> ⚠️ 注意：本版本已取消 URL Scheme 模式（mac 应用当前不支持该功能）。
+> 统一改为使用 Webhook API（需要 flomo PRO）。
 
 ## 功能特性
 
-- ✅ **双通道策略**：URL Scheme 为主，Webhook 自动兜底
+-- ✅ **Webhook 为主（已取消 URL Scheme）**：统一使用 Webhook API 进行发送，URL Scheme 模式已移除
 - ✅ **交互式配置**：安装时自动引导配置 Pro 账户
 - ✅ **标签支持**：自动解析 `#标签` 格式
 - ✅ **长度检查**：自动验证 5000 字限制
@@ -43,21 +46,15 @@ cd skills/flomo-via-app
 echo "来自管道的笔记" | ./scripts/flomo_send.sh
 ```
 
-### URL Scheme 直接调用
+### URL Scheme
 
-```bash
-# 纯文本
-open "flomo://create?content=Hello%20World"
-
-# 带图片（最多 9 张）
-open "flomo://create?image_urls=%5B%22https://example.com/img.jpg%22%5D&content=Photo%20notes"
-```
+URL Scheme 直接调用已在本版本移除，因为 macOS 上的 flomo 应用当前不支持所需的行为。请改用 Webhook API（参见下方“配置”一节），或通过 `./scripts/configure.sh` 保存你的 Webhook 设置到本地 `.env` 后使用 `./scripts/flomo_send.sh`。
 
 ## 要求
 
-- **macOS**（URL Scheme 需要 flomo app）
-- **flomo PRO 会员**（API 功能需要）
-- **Python 3**（用于 URL 编码）
+- **flomo PRO 会员**（Webhook API 需要）
+- **curl** 命令可用（脚本使用 `curl` 发送 HTTP 请求）
+- **Python 3**（脚本使用 Python 构建 JSON payload，或可调整为纯 shell 实现）
 
 ## 配置
 
