@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-socialbot",
+  "displayName": "SocialBot",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770580802955,
+    "commit": null
+  },
+  "history": []
+}
