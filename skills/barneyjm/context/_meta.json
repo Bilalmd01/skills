@@ -3,11 +3,16 @@
   "slug": "context",
   "displayName": "Context",
   "latest": {
-    "version": "0.1.3",
-    "publishedAt": 1770131671589,
-    "commit": "https://github.com/clawdbot/skills/commit/1d94369ce4cdbe8562c21d983a7d92336fbc8bfc"
+    "version": "2.0.0",
+    "publishedAt": 1770520004742,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.3",
+      "publishedAt": 1770131671589,
+      "commit": "https://github.com/clawdbot/skills/commit/1d94369ce4cdbe8562c21d983a7d92336fbc8bfc"
+    },
     {
       "version": "0.1.2",
       "publishedAt": 1769878056137,
