@@ -3,11 +3,16 @@
   "slug": "google-tv",
   "displayName": "Google Tv",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770316912077,
-    "commit": "https://github.com/clawdbot/skills/commit/666ed8cd65cd4391d873a4c27b19578fae4186b6"
+    "version": "1.0.2",
+    "publishedAt": 1770494360698,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770316912077,
+      "commit": "https://github.com/clawdbot/skills/commit/666ed8cd65cd4391d873a4c27b19578fae4186b6"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770227721811,

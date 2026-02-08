@@ -1,24 +1,31 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+
 """
 google_tv_skill.py
 
-Control Google TV / Chromecast with Google TV via ADB.
+Control Chromecast with Google TV and cast to it via ADB.
 
 Usage:
-  ./google_tv_skill.py status [--device IP] [--port PORT] [--verbose]
-  ./google_tv_skill.py play <query_or_id_or_url> [--device IP] [--port PORT] [--app APP] [--verbose]
-  ./google_tv_skill.py pause [--device IP] [--port PORT] [--verbose]
-  ./google_tv_skill.py resume [--device IP] [--port PORT] [--verbose]
+  ./google_tv_skill.py status [--device IP] [--port PORT]
+  ./google_tv_skill.py play <query_or_id_or_url> [--device IP] [--port PORT]
+  ./google_tv_skill.py pause [--device IP] [--port PORT]
+  ./google_tv_skill.py resume [--device IP] [--port PORT]
 
 Notes:
-- Uses the skill-local venv Python; be sure to run with ./.venv/bin/python3 as documented.
+- Requires uv and adb on PATH; no venv required.
 - Caches last successful IP:PORT to .last_device.json in the skill folder.
 - Does NOT perform port scanning. It will attempt the explicit port passed or cached one.
-- YouTube: prefers resolving to a video ID using the yt-api CLI (calls `yt-api` on PATH or the fallback
-  path /Users/anthony/go/bin/yt-api). If an ID is obtained, it launches the YouTube TV app via an intent
-  restricted to the YouTube TV package.
-- Tubi: expects either a tubitv numeric id or an https URL. The script will attempt the tubitv:// intent
-  first and then a VIEW https intent, both restricted to the Tubi package.
+- YouTube: prefers resolving to a video ID using the yt-api CLI (calls `yt-api` on PATH). If an ID is obtained, it launches the YouTube app via ADB intent restricted to the YouTube package.
+- Tubi: expects an https URL. The script will attempt a VIEW https intent restricted to the Tubi package.
+
+Architecture:
+- All ADB connection management and device discovery happens here.
+- The global-search fallback (play_show_via_global_search.py) is a helper that receives an already-connected device address.
+- The fallback only orchestrates UI automation via pre-established ADB connection.
 
 Exit codes:
   0 success
@@ -30,23 +37,21 @@ Exit codes:
 
 import argparse
 import json
-import logging
 import os
 import re
-import shlex
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Iterable, Optional, Sequence, Tuple
 from urllib.parse import parse_qs, urlparse
 
 SKILL_DIR = Path(__file__).resolve().parent
 CACHE_FILE = SKILL_DIR / '.last_device.json'
-FALLBACK_YT_API_PATH = '/Users/anthony/go/bin/yt-api'
 ADB_TIMEOUT_SECONDS = 10
 ADB_CONNECT_ATTEMPTS = 3
-DEFAULT_YOUTUBE_TV_PACKAGE = 'com.google.android.youtube.tv'
+DEFAULT_YOUTUBE_PACKAGE = 'com.google.android.youtube.tv'
 DEFAULT_TUBI_PACKAGE = 'com.tubitv'
 
 YOUTUBE_ID_RE = re.compile(r'^[A-Za-z0-9_-]{6,}$')
@@ -56,11 +61,11 @@ YOUTUBE_SHORT_HOSTS = {'youtu.be', 'www.youtu.be'}
 KEYCODE_MEDIA_PLAY = 126
 KEYCODE_MEDIA_PAUSE = 127
 
-TUBI_SCHEME_PREFIX = 'tubitv://'
-TUBI_INTENT_SCHEME = 'tubitv://video/{id}'
-
-logger = logging.getLogger('google_tv_skill')
-
+def ensure_python3() -> bool:
+    if sys.version_info[0] < 3:
+        print('python3 is required. Please run with python3.')
+        return False
+    return True
 
 def load_cache() -> Optional[dict]:
     if not CACHE_FILE.exists():
@@ -81,21 +86,20 @@ def load_cache() -> Optional[dict]:
         return None
     return {'ip': str(ip), 'port': port_int}
 
-
 def save_cache(ip: str, port: int):
     try:
         CACHE_FILE.write_text(json.dumps({'ip': ip, 'port': int(port)}))
     except Exception as e:
-        logger.debug('Failed to write cache: %s', e)
-
+        print(f'Failed to write cache: {e}')
 
 def adb_available() -> bool:
     return bool(shutil.which('adb'))
 
+def uv_available() -> bool:
+    return bool(shutil.which('uv'))
 
 def is_youtube_id(value: str) -> bool:
     return bool(YOUTUBE_ID_RE.fullmatch(value or ''))
-
 
 def extract_youtube_id(value: str) -> Optional[str]:
     """
@@ -139,7 +143,6 @@ def extract_youtube_id(value: str) -> Optional[str]:
                     return candidate
     return None
 
-
 def find_video_id(data) -> Optional[str]:
     """
     Walk a JSON-like structure and return the first plausible YouTube video id.
@@ -164,26 +167,18 @@ def find_video_id(data) -> Optional[str]:
                 return nested
     return None
 
-
 def yt_api_candidates() -> Iterable[str]:
     seen = set()
     path = shutil.which('yt-api')
     if path:
         seen.add(path)
         yield path
-    fallback = Path(FALLBACK_YT_API_PATH)
-    if fallback.exists():
-        path = str(fallback)
-        if path not in seen:
-            yield path
-
 
 def run_adb(args: Sequence[str], device: Optional[str] = None, timeout: int = ADB_TIMEOUT_SECONDS) -> Tuple[int, str]:
     cmd = ['adb']
     if device:
         cmd += ['-s', device]
     cmd += list(args)
-    logger.debug('Running adb command: %s', ' '.join(shlex.quote(a) for a in cmd))
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         out = (p.stdout or '') + (p.stderr or '')
@@ -197,7 +192,6 @@ def run_adb(args: Sequence[str], device: Optional[str] = None, timeout: int = AD
 def adb_shell(args: Sequence[str], device: Optional[str], timeout: int = ADB_TIMEOUT_SECONDS) -> Tuple[int, str]:
     return run_adb(['shell', *args], device, timeout=timeout)
 
-
 def adb_intent_view(device: str, url: str, package: Optional[str] = None) -> Tuple[bool, str]:
     cmd = ['am', 'start', '-a', 'android.intent.action.VIEW', '-d', url]
     if package and package.strip():
@@ -205,14 +199,45 @@ def adb_intent_view(device: str, url: str, package: Optional[str] = None) -> Tup
     code, out = adb_shell(cmd, device)
     return code == 0, out
 
-
 def youtube_package() -> str:
-    return (os.environ.get('YOUTUBE_TV_PACKAGE') or DEFAULT_YOUTUBE_TV_PACKAGE).strip()
-
+    return (os.environ.get('YOUTUBE_PACKAGE') or DEFAULT_YOUTUBE_PACKAGE).strip()
 
 def tubi_package() -> str:
     return (os.environ.get('TUBI_PACKAGE') or DEFAULT_TUBI_PACKAGE).strip()
 
+def launch_global_search_show(
+    show: str,
+    season: int,
+    episode: int,
+    app_name: str,
+    device: str,
+) -> Tuple[bool, str]:
+    """Launch global-search fallback with pre-verified device connection.
+    
+    Passes the already-connected device address to the fallback helper.
+    The helper only orchestrates UI automation; all ADB connection logic
+    remains in google_tv_skill.py.
+    """
+    script_path = SKILL_DIR / 'play_show_via_global_search.py'
+    cmd = [
+        'uv',
+        'run',
+        str(script_path),
+        show,
+        str(season),
+        str(episode),
+        '--device',
+        device,
+        '--app',
+        app_name,
+    ]
+    try:
+        p = subprocess.run(cmd, timeout=180)
+    except subprocess.TimeoutExpired:
+        return False, 'Global search helper timed out after 180 seconds'
+    except Exception as e:
+        return False, str(e)
+    return p.returncode == 0, ''
 
 def adb_connect(
     ip: str,
@@ -237,15 +262,23 @@ def adb_connect(
         # short exponential backoff (0.5s, 1s, 2s)
         if attempt < attempts:
             backoff = 0.5 * (2 ** (attempt - 1))
-            logger.debug('adb connect attempt %d failed: %s; sleeping %.1fs before retry', attempt, out.strip(), backoff)
             try:
-                import time
-
                 time.sleep(backoff)
             except Exception:
                 pass
     return False, last_out
 
+def discover_mdns_device() -> Optional[dict]:
+    code, out = run_adb(['mdns', 'services'])
+    if code != 0:
+        return None
+    match = re.search(r'(\d+\.\d+\.\d+\.\d+):(\d+)', out)
+    if not match:
+        return None
+    try:
+        return {'ip': match.group(1), 'port': int(match.group(2))}
+    except Exception:
+        return None
 
 def connection_refused(message: str) -> bool:
     if not message:
@@ -257,7 +290,6 @@ def connection_refused(message: str) -> bool:
         or 'failed to connect' in lowered
         or 'cannot connect' in lowered
     )
-
 
 def prompt_for_port(ip: str) -> Optional[int]:
     if not sys.stdin.isatty():
@@ -276,7 +308,6 @@ def prompt_for_port(ip: str) -> Optional[int]:
                 return port
         print('Invalid port. Enter a number between 1 and 65535.')
 
-
 def try_prompt_new_port(ip: str, message: str) -> Tuple[Optional[str], Optional[str]]:
     if not connection_refused(message):
         return None, None
@@ -289,7 +320,6 @@ def try_prompt_new_port(ip: str, message: str) -> Tuple[Optional[str], Optional[
         return f"{ip}:{new_port}", None
     return None, f'adb connect failed (new port): {out.strip()}'
 
-
 def ensure_connected(ip: Optional[str], port: Optional[int]) -> Tuple[Optional[str], Optional[str]]:
     # Returns (device_spec, error_message)
     cache = load_cache()
@@ -297,14 +327,12 @@ def ensure_connected(ip: Optional[str], port: Optional[int]) -> Tuple[Optional[s
     if ip and not port:
         if cache and cache['ip'] == ip:
             port = cache['port']
-            logger.debug('Using cached port %s for %s', port, ip)
         else:
             return None, f'port required for device {ip} (no cached port available)'
 
     if port and not ip:
         if cache:
             ip = cache['ip']
-            logger.debug('Using cached ip %s for port %s', ip, port)
         else:
             return None, 'device IP required when port is provided without cache'
 
@@ -313,12 +341,30 @@ def ensure_connected(ip: Optional[str], port: Optional[int]) -> Tuple[Optional[s
             ip = cache['ip']
             port = cache['port']
         else:
-            return None, 'no device specified and no cached device found'
+            mdns_device = discover_mdns_device()
+            if mdns_device:
+                ip = mdns_device['ip']
+                port = mdns_device['port']
+            else:
+                return None, 'no device specified and no cached device found'
 
     ok, out = adb_connect(ip, port)
     if ok:
         save_cache(ip, port)
         return f"{ip}:{port}", None
+
+    # If connection failed and looks like a refused/timeout error, try mDNS rediscovery
+    # before prompting the user. This handles cases where the device moved to a new IP
+    # (e.g., after router restart or network change).
+    if connection_refused(out):
+        mdns_device = discover_mdns_device()
+        if mdns_device:
+            mdns_ip = mdns_device['ip']
+            mdns_port = mdns_device['port']
+            ok_mdns, out_mdns = adb_connect(mdns_ip, mdns_port)
+            if ok_mdns:
+                save_cache(mdns_ip, mdns_port)
+                return f"{mdns_ip}:{mdns_port}", None
 
     prompted_device, prompt_err = try_prompt_new_port(ip, out)
     if prompted_device:
@@ -327,10 +373,20 @@ def ensure_connected(ip: Optional[str], port: Optional[int]) -> Tuple[Optional[s
         return None, prompt_err
 
     if cache and (cache['ip'], cache['port']) != (ip, port):
-        logger.debug('Explicit adb connect failed; attempting cached device %s:%s', cache['ip'], cache['port'])
         ok2, out2 = adb_connect(cache['ip'], cache['port'])
         if ok2:
             return f"{cache['ip']}:{cache['port']}", None
+
+        # For cached fallback, also try mDNS rediscovery if connection refused
+        if connection_refused(out2):
+            mdns_device = discover_mdns_device()
+            if mdns_device:
+                mdns_ip = mdns_device['ip']
+                mdns_port = mdns_device['port']
+                ok_mdns, out_mdns = adb_connect(mdns_ip, mdns_port)
+                if ok_mdns:
+                    save_cache(mdns_ip, mdns_port)
+                    return f"{mdns_ip}:{mdns_port}", None
 
         prompted_device, prompt_err = try_prompt_new_port(cache['ip'], out2)
         if prompted_device:
@@ -341,7 +397,6 @@ def ensure_connected(ip: Optional[str], port: Optional[int]) -> Tuple[Optional[s
         return None, f'adb connect failed (explicit): {out.strip()} ; cached attempt: {out2.strip()}'
 
     return None, f'adb connect failed: {out.strip()}'
-
 
 def status_cmd(args) -> int:
     device, err = ensure_connected(args.ip, args.port)
@@ -354,7 +409,6 @@ def status_cmd(args) -> int:
     code, out = run_adb(['devices'])
     print(out.strip())
     return 0 if code == 0 else 4
-
 
 def pause_cmd(args) -> int:
     device, err = ensure_connected(args.ip, args.port)
@@ -369,7 +423,6 @@ def pause_cmd(args) -> int:
     print('paused')
     return 0
 
-
 def resume_cmd(args) -> int:
     device, err = ensure_connected(args.ip, args.port)
     if not device:
@@ -382,20 +435,16 @@ def resume_cmd(args) -> int:
     print('resumed')
     return 0
 
-
 def resolve_youtube_id_with_yt_api(query: str) -> Optional[str]:
     """
-    Try to resolve a YouTube ID using an available yt-api CLI on PATH, or fallback path.
+    Try to resolve a YouTube ID using an available yt-api CLI on PATH.
     Expects a simple invocation that returns JSON or plain ID when asked.
     """
     for bin_path in yt_api_candidates():
         try:
-            logger.debug('Trying to resolve YouTube ID using %s', bin_path)
             p = subprocess.run([bin_path, 'search', query], capture_output=True, text=True, timeout=15)
             out = (p.stdout or '').strip()
-            err = (p.stderr or '').strip()
             if p.returncode != 0:
-                logger.debug('yt-api returned %s: %s', p.returncode, err or out)
                 continue
             if not out:
                 continue
@@ -421,52 +470,33 @@ def resolve_youtube_id_with_yt_api(query: str) -> Optional[str]:
         except FileNotFoundError:
             continue
         except Exception as e:
-            logger.debug('yt-api call failed: %s', e)
             continue
     return None
-
 
 def launch_youtube_intent(device: str, video_id: str) -> Tuple[bool, str]:
     url = f'https://www.youtube.com/watch?v={video_id}'
     return adb_intent_view(device, url, youtube_package())
-
 
 def looks_like_tubi(term: str) -> bool:
     if not term:
         return False
     value = term.strip().lower()
     return (
-        value.isdigit()
-        or value.startswith(TUBI_SCHEME_PREFIX)
-        or value.startswith('tubitv')
+        value.startswith('https://www.tubitv.com/')
+        or value.startswith('https://tubitv.com/')
+        or value.startswith('www.tubitv.com/')
+        or value.startswith('tubitv.com/')
         or 'tubitv.com' in value
     )
 
-
 def handle_tubi(device: str, term: str) -> Tuple[bool, str]:
-    # If term looks numeric, try tubitv:// first, then fallback to https VIEW
-    if term.isdigit():
-        scheme = TUBI_INTENT_SCHEME.format(id=term)
-        ok, out = adb_intent_view(device, scheme, tubi_package())
-        if ok:
-            return True, out
-        # fallback to https
-        # The user asked to use web_search when we need canonical Tubi URLs; this script
-        # expects a Tubi https URL as fallback input if available. If not provided, try generic https format.
-        https = f'https://tubitv.com/movies/{term}'
-        return adb_intent_view(device, https, tubi_package())
-
-    if term.lower().startswith(TUBI_SCHEME_PREFIX):
-        return adb_intent_view(device, term, tubi_package())
-
-    if term.startswith('http'):
+    if term.startswith('https://'):
         return adb_intent_view(device, term, tubi_package())
 
     if term.startswith('tubitv.com') or term.startswith('www.tubitv.com'):
         return adb_intent_view(device, f'https://{term}', tubi_package())
 
-    # otherwise we don't attempt assistant-like search here
-    return False, 'Tubi term is not numeric ID nor URL; provide either.'
+    return False, 'Tubi term must be an https Tubi URL.'
 
 
 def play_cmd(args) -> int:
@@ -475,10 +505,8 @@ def play_cmd(args) -> int:
         print(err)
         return 2
     query = args.query.strip()
-    app_hint = (args.app or '').strip().lower()
-    if app_hint and app_hint not in {'youtube', 'tubi'}:
-        logger.debug('Unknown app hint %s; ignoring', app_hint)
-        app_hint = ''
+    app_raw = (args.app or '').strip()
+    app_hint = app_raw.lower()
 
     if app_hint == 'tubi':
         ok, out = handle_tubi(device, query)
@@ -491,7 +519,7 @@ def play_cmd(args) -> int:
     if app_hint == 'youtube':
         video_id = extract_youtube_id(query) or resolve_youtube_id_with_yt_api(query)
         if not video_id:
-            print('failed to resolve YouTube ID for query; per policy no Assistant/UI fallback will be attempted')
+            print('failed to resolve YouTube ID for query')
             return 3
         ok, out = launch_youtube_intent(device, video_id)
         if ok:
@@ -514,7 +542,6 @@ def play_cmd(args) -> int:
         if ok:
             print('launched tubi')
             return 0
-        logger.debug('tubi launch failed; falling back to yt-api: %s', out)
 
     # Otherwise attempt to resolve a YouTube ID using yt-api CLI as requested
     video_id = resolve_youtube_id_with_yt_api(query)
@@ -526,9 +553,20 @@ def play_cmd(args) -> int:
         print('adb intent failed:', out)
         return 4
 
-    print('failed to resolve YouTube ID for query; per policy no Assistant/UI fallback will be attempted')
-    return 3
+    if app_raw and app_hint not in {'youtube', 'tubi'}:
+        if args.season is None or args.episode is None:
+            print('for non-youtube/tubi fallback, pass --season and --episode')
+            return 1
+        ok, out = launch_global_search_show(query, args.season, args.episode, app_raw, device)
+        if ok:
+            print('launched global-search fallback')
+            return 0
+        print('global-search fallback failed:', out)
+        return 4
 
+    print('failed to resolve YouTube ID for query')
+    print('for non-youtube/tubi content, pass --app "<streaming app>" --season N --episode N')
+    return 3
 
 def build_parser():
     p = argparse.ArgumentParser(prog='google_tv_skill.py')
@@ -537,34 +575,33 @@ def build_parser():
     sp_status = sub.add_parser('status')
     sp_status.add_argument('--device', dest='ip', help='Chromecast IP address')
     sp_status.add_argument('--port', type=int, dest='port', help='ADB port')
-    sp_status.add_argument('--verbose', action='store_true')
     sp_status.set_defaults(func=status_cmd)
 
     sp_play = sub.add_parser('play')
     sp_play.add_argument('query', help='Query, YouTube id, or provider-specific id/url')
     sp_play.add_argument('--device', dest='ip', help='Chromecast IP address')
     sp_play.add_argument('--port', type=int, dest='port', help='ADB port')
-    sp_play.add_argument('--app', dest='app', help='App hint (youtube, tubi)')
-    sp_play.add_argument('--verbose', action='store_true')
+    sp_play.add_argument('--app', dest='app', help='App hint (youtube, tubi, or streaming app for fallback)')
+    sp_play.add_argument('--season', type=int, help='Season number for non-youtube/tubi fallback')
+    sp_play.add_argument('--episode', type=int, help='Episode number for non-youtube/tubi fallback')
     sp_play.set_defaults(func=play_cmd)
 
     sp_pause = sub.add_parser('pause')
     sp_pause.add_argument('--device', dest='ip', help='Chromecast IP address')
     sp_pause.add_argument('--port', type=int, dest='port', help='ADB port')
-    sp_pause.add_argument('--verbose', action='store_true')
     sp_pause.set_defaults(func=pause_cmd)
 
     sp_resume = sub.add_parser('resume')
     sp_resume.add_argument('--device', dest='ip', help='Chromecast IP address')
     sp_resume.add_argument('--port', type=int, dest='port', help='ADB port')
-    sp_resume.add_argument('--verbose', action='store_true')
     sp_resume.set_defaults(func=resume_cmd)
 
     return p
 
-
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
+    if not ensure_python3():
+        return 2
     parser = build_parser()
     args = parser.parse_args(argv)
     if not args.cmd:
@@ -582,10 +619,9 @@ def main(argv=None):
             except Exception:
                 pass
 
-    # logging
-    level = logging.DEBUG if getattr(args, 'verbose', False) else logging.INFO
-    logging.basicConfig(level=level, format='%(levelname)s: %(message)s')
-
+    if not uv_available():
+        print('uv not found on PATH. Install uv and run again.')
+        return 2
     if not adb_available():
         print('adb not found on PATH. Install Android platform-tools and ensure adb is available.')
         return 2
@@ -594,11 +630,9 @@ def main(argv=None):
     try:
         rc = args.func(args)
     except Exception as e:
-        logger.exception('Unhandled error')
         print('error:', e)
         return 1
     return rc
-
 
 if __name__ == '__main__':
     raise SystemExit(main())
