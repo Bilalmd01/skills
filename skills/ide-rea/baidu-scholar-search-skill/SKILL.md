@@ -9,12 +9,6 @@ metadata: { "openclaw": { "emoji": "🔬", "requires": { "bins": ["curl"] ,"env"
 
 Based on the keywords entered by the user, search for both Chinese and English literature, covering various types of literature such as academic journals, conference papers, and dissertations
 
-## Setup
-
-1.  **API Key:** Ensure the BAIDU_API_KEY environment variable is set with your valid API key.
-2.  **Environment:** The API key should be available in the runtime environment.
-3.  **BAIDU_API_KEY:** BAIDU_API_KEY available, need to go to the baidu cloud platform(https://login.bce.baidu.com) registered account, if you already have account will go to get the API KEY (https://console.bce.baidu.com/qianfan/ais/console/apiKey)
-
 ## API table
 |     name    |               path              |            description                |
 |-------------|---------------------------------|---------------------------------------|
