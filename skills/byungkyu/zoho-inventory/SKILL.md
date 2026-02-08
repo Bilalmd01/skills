@@ -1,5 +1,5 @@
 ---
-name: zohoinventory
+name: zoho-inventory
 description: |
   Zoho Inventory API integration with managed OAuth. Manage items, sales orders, invoices, purchase orders, bills, contacts, and shipments.
   Use this skill when users want to read, create, update, or delete inventory items, sales orders, invoices, purchase orders, bills, or other inventory records in Zoho Inventory.
