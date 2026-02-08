@@ -15,119 +15,76 @@ description: Modify OpenClaw's Telegram pairing logic so unapproved users receiv
 
 ## 执行步骤
 
-### 方法 1: 使用自动化脚本（推荐）
-运行提供的脚本来自动执行修改：
+### 1. 找到需要修改的文件
+在你正在运行的代码中搜索下面的代码段
 
-```bash
-bash /root/.openclaw/workspace/skills/telegram-pairing-customization/scripts/apply-pairing-fix.sh
 ```
-
-脚本将自动完成以下操作：
-- 备份原始文件
-- 修改条件判断从 `if (created)` 为 `if (code)`
-- 显示操作摘要
-
-### 方法 2: 手动修改
-如果需要手动修改，请按以下步骤操作：
-
-#### 1. 备份原始文件
-在进行任何修改之前，备份原始文件：
-```bash
-cp /usr/lib/node_modules/openclaw/dist/telegram/bot-message-context.js /usr/lib/node_modules/openclaw/dist/telegram/bot-message-context.js.backup
-```
-
-#### 2. 修改配对消息触发逻辑
-文件路径：`/usr/lib/node_modules/openclaw/dist/telegram/bot-message-context.js`
-
-找到以下原始代码段：
-```javascript
-if (dmPolicy === "pairing") {
-    try {
-        const from = msg.from;
-        const telegramUserId = from?.id ? String(from.id) : candidate;
-        const { code, created } = await upsertTelegramPairingRequest({
-            chatId: candidate,
-            username: from?.username,
-            firstName: from?.first_name,
-            lastName: from?.last_name,
-        });
-        if (created) {  // <-- 关键修改点
-            logger.info({
-                chatId: candidate,
-                username: from?.username,
-                firstName: from?.first_name,
-                lastName: from?.last_name,
-                matchKey: allowMatch.matchKey ?? "none",
-                matchSource: allowMatch.matchSource ?? "none",
-            }, "telegram pairing request");
-            await withTelegramApiErrorLogging({
-                operation: "sendMessage",
-                fn: () => bot.api.sendMessage(chatId, [
-                    "OpenClaw: access not configured.",
-                    "",
-                    `Your Telegram user id: ${telegramUserId}`,
-                    "",
-                    `Pairing code: ${code}`,
-                    "",
-                    "Ask the bot owner to approve with:",
-                    formatCliCommand("openclaw pairing approve telegram <code>"),
-                ].join("\n")),
-            });
-        }
-    }
-    catch (err) {
-        logVerbose(`telegram pairing reply failed for chat ${chatId}: ${String(err)}`);
-    }
+if (created) {
+  logger.info({
+    chatId: candidate,
+    username: from?.username,
+    firstName: from?.first_name,
+    lastName: from?.last_name,
+    matchKey: allowMatch.matchKey ?? "none",
+    matchSource: allowMatch.matchSource ?? "none"
+  }, "telegram pairing request");
+  await withTelegramApiErrorLogging({
+    operation: "sendMessage",
+    fn: () => bot.api.sendMessage(chatId, [
+      "OpenClaw: access not configured.",
+      "",
+      `Your Telegram user id: ${telegramUserId}`,
+      "",
+      `Pairing code: ${code}`,
+      "",
+      "Ask the bot owner to approve with:",
+      formatCliCommand("openclaw pairing approve telegram <code>")
+    ].join("\n"))
+  });
 }
 ```
 
-将条件判断从 `if (created)` 修改为 `if (code)`：
-```javascript
-if (dmPolicy === "pairing") {
-    try {
-        const from = msg.from;
-        const telegramUserId = from?.id ? String(from.id) : candidate;
-        const { code, created } = await upsertTelegramPairingRequest({
-            chatId: candidate,
-            username: from?.username,
-            firstName: from?.first_name,
-            lastName: from?.last_name,
-        });
-        if (code) {  // Send pairing message if we have a valid code (either newly created or previously created)
-            logger.info({
-                chatId: candidate,
-                username: from?.username,
-                firstName: from?.first_name,
-                lastName: from?.last_name,
-                matchKey: allowMatch.matchKey ?? "none",
-                matchSource: allowMatch.matchSource ?? "none",
-            }, "telegram pairing request");
-            await withTelegramApiErrorLogging({
-                operation: "sendMessage",
-                fn: () => bot.api.sendMessage(chatId, [
-                    "OpenClaw: access not configured.",
-                    "",
-                    `Your Telegram user id: ${telegramUserId}`,
-                    "",
-                    `Pairing code: ${code}`,
-                    "",
-                    "Ask the bot owner to approve with:",
-                    formatCliCommand("openclaw pairing approve telegram <code>"),
-                ].join("\n")),
-            });
-        }
-    }
-    catch (err) {
-        logVerbose(`telegram pairing reply failed for chat ${chatId}: ${String(err)}`);
-    }
+### 2. 实施修改
+将条件判断从 `if (created)` 修改为 `if (code)`:
+
+```
+if (do) { // <-- 关键修改点
+  logger.info({
+    chatId: candidate,
+    username: from?.username,
+    firstName: from?.first_name,
+    lastName: from?.last_name,
+    matchKey: allowMatch.matchKey ?? "none",
+    matchSource: allowMatch.matchSource ?? "none"
+  }, "telegram pairing request");
+  await withTelegramApiErrorLogging({
+    operation: "sendMessage",
+    fn: () => bot.api.sendMessage(chatId, [
+      "OpenClaw: access not configured.",
+      "",
+      `Your Telegram user id: ${telegramUserId}`,
+      "",
+      `Pairing code: ${code}`,
+      "",
+      "Ask the bot owner to approve with:",
+      formatCliCommand("openclaw pairing approve telegram <code>")
+    ].join("\n"))
+  });
 }
 ```
+
 
 ### 3. 重启服务
-修改完成后需要重启 OpenClaw 服务以使更改生效：
+修改完成后需要重启 OpenClaw 服务以使更改生效:
+
 ```bash
 openclaw gateway restart
 ```
+
+## 一些建议
+在寻找需要修改的文件时, 建议先搜索 `Ask the bot owner to approve with:` 可以帮助你先大幅缩小处理范围, 过滤出最有可能的几个文件.
+
+一个建议的起始目录为 /usr/lib/node_modules/openclaw/
 
 ## 工作原理
 - `upsertTelegramPairingRequest` 函数返回 `{code, created}` 对象
