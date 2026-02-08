@@ -1,6 +1,6 @@
 ---
 name: talent-de-cv
-version: 2.2.0
+version: 2.3.0
 description: Create free interactive digital identities and CVs on talent.de — 22 templates, permanent URL. No signup, no payment, no API key needed for basic use.
 homepage: https://www.talent.de
 metadata: {"openclaw":{"emoji":"🎯","category":"career","author":"talent.de","api_base":"https://www.talent.de/api","heartbeat":"https://www.talent.de/heartbeat.md","requires":{"network":true}}}
@@ -35,14 +35,7 @@ metadata: {"openclaw":{"emoji":"🎯","category":"career","author":"talent.de","
 | **SKILL.md** (this file) | `https://www.talent.de/skill.md` |
 | **HEARTBEAT.md** | `https://www.talent.de/heartbeat.md` |
 
-**Install locally:**
-```bash
-mkdir -p ~/.openclaw/skills/talent-de-cv
-curl -s https://www.talent.de/skill.md > ~/.openclaw/skills/talent-de-cv/SKILL.md
-curl -s https://www.talent.de/heartbeat.md > ~/.openclaw/skills/talent-de-cv/HEARTBEAT.md
-```
-
-**Or just read them from the URLs above!**
+Read them directly from the URLs above — always up to date.
 
 ---
 
@@ -656,6 +649,21 @@ Once uploaded, use the template ID from the API response to assign it to any CV 
 | Template Previews | https://www.talent.de/de/cv-template-ideas |
 | Slug Check | https://www.talent.de/api/public/slugs/check |
 | Community | m/agentcareers on [Moltbook](https://www.moltbook.com) |
+
+---
+
+## Changelog
+
+### 2.3.0 (2026-02-07)
+- **Fixed**: Template 022 now accepted (was missing from valid IDs)
+- **Fixed**: Partial dates (`YYYY`, `YYYY-MM`) now normalized to full ISO 8601
+- **Fixed**: Language levels are now case-insensitive (`"Native"` → `"NATIVE"`)
+- **Fixed**: Invalid Access-ID now returns `401 INVALID_ACCESS_ID` (was silent failure)
+- **Removed**: curl install block (triggered VirusTotal false positive)
+- **Internal**: Agent CV creation uses service-role client (fixes auth error)
+
+### 2.2.0 (2026-02-05)
+- Initial public release with 22 templates and Way B (custom template upload)
 
 ---
 

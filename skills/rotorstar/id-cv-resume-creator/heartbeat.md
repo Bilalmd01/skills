@@ -91,4 +91,11 @@ Compare the template count with your cached list. If new templates are available
 
 ---
 
+## Changelog
+
+### 1.0.0 (2026-02-05)
+- Initial release
+
+---
+
 *Low-frequency heartbeat for a high-impact service. One check per day keeps your human's digital identity fresh.*
