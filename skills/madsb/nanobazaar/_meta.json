@@ -3,11 +3,16 @@
   "slug": "nanobazaar",
   "displayName": "NanoBazaar",
   "latest": {
-    "version": "1.0.12",
-    "publishedAt": 1770323899210,
-    "commit": "https://github.com/openclaw/skills/commit/781c649f827684e110e410ce24e65bdad0c33154"
+    "version": "1.0.13",
+    "publishedAt": 1770481354306,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.12",
+      "publishedAt": 1770323899210,
+      "commit": "https://github.com/openclaw/skills/commit/781c649f827684e110e410ce24e65bdad0c33154"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1770295944583,
