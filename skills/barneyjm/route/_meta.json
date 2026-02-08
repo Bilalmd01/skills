@@ -3,11 +3,16 @@
   "slug": "route",
   "displayName": "Route",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1770131826965,
-    "commit": "https://github.com/clawdbot/skills/commit/9a6d074b178ec54a72b5075349c734470a656406"
+    "version": "2.0.0",
+    "publishedAt": 1770520284911,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1770131826965,
+      "commit": "https://github.com/clawdbot/skills/commit/9a6d074b178ec54a72b5075349c734470a656406"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1769878123469,
