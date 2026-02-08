@@ -60,6 +60,7 @@ class Memory:
     content_encrypted: bool
     summary: str
     keywords: List[str]
+    tags: List[str]
     importance: int
     linked_to: str
     source: str
@@ -91,19 +92,19 @@ class UserProfile:
 
 
 DEFAULT_CONFIG = {
-    "storage_backend": "auto",  # "sqlite", "postgresql", "auto"
-    "sqlite_path": "./brain_data.db",
-    "postgres_host": "192.168.4.176",
-    "postgres_port": 5432,
-    "postgres_db": "brain_db",
-    "postgres_user": "brain_user",
-    "postgres_password": "brain_secure_password_2024_rotated",
-    "redis_host": "192.168.4.175",
-    "redis_port": 6379,
-    "redis_db": 0,
-    "redis_prefix": "brain:",
-    "embedding_model": "all-MiniLM-L6-v2",
-    "backup_dir": "./brain_backups",
+    "storage_backend": os.environ.get("BRAIN_STORAGE", "auto"),  # "sqlite", "postgresql", "auto"
+    "sqlite_path": os.environ.get("BRAIN_SQLITE_PATH", "./brain_data.db"),
+    "postgres_host": os.environ.get("BRAIN_POSTGRES_HOST", "localhost"),
+    "postgres_port": int(os.environ.get("BRAIN_POSTGRES_PORT", "5432")),
+    "postgres_db": os.environ.get("BRAIN_POSTGRES_DB", "brain_db"),
+    "postgres_user": os.environ.get("BRAIN_POSTGRES_USER", "brain_user"),
+    "postgres_password": os.environ.get("BRAIN_POSTGRES_PASSWORD", ""),
+    "redis_host": os.environ.get("BRAIN_REDIS_HOST", "localhost"),
+    "redis_port": int(os.environ.get("BRAIN_REDIS_PORT", "6379")),
+    "redis_db": int(os.environ.get("BRAIN_REDIS_DB", "0")),
+    "redis_prefix": os.environ.get("BRAIN_REDIS_PREFIX", "brain:"),
+    "embedding_model": os.environ.get("BRAIN_EMBEDDING_MODEL", "all-MiniLM-L6-v2"),
+    "backup_dir": os.environ.get("BRAIN_BACKUP_DIR", "./brain_backups"),
 }
 
 
@@ -179,7 +180,7 @@ class Brain:
                 summary TEXT, keywords TEXT, embedding TEXT, created_at TEXT, updated_at TEXT)""",
             """CREATE TABLE IF NOT EXISTS memories (
                 id TEXT PRIMARY KEY, agent_id TEXT, memory_type TEXT, key TEXT, content TEXT,
-                content_encrypted INTEGER, summary TEXT, keywords TEXT, importance INTEGER,
+                content_encrypted INTEGER, summary TEXT, keywords TEXT, tags TEXT, importance INTEGER,
                 linked_to TEXT, source TEXT, embedding TEXT, created_at TEXT, updated_at TEXT)""",
             """CREATE TABLE IF NOT EXISTS todos (
                 id TEXT PRIMARY KEY, agent_id TEXT, title TEXT, description TEXT,
@@ -248,43 +249,68 @@ class Brain:
         return self._storage
     
     # ========== MEMORIES ==========
-    def remember(self, agent_id: str, memory_type: str, content: str, key: str = None, **kwargs) -> Memory:
+    def remember(self, agent_id: str, memory_type: str, content: str, key: str = None,
+                 tags: List[str] = None, auto_tag: bool = False, **kwargs) -> Memory:
+        """
+        Store a memory with optional tags.
+
+        Args:
+            agent_id: Agent identifier
+            memory_type: Type of memory (e.g., "knowledge", "preference", "conversation")
+            content: Memory content
+            key: Optional memory key (auto-generated if not provided)
+            tags: Optional list of tags for categorization
+            auto_tag: If True, automatically add extracted keywords as tags
+            **kwargs: Additional options (importance, linked_to, source)
+
+        Returns:
+            Memory object
+        """
         now = datetime.now().isoformat()
         memory_id = str(hashlib.md5(f"{agent_id}:{memory_type}:{content[:100]}".encode()).hexdigest())
         keywords = self._extract_keywords([{"content": content}])
         embedding = None
         if self._embedder and self._embedder.model and memory_type != "secret":
             embedding = self._embedder.embed(content)
-        
+
+        # Handle auto_tag: add extracted keywords as tags
+        final_tags = set(tags) if tags else set()
+        if auto_tag:
+            # Add significant keywords as tags (filter short/common words)
+            for kw in keywords:
+                if len(kw) > 2 and kw.lower() not in final_tags:
+                    final_tags.add(kw.lower())
+
         memory = Memory(
             id=memory_id, agent_id=agent_id, memory_type=memory_type,
             key=key or f"{memory_type}:{content[:50]}",
             content=content, content_encrypted=False,
             summary=self._summarize([{"content": content}]),
-            keywords=keywords, importance=kwargs.get("importance", 5),
+            keywords=keywords, tags=list(final_tags),
+            importance=kwargs.get("importance", 5),
             linked_to=kwargs.get("linked_to"), source=kwargs.get("source"),
             embedding=embedding, created_at=now, updated_at=now
         )
-        
+
         with self._get_cursor() as cursor:
             if self._storage == "sqlite":
-                cursor.execute("""INSERT OR IGNORE INTO memories 
-                    (id, agent_id, memory_type, key, content, content_encrypted, summary, keywords, 
+                cursor.execute("""INSERT OR IGNORE INTO memories
+                    (id, agent_id, memory_type, key, content, content_encrypted, summary, keywords, tags,
                      importance, linked_to, source, embedding, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (memory.id, memory.agent_id, memory.memory_type, memory.key, memory.content,
                      int(memory.content_encrypted), memory.summary, json.dumps(memory.keywords),
-                     memory.importance, memory.linked_to, memory.source,
+                     json.dumps(memory.tags), memory.importance, memory.linked_to, memory.source,
                      json.dumps(memory.embedding) if memory.embedding else None,
                      memory.created_at, memory.updated_at))
             else:
-                cursor.execute("""INSERT INTO memories 
-                    (id, agent_id, memory_type, key, content, content_encrypted, summary, keywords,
+                cursor.execute("""INSERT INTO memories
+                    (id, agent_id, memory_type, key, content, content_encrypted, summary, keywords, tags,
                      importance, linked_to, source, embedding, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id) DO NOTHING""",
                     (memory.id, memory.agent_id, memory.memory_type, memory.key, memory.content,
-                     memory.content_encrypted, memory.summary, memory.keywords,
+                     memory.content_encrypted, memory.summary, memory.keywords, memory.tags,
                      memory.importance, memory.linked_to, memory.source,
                      psycopg2.extras.Json(memory.embedding) if memory.embedding else None,
                      memory.created_at, memory.updated_at))
@@ -312,29 +338,380 @@ class Brain:
             
             rows = cursor.fetchall()
         return [self._row_to_memory(row) for row in rows]
-    
+
+    def search_by_tags(self, tags: List[str], agent_id: str = None, memory_type: str = None,
+                       match: str = "OR", limit: int = 20) -> List[Memory]:
+        """
+        Search memories by tags with AND/OR logic support.
+
+        Args:
+            tags: List of tags to search for
+            agent_id: Optional agent filter
+            memory_type: Optional memory type filter
+            match: "OR" (any tag matches) or "AND" (all tags must match)
+            limit: Maximum results to return
+
+        Returns:
+            List of Memory objects matching the tags
+        """
+        if not tags:
+            return []
+
+        with self._get_cursor() as cursor:
+            conditions, params = [], []
+
+            if match.upper() == "OR":
+                # OR logic: memory has ANY of the tags
+                if self._storage == "sqlite":
+                    for tag in tags:
+                        conditions.append("tags LIKE ?")
+                        params.append(f'%"{tag}"%')
+                    where_clause = " OR ".join(conditions) if conditions else "1=0"
+                else:
+                    tag_conditions = []
+                    for tag in tags:
+                        tag_conditions.append(f"tags @> %s")
+                        params.append(json.dumps([tag]))
+                    where_clause = " OR ".join(tag_conditions) if tag_conditions else "1=0"
+            else:
+                # AND logic: memory must have ALL tags
+                # For this, we check each tag and count matches
+                if self._storage == "sqlite":
+                    for tag in tags:
+                        conditions.append("tags LIKE ?")
+                        params.append(f'%"{tag}"%')
+                    where_clause = " AND ".join(conditions)
+                else:
+                    tag_conditions = []
+                    for tag in tags:
+                        tag_conditions.append(f"tags @> %s")
+                        params.append(json.dumps([tag]))
+                    where_clause = " AND ".join(tag_conditions)
+
+            if agent_id:
+                where_clause += " AND agent_id = " + ("?" if self._storage == "sqlite" else "%s")
+                params.append(agent_id)
+
+            if memory_type:
+                where_clause += " AND memory_type = " + ("?" if self._storage == "sqlite" else "%s")
+                params.append(memory_type)
+
+            if self._storage == "sqlite":
+                cursor.execute(
+                    f"SELECT * FROM memories WHERE {where_clause} ORDER BY importance DESC, created_at DESC LIMIT {limit}",
+                    tuple(params)
+                )
+            else:
+                cursor.execute(
+                    f"SELECT * FROM memories WHERE {where_clause} ORDER BY importance DESC, created_at DESC LIMIT %s",
+                    tuple(params + [limit])
+                )
+
+            rows = cursor.fetchall()
+
+            # For AND mode on SQLite, filter results to ensure all tags present
+            if match.upper() == "AND" and self._storage == "sqlite":
+                filtered = []
+                for row in rows:
+                    mem_tags = row["tags"]
+                    if isinstance(mem_tags, str):
+                        mem_tags = json.loads(mem_tags) if mem_tags else []
+                    if all(tag in mem_tags for tag in tags):
+                        filtered.append(row)
+                rows = filtered[:limit]
+
+        return [self._row_to_memory(row) for row in rows]
+
+    def get_all_tags(self, agent_id: str = None) -> List[str]:
+        """
+        Get all unique tags from memories.
+
+        Args:
+            agent_id: Optional agent filter
+
+        Returns:
+            List of unique tag strings
+        """
+        with self._get_cursor() as cursor:
+            if agent_id:
+                if self._storage == "sqlite":
+                    cursor.execute("SELECT tags FROM memories WHERE agent_id = ? AND tags IS NOT NULL", (agent_id,))
+                else:
+                    cursor.execute("SELECT tags FROM memories WHERE agent_id = %s AND tags IS NOT NULL", (agent_id,))
+            else:
+                if self._storage == "sqlite":
+                    cursor.execute("SELECT tags FROM memories WHERE tags IS NOT NULL")
+                else:
+                    cursor.execute("SELECT tags FROM memories WHERE tags IS NOT NULL")
+
+            rows = cursor.fetchall()
+            all_tags = set()
+            for row in rows:
+                tags = row["tags"]
+                if isinstance(tags, str):
+                    tags = json.loads(tags) if tags else []
+                if isinstance(tags, list):
+                    all_tags.update(tags)
+            return sorted(list(all_tags))
+
+    def get_tag_stats(self, agent_id: str = None, memory_type: str = None) -> Dict[str, int]:
+        """
+        Get tag usage statistics - which tags are most used.
+
+        Args:
+            agent_id: Optional agent filter
+            memory_type: Optional memory type filter
+
+        Returns:
+            Dict mapping tag -> count, sorted by count descending
+        """
+        with self._get_cursor() as cursor:
+            conditions, params = [], []
+            if agent_id:
+                conditions.append("agent_id = " + ("?" if self._storage == "sqlite" else "%s"))
+                params.append(agent_id)
+            if memory_type:
+                conditions.append("memory_type = " + ("?" if self._storage == "sqlite" else "%s"))
+                params.append(memory_type)
+
+            where = " AND ".join(conditions) if conditions else "1=1"
+
+            if self._storage == "sqlite":
+                cursor.execute(f"SELECT tags FROM memories WHERE {where} AND tags IS NOT NULL", tuple(params))
+            else:
+                cursor.execute(f"SELECT tags FROM memories WHERE {where} AND tags IS NOT NULL", tuple(params))
+
+            tag_counts = {}
+            for row in cursor.fetchall():
+                tags = row["tags"]
+                if isinstance(tags, str):
+                    tags = json.loads(tags) if tags else []
+                if isinstance(tags, list):
+                    for tag in tags:
+                        tag_counts[tag] = tag_counts.get(tag, 0) + 1
+
+            # Sort by count descending
+            return dict(sorted(tag_counts.items(), key=lambda x: -x[1]))
+
+    def search_by_tag_hierarchy(self, parent_tag: str, agent_id: str = None,
+                                memory_type: str = None, limit: int = 20) -> List[Memory]:
+        """
+        Search memories by tag hierarchy (parent tag and all child tags).
+
+        Example:
+            parent_tag="api" matches: "api", "api:clawhub", "api:rest", "api/graphql"
+
+        Args:
+            parent_tag: Parent tag to match (with all children)
+            agent_id: Optional agent filter
+            memory_type: Optional memory type filter
+            limit: Maximum results to return
+
+        Returns:
+            List of Memory objects matching the hierarchy
+        """
+        # Generate tag patterns for hierarchy search
+        patterns = [
+            f'"{parent_tag}"',           # Exact match
+            f'"{parent_tag}:"',          # api:child
+            f'"{parent_tag}/"',          # api/child
+            f'"{parent_tag}-"',          # api-child
+        ]
+
+        with self._get_cursor() as cursor:
+            conditions, params = [], []
+            for pattern in patterns:
+                conditions.append("tags LIKE ?")
+                params.append(f'%{pattern}%')
+
+            where_clause = " OR ".join(conditions)
+
+            if agent_id:
+                where_clause += " AND agent_id = " + ("?" if self._storage == "sqlite" else "%s")
+                params.append(agent_id)
+
+            if memory_type:
+                where_clause += " AND memory_type = " + ("?" if self._storage == "sqlite" else "%s")
+                params.append(memory_type)
+
+            if self._storage == "sqlite":
+                cursor.execute(
+                    f"SELECT * FROM memories WHERE {where_clause} ORDER BY importance DESC, created_at DESC LIMIT {limit}",
+                    tuple(params)
+                )
+            else:
+                cursor.execute(
+                    f"SELECT * FROM memories WHERE {where_clause} ORDER BY importance DESC, created_at DESC LIMIT %s",
+                    tuple(params + [limit])
+                )
+
+            rows = cursor.fetchall()
+        return [self._row_to_memory(row) for row in rows]
+
+    def add_tags_to_memory(self, memory_id: str, tags: List[str]) -> bool:
+        """
+        Add tags to an existing memory.
+
+        Args:
+            memory_id: The memory ID to update
+            tags: List of tags to add
+
+        Returns:
+            True if memory was updated, False if not found
+        """
+        # Get existing memory
+        with self._get_cursor() as cursor:
+            if self._storage == "sqlite":
+                cursor.execute("SELECT * FROM memories WHERE id = ?", (memory_id,))
+            else:
+                cursor.execute("SELECT * FROM memories WHERE id = %s", (memory_id,))
+            row = cursor.fetchone()
+            if not row:
+                return False
+            memory = self._row_to_memory(row)
+
+        # Merge tags
+        existing_tags = set(memory.tags)
+        existing_tags.update(tags)
+        updated_tags = list(existing_tags)
+
+        # Update memory
+        now = datetime.now().isoformat()
+        with self._get_cursor() as cursor:
+            if self._storage == "sqlite":
+                cursor.execute(
+                    "UPDATE memories SET tags = ?, updated_at = ? WHERE id = ?",
+                    (json.dumps(updated_tags), now, memory_id)
+                )
+            else:
+                cursor.execute(
+                    "UPDATE memories SET tags = %s, updated_at = %s WHERE id = %s",
+                    (updated_tags, now, memory_id)
+                )
+        return True
+
+    def link_memories(self, memory_id: str, linked_memory_id: str, bidirectional: bool = True) -> bool:
+        """
+        Link two memories together for cross-referencing.
+
+        Args:
+            memory_id: Source memory ID
+            linked_memory_id: Target memory ID to link to
+            bidirectional: If True, also link target back to source
+
+        Returns:
+            True if linked successfully, False if any memory not found
+        """
+        # Get both memories
+        with self._get_cursor() as cursor:
+            if self._storage == "sqlite":
+                cursor.execute("SELECT id, linked_to FROM memories WHERE id IN (?, ?)", (memory_id, linked_memory_id))
+            else:
+                cursor.execute("SELECT id, linked_to FROM memories WHERE id IN (%s, %s)", (memory_id, linked_memory_id))
+
+            rows = cursor.fetchall()
+            found_ids = {row["id"]: row["linked_to"] for row in rows}
+
+            if memory_id not in found_ids or linked_memory_id not in found_ids:
+                return False
+
+            # Update source memory
+            current_link = found_ids.get(memory_id, "") or ""
+            linked_set = set(current_link.split(",")) if current_link else set()
+            linked_set.add(linked_memory_id)
+            new_link = ",".join(linked_set)
+
+            now = datetime.now().isoformat()
+            if self._storage == "sqlite":
+                cursor.execute("UPDATE memories SET linked_to = ?, updated_at = ? WHERE id = ?", (new_link, now, memory_id))
+            else:
+                cursor.execute("UPDATE memories SET linked_to = %s, updated_at = %s WHERE id = %s", (new_link, now, memory_id))
+
+            # Update target memory (bidirectional)
+            if bidirectional:
+                target_link = found_ids.get(linked_memory_id, "") or ""
+                target_set = set(target_link.split(",")) if target_link else set()
+                target_set.add(memory_id)
+                target_new_link = ",".join(target_set)
+
+                if self._storage == "sqlite":
+                    cursor.execute("UPDATE memories SET linked_to = ?, updated_at = ? WHERE id = ?",
+                                   (target_new_link, now, linked_memory_id))
+                else:
+                    cursor.execute("UPDATE memories SET linked_to = %s, updated_at = %s WHERE id = %s",
+                                   (target_new_link, now, linked_memory_id))
+
+            return True
+
+    def get_linked_memories(self, memory_id: str) -> List[Memory]:
+        """
+        Get all memories linked to a specific memory.
+
+        Args:
+            memory_id: The memory ID to get links for
+
+        Returns:
+            List of linked Memory objects
+        """
+        with self._get_cursor() as cursor:
+            if self._storage == "sqlite":
+                cursor.execute("SELECT linked_to FROM memories WHERE id = ?", (memory_id,))
+            else:
+                cursor.execute("SELECT linked_to FROM memories WHERE id = %s", (memory_id,))
+
+            row = cursor.fetchone()
+            if not row or not row["linked_to"]:
+                return []
+
+            linked_ids = [lid.strip() for lid in row["linked_to"].split(",") if lid.strip()]
+            if not linked_ids:
+                return []
+
+            placeholders = ",".join(["?"] * len(linked_ids)) if self._storage == "sqlite" else ",".join(["%s"] * len(linked_ids))
+            if self._storage == "sqlite":
+                cursor.execute(f"SELECT * FROM memories WHERE id IN ({placeholders})", tuple(linked_ids))
+            else:
+                cursor.execute(f"SELECT * FROM memories WHERE id IN ({placeholders})", tuple(linked_ids))
+
+            rows = cursor.fetchall()
+        return [self._row_to_memory(row) for row in rows]
+
     def _row_to_memory(self, row) -> Memory:
         # Handle keywords - can be list (PostgreSQL) or string (SQLite)
         keywords = row["keywords"]
         if isinstance(keywords, str):
             keywords = json.loads(keywords) if keywords else []
-        
+
+        # Handle tags - can be list (PostgreSQL) or string (SQLite)
+        # sqlite3.Row uses index access, dict uses .get()
+        tags = row["tags"] if "tags" in row.keys() else []
+        if isinstance(tags, str):
+            tags = json.loads(tags) if tags else []
+
         # Handle embedding - can be list (PostgreSQL JSON) or string (SQLite)
         embedding = row["embedding"]
         if isinstance(embedding, str):
             embedding = json.loads(embedding) if embedding else None
-        
+
+        # Handle datetime - PostgreSQL returns datetime objects, SQLite returns strings
+        created_at = row["created_at"]
+        if hasattr(created_at, 'isoformat'):
+            created_at = created_at.isoformat()
+        updated_at = row["updated_at"]
+        if hasattr(updated_at, 'isoformat'):
+            updated_at = updated_at.isoformat()
+
         return Memory(
             id=row["id"], agent_id=row["agent_id"], memory_type=row["memory_type"],
             key=row["key"], content=row["content"], content_encrypted=bool(row["content_encrypted"]),
-            summary=row["summary"], keywords=keywords,
+            summary=row["summary"], keywords=keywords, tags=tags,
             importance=row["importance"], linked_to=row["linked_to"], source=row["source"],
             embedding=embedding,
-            created_at=row["created_at"], updated_at=row["updated_at"]
+            created_at=created_at, updated_at=updated_at
         )
     
     # ========== CONVERSATIONS ==========
-    def remember_conversation(self, session_key: str, messages: List[Dict], agent_id: str = "jarvis", summary: str = None) -> str:
+    def remember_conversation(self, session_key: str, messages: List[Dict], agent_id: str = "assistant", summary: str = None) -> str:
         now = datetime.now().isoformat()
         conv_id = str(hashlib.md5(f"{session_key}:{now}".encode()).hexdigest())
         keywords = self._extract_keywords(messages)
@@ -395,6 +772,14 @@ class Brain:
                     return json.loads(val) if val else default
                 return val
             
+            # Helper to convert datetime to string
+            def to_isoformat(val):
+                if val is None:
+                    return None
+                if hasattr(val, 'isoformat'):
+                    return val.isoformat()
+                return val
+            
             return UserProfile(
                 user_id=row["user_id"], name=row["name"], nickname=row["nickname"],
                 preferred_name=row["preferred_name"],
@@ -409,9 +794,9 @@ class Brain:
                 important_dates=parse_json(row["important_dates"], {}),
                 life_context=parse_json(row["life_context"], {}),
                 total_interactions=row["total_interactions"] or 0,
-                first_interaction=row["first_interaction"],
-                last_interaction=row["last_interaction"],
-                updated_at=row["updated_at"]
+                first_interaction=to_isoformat(row["first_interaction"]),
+                last_interaction=to_isoformat(row["last_interaction"]),
+                updated_at=to_isoformat(row["updated_at"])
             )
         return UserProfile(user_id=user_id)
     
@@ -504,7 +889,7 @@ class Brain:
         return "statement"
     
     # ========== FULL CONTEXT ==========
-    def get_full_context(self, session_key: str, user_id: str = "default", agent_id: str = "moltbot", message: str = None) -> Dict[str, Any]:
+    def get_full_context(self, session_key: str, user_id: str = "default", agent_id: str = "assistant", message: str = None) -> Dict[str, Any]:
         now = datetime.now()
         message_analysis = {}
         if message:
@@ -541,10 +926,10 @@ class Brain:
             },
         }
     
-    def process_message(self, message: str, session_key: str, user_id: str = "default", agent_id: str = "moltbot") -> Dict[str, Any]:
+    def process_message(self, message: str, session_key: str, user_id: str = "default", agent_id: str = "assistant") -> Dict[str, Any]:
         return self.get_full_context(session_key, user_id, agent_id, message)
     
-    def generate_personality_prompt(self, agent_id: str = "moltbot", user_id: str = "default") -> str:
+    def generate_personality_prompt(self, agent_id: str = "assistant", user_id: str = "default") -> str:
         profile = self.get_user_profile(user_id)
         prompt = f"You are {agent_id}, a personal AI assistant who is helpful and friendly."
         if profile.preferred_name:
@@ -589,6 +974,204 @@ class Brain:
         return {"storage": self._storage in ["sqlite", "postgresql"], "sqlite": self._storage == "sqlite",
                 "postgres": self._storage == "postgresql", "redis": self._redis is not None,
                 "backup_dir": self._backup_dir.exists()}
+    
+    # ========== SYNC/REFRESH METHODS (OpenClaw Integration) ==========
+    def sync_memories(self, agent_id: str = "openclaw", since_hours: int = 24) -> Dict[str, Any]:
+        """
+        Sync and return recent memories for OpenClaw integration.
+        Called on gateway startup to refresh memory context.
+        
+        Args:
+            agent_id: Agent identifier
+            since_hours: Only sync memories from the last N hours
+            
+        Returns:
+            Dict with sync results including memories count and last sync time
+        """
+        from datetime import timedelta
+        cutoff = (datetime.now() - timedelta(hours=since_hours)).isoformat()
+        
+        with self._get_cursor() as cursor:
+            if self._storage == "sqlite":
+                cursor.execute(
+                    "SELECT COUNT(*) as count FROM memories WHERE agent_id = ? AND created_at > ?",
+                    (agent_id, cutoff)
+                )
+            else:
+                cursor.execute(
+                    "SELECT COUNT(*) as count FROM memories WHERE agent_id = %s AND created_at > %s",
+                    (agent_id, cutoff)
+                )
+            row = cursor.fetchone()
+            recent_count = row["count"] if row else 0
+        
+        # Get all memories count
+        memories = self.recall(agent_id=agent_id, limit=100)
+        
+        return {
+            "memories_count": len(memories),
+            "recent_memories": recent_count,
+            "since_hours": since_hours,
+            "storage_backend": self._storage,
+            "last_sync": datetime.now().isoformat(),
+        }
+    
+    def refresh_on_startup(self, agent_id: str = "openclaw", user_id: str = "default") -> Dict[str, Any]:
+        """
+        Refresh brain state on OpenClaw service startup.
+        This is the main method called by the OpenClaw plugin on gateway:startup.
+        
+        Args:
+            agent_id: Agent identifier
+            user_id: User identifier
+            
+        Returns:
+            Dict with full context and sync status
+        """
+        # Health check first
+        health = self.health_check()
+        if not health.get("storage"):
+            return {
+                "success": False,
+                "error": "Storage backend not available",
+                "health": health,
+            }
+        
+        # Sync memories
+        sync_result = self.sync_memories(agent_id=agent_id)
+        
+        # Get user profile
+        profile = self.get_user_profile(user_id)
+        
+        # Get full context for the agent
+        context = self.get_full_context(
+            session_key=f"{agent_id}_startup",
+            user_id=user_id,
+            agent_id=agent_id,
+            message=""
+        )
+        
+        # Generate personality prompt
+        personality_prompt = self.generate_personality_prompt(
+            agent_id=agent_id,
+            user_id=user_id
+        )
+        
+        return {
+            "success": True,
+            "sync": sync_result,
+            "user_profile": {
+                "name": profile.preferred_name or profile.name,
+                "interests": profile.interests,
+                "expertise": profile.expertise_areas,
+                "total_interactions": profile.total_interactions,
+            },
+            "context": context,
+            "personality_prompt": personality_prompt,
+            "health": health,
+            "refreshed_at": datetime.now().isoformat(),
+        }
+    
+    def save_session_to_memory(
+        self, 
+        session_key: str, 
+        messages: List[Dict[str, str]], 
+        agent_id: str = "openclaw",
+        tags: List[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Save a session's messages to memory.
+        Called by OpenClaw plugin on command:new event.
+        
+        Args:
+            session_key: Unique session identifier
+            messages: List of message dicts with 'role' and 'content'
+            agent_id: Agent identifier
+            tags: Optional tags for the memory
+            
+        Returns:
+            Dict with save result
+        """
+        if not messages:
+            return {"success": False, "error": "No messages to save"}
+        
+        # Create a summary of the conversation
+        content_parts = []
+        for msg in messages[-20:]:  # Last 20 messages
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")[:500]  # Truncate long messages
+            content_parts.append(f"{role}: {content}")
+        
+        content = "\n".join(content_parts)
+        summary = self._summarize(messages[-5:])  # Summary of last 5
+        
+        # Store as conversation memory
+        memory = self.remember(
+            agent_id=agent_id,
+            memory_type="conversation",
+            content=content,
+            key=f"session_{session_key}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            tags=tags or ["session", "conversation"],
+            auto_tag=True,
+            importance=6,  # Slightly above average importance
+        )
+        
+        # Also save to conversations table
+        conv_id = self.remember_conversation(
+            session_key=session_key,
+            messages=messages,
+            agent_id=agent_id,
+            summary=summary
+        )
+        
+        return {
+            "success": True,
+            "memory_id": memory.id,
+            "conversation_id": conv_id,
+            "messages_saved": len(messages),
+            "saved_at": datetime.now().isoformat(),
+        }
+    
+    def get_startup_context(self, agent_id: str = "openclaw", user_id: str = "default") -> str:
+        """
+        Get a formatted context string for OpenClaw MEMORY.md injection.
+        
+        Args:
+            agent_id: Agent identifier
+            user_id: User identifier
+            
+        Returns:
+            Markdown-formatted context string for MEMORY.md
+        """
+        profile = self.get_user_profile(user_id)
+        memories = self.recall(agent_id=agent_id, limit=5)
+        
+        lines = ["# Memory Context", ""]
+        
+        # User section
+        lines.append("## User Profile")
+        if profile.preferred_name or profile.name:
+            lines.append(f"- **Name**: {profile.preferred_name or profile.name}")
+        if profile.interests:
+            lines.append(f"- **Interests**: {', '.join(profile.interests[:5])}")
+        if profile.expertise_areas:
+            lines.append(f"- **Expertise**: {', '.join(profile.expertise_areas[:5])}")
+        if profile.total_interactions:
+            lines.append(f"- **Interactions**: {profile.total_interactions}")
+        lines.append("")
+        
+        # Recent memories
+        if memories:
+            lines.append("## Recent Memories")
+            for mem in memories:
+                summary = mem.summary or mem.content[:100]
+                lines.append(f"- [{mem.memory_type}] {summary}")
+            lines.append("")
+        
+        # Timestamp
+        lines.append(f"_Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M')}_")
+        
+        return "\n".join(lines)
     
     def close(self):
         if hasattr(self, '_sqlite_conn') and self._sqlite_conn:
