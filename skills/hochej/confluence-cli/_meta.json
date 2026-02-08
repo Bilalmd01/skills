@@ -1,0 +1,11 @@
+{
+  "owner": "hochej",
+  "slug": "confluence-cli",
+  "displayName": "Confluence CLI (confcli)",
+  "latest": {
+    "version": "0.2.5",
+    "publishedAt": 1770576683426,
+    "commit": null
+  },
+  "history": []
+}
