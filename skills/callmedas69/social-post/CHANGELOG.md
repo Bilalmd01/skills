@@ -2,6 +2,90 @@
 
 All notable changes to the social-post skill will be documented in this file.
 
+## [1.2.0] - 2026-02-08
+
+### Added
+- **Reply functionality**: New `reply.sh` script to reply to tweets and casts
+  - Reply to Twitter tweets with `--twitter <tweet_id>`
+  - Reply to Farcaster casts with `--farcaster <cast_hash>`
+  - Reply to both platforms simultaneously
+  - Support for image attachments in replies
+  - Link shortening in replies with `--shorten-links`
+  - Character/byte validation for replies
+  - Draft preview before posting replies
+  - Dry-run mode for testing replies
+- **Documentation**: Complete reply examples and usage in SKILL.md and README.md
+- **ID extraction guide**: How to get Tweet IDs and Farcaster cast hashes from URLs
+
+### Features
+- Reply to specific tweets using tweet ID from URL
+- Reply to specific casts using cast hash from URL  
+- All posting features available for replies (images, link shortening, truncation)
+- Proper threading support for replies
+- Cost transparency for replies (same as regular posts)
+
+### Technical
+- Extended Twitter library with reply support using `in_reply_to_tweet_id`
+- Extended Farcaster library with reply support using `parentCastId`
+- Image upload support for both Twitter and Farcaster replies
+- Reuses existing validation and link shortening libraries
+
+## [1.1.0] - 2026-02-06
+
+### Added
+- **Draft preview**: Shows exact text, image, and target platforms before posting
+- **Confirmation prompt**: Interactive "Proceed with posting? (y/n)" confirmation
+- **`--yes` flag**: Skip confirmation for automated workflows
+- **Balance checking script**: New `check-balance.sh` to monitor Farcaster wallet
+  - Shows ETH and USDC balances on Base
+  - Displays remaining casts estimate
+  - Warns when balance is low (<0.1 USDC)
+  - Provides BaseScan link for detailed view
+
+### Changed
+- **Updated X/Twitter API pricing documentation**:
+  - ✅ Corrected to **consumption-based model** (no tiers)
+  - ✅ Removed outdated subscription tier references (Basic/Pro)
+  - ✅ Clarified pay-per-API-request model
+  - ✅ Added official pricing link: https://developer.twitter.com/#pricing
+  - ✅ Updated setup instructions to reflect billing model
+- **Enhanced cost transparency**:
+  - Added platform comparison table
+  - Documented Farcaster costs (0.001 USDC per cast)
+  - Explained x402 payment protocol
+  - Included Neynar Hub payment address
+  - Added cost model comparison section
+
+### Improved
+- **README.md**:
+  - Quick reference table with costs and setup time
+  - Step-by-step credential setup for both platforms
+  - Platform comparison table (cost model, limits, billing)
+  - Comprehensive troubleshooting section for credentials
+  - Verification steps for testing setup
+- **SKILL.md**:
+  - Detailed "Setup & Credentials" section
+  - Security warnings for private key handling
+  - Cost breakdown for both platforms
+  - Official links and references
+- **Help text** in `post.sh`:
+  - Added cost information
+  - Added `--yes` flag documentation
+  - Updated platform limits section
+
+### Fixed
+- ❌ Removed incorrect "free tier" references for X API
+- ❌ Removed outdated tier pricing ($100/mo, $200/mo, $5k/mo)
+- ❌ Fixed `.env` file parsing error (quoted mnemonic)
+- ✅ Corrected all cost documentation to reflect current pricing models
+
+### Documentation
+- Added setup time estimates (X: 5-10 min, Farcaster: 15-20 min)
+- Documented credential file locations and formats
+- Added wallet funding requirements for Farcaster
+- Included credential verification commands
+- Enhanced troubleshooting with specific error scenarios
+
 ## [1.0.0] - 2026-02-06
 
 ### Added
