@@ -62,15 +62,15 @@ curl -XGET 'https://appbuilder.baidu.com/v2/baike/lemma/get_content?search_type=
 
 **Example 1: if user just give lemmaTitle**
 ```bash
-BAIDU_API_KEY=xxx sh baidu_baike.sh 'search' '$lemmaTitle'
+BAIDU_API_KEY=xxx sh scripts/baidu_baike.sh 'search' '$lemmaTitle'
 ```
 
 **Example 1: if user just give lemmaId**
 ```bash
-BAIDU_API_KEY=xxx sh baidu_baike.sh 'search_by_id' '$lemmaId'
+BAIDU_API_KEY=xxx sh scripts/baidu_baike.sh 'search_by_id' '$lemmaId'
 ```
 
 **Example 1: if user just give lemmaTitle,but wish search by lemmaId**
 ```bash
-BAIDU_API_KEY=xxx sh baidu_baike.sh 'list_by_title' '$lemmaTitle'
+BAIDU_API_KEY=xxx sh scripts/baidu_baike.sh 'list_by_title' '$lemmaTitle'
 ```
