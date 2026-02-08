@@ -6,7 +6,7 @@
 # voice transcriptions and sending responses.
 # Works with both Clawdbot and OpenClaw.
 #
-# Usage: ./connect.sh {start|stop|status|restart}
+# Usage: ./connect.sh {start|stop|status|restart} [--server <url>]
 #
 
 set -e
@@ -16,6 +16,21 @@ SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 CONFIG_FILE="$SKILL_DIR/skill-config.json"
 PID_FILE="$SKILL_DIR/.connect.pid"
 LOG_FILE="$SKILL_DIR/.connect.log"
+
+# Parse server override from args
+SERVER_FLAG=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --server)
+            SERVER_FLAG="--server $2"
+            shift 2
+            ;;
+        *)
+            CMD="${CMD:-$1}"
+            shift
+            ;;
+    esac
+done
 
 # Colors for output
 RED='\033[0;31m'
@@ -89,6 +104,12 @@ start_connection() {
     
     echo "🚀 Starting WebSocket connection..."
     
+    # Source .env files for environment variable resolution
+    # Supports both OpenClaw and Clawdbot paths
+    [ -f "$HOME/.openclaw/.env" ] && . "$HOME/.openclaw/.env"
+    [ -f "$HOME/.clawdbot/.env" ] && . "$HOME/.clawdbot/.env"
+    [ -f "$SKILL_DIR/.env" ] && . "$SKILL_DIR/.env"
+    
     # Rotate log if it's too big (> 1MB)
     if [ -f "$LOG_FILE" ] && [ $(stat -f%z "$LOG_FILE" 2>/dev/null || stat -c%s "$LOG_FILE" 2>/dev/null || echo 0) -gt 1048576 ]; then
         echo "🔄 Rotating large log file..."
@@ -96,7 +117,7 @@ start_connection() {
     fi
     
     # Start the WebSocket client in background (append to log)
-    nohup node "$SCRIPT_DIR/ws-client.js" >> "$LOG_FILE" 2>&1 &
+    nohup node "$SCRIPT_DIR/ws-client.js" $SERVER_FLAG >> "$LOG_FILE" 2>&1 &
     local pid=$!
     echo $pid > "$PID_FILE"
     
@@ -195,6 +216,9 @@ show_status() {
     echo "  status   - Show this status"
     echo "  watchdog - Check if running and restart if needed"
     echo ""
+    echo "Flags:"
+    echo "  --server <url>  - Override server URL"
+    echo ""
 }
 
 restart_connection() {
@@ -222,7 +246,7 @@ watchdog_check() {
 }
 
 # Main command handling
-case "${1:-}" in
+case "${CMD:-}" in
     start)
         print_status
         check_config
@@ -251,14 +275,17 @@ case "${1:-}" in
         print_status
         echo -e "${RED}❌ Invalid command${NC}"
         echo ""
-        echo "Usage: $0 {start|stop|status|restart|watchdog}"
+        echo "Usage: $0 {start|stop|status|restart|watchdog} [--server <url>]"
         echo ""
         echo "Commands:"
-        echo "  start    - Start WebSocket connection to Clawd Talk server"
+        echo "  start    - Start WebSocket connection to ClawdTalk server"
         echo "  stop     - Stop WebSocket connection"
         echo "  restart  - Restart WebSocket connection"
         echo "  status   - Show connection status and configuration"
         echo "  watchdog - Check if running and restart if needed (for cron)"
+        echo ""
+        echo "Flags:"
+        echo "  --server <url>  - Override server URL"
         exit 1
         ;;
 esac
