@@ -63,7 +63,9 @@ Playlists show a video count badge:
 Artist/channel cards appear at the top of results for artist searches:
 
 ```yaml
-- link "Artist Name ... @handle•NNN萬位訂閱者 ..." [ref=eXXX]:
+- link "Artist Name ... @handle•NNNK subscribers ..." [ref=eXXX]:    # English locale
+    - /url: /@handle
+- link "Artist Name ... @handle•NNN萬位訂閱者 ..." [ref=eXXX]:      # Chinese locale
     - /url: /@handle
 ```
 
