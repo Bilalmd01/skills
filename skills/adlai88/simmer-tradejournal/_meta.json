@@ -1,13 +1,18 @@
 {
   "owner": "adlai88",
   "slug": "simmer-tradejournal",
-  "displayName": "Tradejournal",
+  "displayName": "Prediction Trade Journal",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1770442578038,
-    "commit": "https://github.com/openclaw/skills/commit/dc21914522f5bd841cba21fe638dca90a8f41bab"
+    "version": "1.1.1",
+    "publishedAt": 1770472757827,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1770442578038,
+      "commit": "https://github.com/openclaw/skills/commit/dc21914522f5bd841cba21fe638dca90a8f41bab"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1769764987880,
