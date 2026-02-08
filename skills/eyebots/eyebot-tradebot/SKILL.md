@@ -34,7 +34,15 @@ Smart DEX trading with best-rate aggregation and advanced automation.
 - Sandwich attack prevention
 
 ## Trigger Keywords
-swap, trade, buy, sell, dca, limit order, stop loss, tradebot
+swap, trade, exchange, buy crypto, sell crypto,
+dex swap, uniswap, sushiswap, pancakeswap,
+best price, cheapest swap, lowest fees,
+dca, dollar cost average, auto buy,
+limit order, stop loss, take profit, trailing stop,
+snipe token, frontrun, mev protection,
+arbitrage, flash loan, sandwich protection,
+buy the dip, accumulate, stack sats,
+swap eth, swap usdc, convert tokens, tradebot
 
 ## Example Commands
 - "Swap 100 USDC to ETH on Base"
