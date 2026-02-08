@@ -1,6 +1,6 @@
 ---
 name: korail-manager
-version: 1.1.3
+version: 1.1.4
 description: "Korail(KTX) & SRT reservation automation skill. Search, reserve, and watch for tickets. Supports Telegram and Slack notifications. (English/Korean supported)"
 tools:
   # ── KTX ──
