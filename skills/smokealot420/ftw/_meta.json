@@ -3,9 +3,15 @@
   "slug": "ftw",
   "displayName": "FTW (First Try Works)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770539021969,
-    "commit": "https://github.com/openclaw/skills/commit/34c6b198d238b3d830302dae2532e125f6ed3e4b"
+    "version": "1.0.2",
+    "publishedAt": 1770568226542,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770539021969,
+      "commit": "https://github.com/openclaw/skills/commit/34c6b198d238b3d830302dae2532e125f6ed3e4b"
+    }
+  ]
 }

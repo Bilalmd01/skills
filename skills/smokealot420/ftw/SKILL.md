@@ -103,17 +103,32 @@ Output: "Project initialized at PROJECT_PATH". Done.
 
 **Prerequisite:** A PRD must exist. If none found, tell user to create one first.
 
-Read {baseDir}/references/workflow-full.md and follow its phase workflow.
+For each phase from START_PHASE to END_PHASE, you will execute this pipeline:
 
-Loop through phases START_PHASE to END_PHASE using the workflow defined there.
+1. **Check/Generate PRP** — Look for existing PRP; if none, spawn a research sub-agent (`sessions_spawn`) to do codebase analysis + PRP generation
+2. **Spawn EXECUTOR** — Fresh sub-agent (`sessions_spawn`) implements the PRP requirements
+3. **Spawn VALIDATOR** — Fresh sub-agent (`sessions_spawn`) independently verifies ALL requirements against the PRP
+4. **Debug Loop** (max 3x) — If GAPS_FOUND: spawn DEBUGGER sub-agent, then re-validate. If HUMAN_NEEDED: ask user
+5. **Smart Commit** — Semantic commit with `Built with FTW (First Try Works)`
+6. **Update WORKFLOW.md** — Mark phase complete with validation results
+7. **Next Phase** — Loop back to step 1
+
+Read {baseDir}/references/workflow-full.md for the detailed step-by-step instructions including sub-agent prompt templates.
 
 ---
 
 ## Mode: Mini
 
-Read {baseDir}/references/workflow-mini.md and follow its discovery-driven workflow.
+No PRD required — starts from a quick conversation with the user.
 
-No PRD required - starts from a quick conversation.
+1. **Discovery** — Ask 3-5 targeted questions (what it does, where it lives, success criteria, out of scope). Structure answers into YAML
+2. **Research & PRP Generation** — Spawn sub-agent (`sessions_spawn`) for codebase analysis + PRP generation from discovery answers
+3. **Spawn EXECUTOR** — Fresh sub-agent implements the PRP
+4. **Spawn VALIDATOR** — Fresh sub-agent verifies requirements (or self-validate if <5 files/<100 lines changed)
+5. **Debug Loop** (max 3x) — If GAPS_FOUND: spawn DEBUGGER, re-validate. If HUMAN_NEEDED: ask user
+6. **Smart Commit** — `feat(mini): implement {FEATURE_NAME}` with `Built with FTW (First Try Works)`
+
+Read {baseDir}/references/workflow-mini.md for the detailed step-by-step instructions including discovery questions, sub-agent prompt templates, and validation sizing logic.
 
 ---
 

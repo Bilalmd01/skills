@@ -176,7 +176,12 @@ After debugger: re-validate -> PASS (commit) or loop (max 3) or escalate.
 
 ```bash
 cd PROJECT_PATH && git status && git diff --stat
-git add -A
+```
+
+Review changed files. Stage only the files created or modified by this workflow (never `.env`, credentials, or unrelated files):
+
+```bash
+git add <specific-files...>
 git commit -m "feat(mini): implement {FEATURE_NAME}
 
 - {bullet 1}
