@@ -1,0 +1,38 @@
+{
+  "name": "zero-rules-engine",
+  "version": "1.0.0",
+  "description": "Deterministic task interceptor for OpenClaw. Math, time, currency, files, dates — zero tokens, zero latency.",
+  "main": "rules.js",
+  "bin": {
+    "zero-rules": "./rules.js"
+  },
+  "scripts": {
+    "test": "node rules.js \"247 × 18\" && node rules.js \"time in Tokyo\" && node rules.js \"list files in ~/\" && node rules.js \"what day is today\" && node rules.js --status",
+    "test:math": "node rules.js \"247 × 18\"",
+    "test:time": "node rules.js \"time in Tokyo\"",
+    "test:currency": "node rules.js \"$100 USD to EUR\"",
+    "test:files": "node rules.js \"list files in ~/\"",
+    "test:date": "node rules.js \"days until Christmas\"",
+    "test:miss": "node rules.js \"Write a proposal for Sarah\"",
+    "test:status": "node rules.js --status"
+  },
+  "keywords": [
+    "openclaw",
+    "clawdbot",
+    "moltbot",
+    "skill",
+    "token-optimization",
+    "cost-reduction",
+    "deterministic",
+    "agentskills"
+  ],
+  "author": "CascadeAI <hello@cascadeai.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deeqyaqub1-cmd/zero-rules-openclaw"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
