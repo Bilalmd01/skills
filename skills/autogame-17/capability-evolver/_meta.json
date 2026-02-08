@@ -3,11 +3,16 @@
   "slug": "capability-evolver",
   "displayName": "Capability Evolver",
   "latest": {
-    "version": "1.6.0",
-    "publishedAt": 1770468264490,
-    "commit": "https://github.com/openclaw/skills/commit/ac5b058bab888d712f85807b712b44c177672131"
+    "version": "1.7.0",
+    "publishedAt": 1770531008640,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.0",
+      "publishedAt": 1770468264490,
+      "commit": "https://github.com/openclaw/skills/commit/ac5b058bab888d712f85807b712b44c177672131"
+    },
     {
       "version": "1.4.4",
       "publishedAt": 1770382896311,
