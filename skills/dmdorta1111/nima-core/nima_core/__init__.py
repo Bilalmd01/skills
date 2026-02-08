@@ -11,6 +11,7 @@ from .layers.binding_layer import VSABindingLayer, BoundEpisode, BindingOperatio
 from .bridge import NimaV2Bridge, ProcessedExperience
 from .services.heartbeat import NimaHeartbeat
 from .services.markdown_bridge import MarkdownBridge
+from .cognition.dream_engine import DreamEngine, DreamSession, Insight, Pattern
 
 __all__ = [
     "NimaCore",
@@ -25,5 +26,9 @@ __all__ = [
     "ProcessedExperience",
     "NimaHeartbeat",
     "MarkdownBridge",
+    "DreamEngine",
+    "DreamSession",
+    "Insight",
+    "Pattern",
     "__version__",
 ]

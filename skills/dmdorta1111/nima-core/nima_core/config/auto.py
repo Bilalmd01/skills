@@ -54,8 +54,8 @@ def get_nima_config() -> Dict[str, Any]:
         workspace = Path(openclaw["workspace"]).expanduser().resolve()
         return {
             "mode": "openclaw",
-            "data_dir": str(workspace / "nima_core" / "storage" / "data"),
-            "models_dir": str(workspace / "nima_core" / "models"),
+            "data_dir": str(workspace / "nima_data"),
+            "models_dir": str(workspace / "nima_models"),
             "openclaw": openclaw
         }
     else:

@@ -7,7 +7,7 @@ setup(
     long_description=open("README.md").read() if __import__("os").path.exists("README.md") else "",
     long_description_content_type="text/markdown",
     author="NIMA Project",
-    url="https://github.com/lilubot/nima-core",
+    url="https://github.com/nima-project/nima-core",
     packages=find_packages(),
     python_requires=">=3.9",
     install_requires=[

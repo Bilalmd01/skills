@@ -41,12 +41,11 @@ def run_setup():
     setup_paths(config)
     print("✅ Directories created")
     
-    # Save config
+    # Save config (atomic write)
     config_path = Path(config['data_dir']) / "config.json"
-    import json
+    from ..utils import atomic_json_save
     try:
-        with open(config_path, 'w') as f:
-            json.dump(config, f, indent=2)
+        atomic_json_save(config, config_path)
         print(f"✅ Config saved to {config_path}")
     except OSError as e:
         print(f"Error: Failed to write config file: {e}", file=sys.stderr)

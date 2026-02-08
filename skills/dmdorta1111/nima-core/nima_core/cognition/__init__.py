@@ -6,6 +6,7 @@ from .sequence_predictor import SequenceCorpus, NextTurnPredictor
 from .active_inference import ActiveInferenceEngine
 from .hyperbolic_memory import HyperbolicTaxonomy
 from .metacognitive import MetacognitiveLayer
+from .dream_engine import DreamEngine, DreamSession, Insight, Pattern
 
 __all__ = [
     "FreeEnergyConsolidation",
@@ -22,4 +23,8 @@ __all__ = [
     "ActiveInferenceEngine",
     "HyperbolicTaxonomy",
     "MetacognitiveLayer",
+    "DreamEngine",
+    "DreamSession",
+    "Insight",
+    "Pattern",
 ]

@@ -123,7 +123,7 @@ def test_introspect():
     try:
         # Enable metacognitive layer
         os.environ["NIMA_V2_ALL"] = "false"
-        os.environ["NIMA_METACOGNITIVE"] = "true"
+        os.environ["NIMA_V2_META"] = "true"
         os.environ["NIMA_DATA_DIR"] = temp_dir
         
         nima = NimaCore(name="TestBot", data_dir=temp_dir, auto_init=True)
@@ -148,7 +148,67 @@ def test_introspect():
     finally:
         # Cleanup
         shutil.rmtree(temp_dir, ignore_errors=True)
-        os.environ.pop("NIMA_METACOGNITIVE", None)
+        os.environ.pop("NIMA_V2_META", None)
+
+
+def test_dream_engine():
+    """Test dream consolidation engine."""
+    print("8. Testing Dream Engine...")
+    import tempfile
+    import shutil
+    from nima_core import NimaCore
+    
+    temp_dir = tempfile.mkdtemp()
+    try:
+        os.environ["NIMA_V2_ALL"] = "false"
+        os.environ["NIMA_DATA_DIR"] = temp_dir
+        
+        nima = NimaCore(name="TestBot", data_dir=temp_dir, auto_init=False)
+        
+        # Capture varied memories across different domains and people
+        nima.capture("Alice", "I wrote a new algorithm for sorting data efficiently", importance=0.8)
+        nima.capture("Bob", "The team meeting about the project deadline went well", importance=0.7)
+        nima.capture("Alice", "I'm feeling really excited about the architecture redesign", importance=0.9)
+        nima.capture("Charlie", "We need to plan the schedule for next week's tasks", importance=0.6)
+        nima.capture("Bob", "The relationship between the frontend and backend code is interesting", importance=0.7)
+        nima.capture("Alice", "I had a wonderful idea for a creative design pattern", importance=0.85)
+        nima.capture("Diana", "The meaning of consciousness in AI systems fascinates me", importance=0.75)
+        
+        # Verify memories stored
+        status = nima.status()
+        assert status["memory_count"] >= 5, f"Expected >= 5 memories, got {status['memory_count']}"
+        print(f"   ✓ Captured {status['memory_count']} memories")
+        
+        # Run dream consolidation
+        result = nima.dream(hours=24)
+        
+        # Verify result structure
+        assert result["status"] == "complete", f"Dream status: {result['status']}"
+        assert result["memories_processed"] > 0, "No memories processed"
+        assert "patterns" in result, "Missing 'patterns' key in result"
+        assert "insights" in result, "Missing 'insights' key in result"
+        assert "schemas" in result, "Missing 'schemas' key in result"
+        assert "summary" in result, "Missing 'summary' key in result"
+        
+        print(f"   ✓ Dream processed {result['memories_processed']} memories")
+        print(f"   ✓ Found {len(result['patterns'])} patterns")
+        print(f"   ✓ Generated {len(result['insights'])} insights")
+        print(f"   ✓ Extracted {result['schemas']} schemas")
+        print(f"   ✓ Summary: {result['summary']}")
+        
+        # Test DreamEngine directly for deeper checks
+        from nima_core.cognition.dream_engine import DreamEngine
+        
+        engine = DreamEngine(data_dir=temp_dir, nima_core=nima)
+        summary = engine.get_summary()
+        assert isinstance(summary, dict), "get_summary should return dict"
+        assert "total_patterns" in summary, "Missing total_patterns in summary"
+        print(f"   ✓ Engine summary: {summary['total_patterns']} patterns, {summary['total_insights']} insights")
+        
+        print("   ✅ Dream Engine test passed")
+        
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
@@ -164,6 +224,7 @@ if __name__ == "__main__":
         test_binding_layer,
         test_experience_recall_roundtrip,
         test_introspect,
+        test_dream_engine,
     ]
     passed = 0
     

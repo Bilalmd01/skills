@@ -22,7 +22,8 @@ import numpy as np
 import torch
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import time as _time
 
 from .config.nima_config import NimaConfig, get_config, reload_config
 from .config import ZERO_NORM_THRESHOLD
@@ -51,6 +52,7 @@ class NimaCore:
         models_dir: Optional[str] = None,
         config: Optional[NimaConfig] = None,
         care_people: Optional[List[str]] = None,
+        important_people: Optional[Dict[str, float]] = None,
         traits: Optional[Dict[str, float]] = None,
         beliefs: Optional[List[str]] = None,
         auto_init: bool = True,
@@ -64,6 +66,9 @@ class NimaCore:
             models_dir: Where projection model lives (default: NIMA_MODELS_DIR env or ./models)
             config: NimaConfig override (or loads from env)
             care_people: Names that boost CARE affect (e.g. ["Alice", "Bob"])
+            important_people: Dict mapping names to importance weight multipliers
+                              e.g. {"Alice": 1.5, "Bob": 1.3} — these people's
+                              memories get higher priority in smart consolidation
             traits: Self-model traits dict (e.g. {"curious": 0.9})
             beliefs: Self-model beliefs list
             auto_init: Initialize all enabled components immediately
@@ -84,6 +89,7 @@ class NimaCore:
         
         # Identity parameters
         self.care_people = care_people or []
+        self.important_people = important_people or {}
         self.traits = traits or {}
         self.beliefs = beliefs or []
         
@@ -168,11 +174,15 @@ class NimaCore:
             
             # Store if should consolidate
             if processed.should_consolidate:
+                now = datetime.now()
                 self._store_memory({
                     "who": who,
                     "what": content,
                     "importance": importance,
                     "timestamp": datetime.now().isoformat(),
+                    "timestamp_ms": kwargs.get("timestamp_ms", int(now.timestamp() * 1000)),
+                    "timestamp_iso": kwargs.get("timestamp_iso", now.isoformat()),
+                    "when": kwargs.get("when", now.strftime("%Y-%m-%d %H:%M")),
                     "affect": processed.affect.get("dominant") if processed.affect else None,
                     "fe_score": processed.free_energy,
                     "fe_reason": processed.consolidation_reason,
@@ -181,11 +191,15 @@ class NimaCore:
         else:
             # No bridge — store everything above threshold
             if importance > 0.3:
+                now = datetime.now()
                 self._store_memory({
                     "who": who,
                     "what": content,
                     "importance": importance,
                     "timestamp": datetime.now().isoformat(),
+                    "timestamp_ms": kwargs.get("timestamp_ms", int(now.timestamp() * 1000)),
+                    "timestamp_iso": kwargs.get("timestamp_iso", now.isoformat()),
+                    "when": kwargs.get("when", now.strftime("%Y-%m-%d %H:%M")),
                 })
                 result["stored"] = True
         
@@ -195,35 +209,180 @@ class NimaCore:
         
         return result
     
-    def recall(self, query: str, top_k: int = 5) -> List[Dict]:
+    def recall(
+        self,
+        query: str,
+        top_k: int = 5,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+    ) -> List[Dict]:
         """
-        Search memories semantically.
+        Search memories semantically, optionally filtered by time range.
         
         Args:
             query: Search query text
             top_k: Number of results
+            since: Only memories after this datetime (ISO string or "24h"/"7d"/"30d")
+            until: Only memories before this datetime (ISO string)
         
         Returns:
             List of memory dicts sorted by relevance
         """
         try:
+            # Parse time filters
+            since_ms = self._parse_time_filter(since) if since else None
+            until_ms = self._parse_time_filter(until) if until else None
+            
             from .embeddings.embeddings import get_embedder
             embedder = get_embedder()
             
             query_vec = embedder.encode_single(query)
             if query_vec is None:
-                return self._text_search(query, top_k)
+                return self._text_search(query, top_k, since_ms=since_ms, until_ms=until_ms)
             
             # Try sparse retrieval first
             if self.config.sparse_retrieval:
-                return self._sparse_recall(query_vec, top_k)
+                results = self._sparse_recall(query_vec, top_k * 3 if since_ms or until_ms else top_k)
+            else:
+                results = self._dense_recall(query_vec, top_k * 3 if since_ms or until_ms else top_k)
             
-            # Fallback to brute force
-            return self._dense_recall(query_vec, top_k)
+            # Apply time filter
+            if since_ms or until_ms:
+                results = self._filter_by_time(results, since_ms, until_ms)
+            
+            return results[:top_k]
             
         except Exception as e:
             logger.warning(f"Recall failed: {e}")
-            return self._text_search(query, top_k)
+            return self._text_search(query, top_k, since_ms=since_ms if since else None, until_ms=until_ms if until else None)
+    
+    def temporal_recall(
+        self,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        who: Optional[str] = None,
+        top_k: int = 20,
+    ) -> List[Dict]:
+        """
+        Recall memories by time range (no semantic query needed).
+        
+        "What happened yesterday?" / "What did Alice say last week?"
+        
+        Args:
+            since: Start time (ISO string, or "1h"/"24h"/"7d"/"30d")
+            until: End time (ISO string, default: now)
+            who: Filter by person
+            top_k: Max results
+        
+        Returns:
+            List of memory dicts sorted by time (newest first)
+        """
+        since_ms = self._parse_time_filter(since) if since else 0
+        until_ms = self._parse_time_filter(until) if until else int(datetime.now().timestamp() * 1000)
+        
+        memories = self._load_memories()
+        
+        results = []
+        for mem in memories:
+            mem = self._ensure_temporal(mem)
+            ts = mem.get("timestamp_ms", 0)
+            
+            if ts < since_ms or ts > until_ms:
+                continue
+            if who and mem.get("who", "").lower() != who.lower():
+                continue
+            
+            results.append(mem)
+        
+        # Sort by time, newest first
+        results.sort(key=lambda m: m.get("timestamp_ms", 0), reverse=True)
+        return results[:top_k]
+    
+    @staticmethod
+    def _parse_time_filter(value: str) -> int:
+        """Parse a time filter string to epoch milliseconds.
+        
+        Supports:
+        - Relative: "1h", "24h", "7d", "30d", "1w", "3m"
+        - ISO: "2026-02-07", "2026-02-07T03:00:00"
+        - Epoch ms: "1770449401356"
+        
+        Returns:
+            Epoch milliseconds
+        """
+        if not value:
+            return 0
+        
+        value = value.strip()
+        
+        # Epoch ms (large number)
+        if value.isdigit() and len(value) > 10:
+            return int(value)
+        
+        # Relative time shortcuts
+        relative_map = {
+            "h": "hours", "d": "days", "w": "weeks", "m": "months"
+        }
+        if len(value) >= 2 and value[-1] in relative_map and value[:-1].isdigit():
+            amount = int(value[:-1])
+            unit = value[-1]
+            now = datetime.now()
+            if unit == "h":
+                dt = now - timedelta(hours=amount)
+            elif unit == "d":
+                dt = now - timedelta(days=amount)
+            elif unit == "w":
+                dt = now - timedelta(weeks=amount)
+            elif unit == "m":
+                dt = now - timedelta(days=amount * 30)  # Approximate
+            else:
+                dt = now
+            return int(dt.timestamp() * 1000)
+        
+        # ISO datetime
+        try:
+            dt = datetime.fromisoformat(value)
+            return int(dt.timestamp() * 1000)
+        except (ValueError, TypeError):
+            pass
+        
+        # Date only
+        try:
+            dt = datetime.strptime(value, "%Y-%m-%d")
+            return int(dt.timestamp() * 1000)
+        except (ValueError, TypeError):
+            pass
+        
+        logger.warning(f"Could not parse time filter: {value}")
+        return 0
+    
+    @staticmethod
+    def _filter_by_time(
+        memories: List[Dict],
+        since_ms: Optional[int] = None,
+        until_ms: Optional[int] = None,
+    ) -> List[Dict]:
+        """Filter memory list by time range."""
+        filtered = []
+        for mem in memories:
+            ts = mem.get("timestamp_ms", 0)
+            # Try to recover timestamp_ms if missing
+            if not ts:
+                raw_ts = mem.get("timestamp")
+                if isinstance(raw_ts, (int, float)) and raw_ts > 1e12:
+                    ts = int(raw_ts)
+                elif isinstance(raw_ts, str):
+                    try:
+                        ts = int(datetime.fromisoformat(raw_ts).timestamp() * 1000)
+                    except (ValueError, TypeError):
+                        pass
+            
+            if since_ms and ts < since_ms:
+                continue
+            if until_ms and ts > until_ms:
+                continue
+            filtered.append(mem)
+        return filtered
     
     def capture(
         self,
@@ -258,37 +417,42 @@ class NimaCore:
             logger.error(f"Capture failed: {e}")
             return False
     
-    def dream(self, hours: int = 24) -> Dict:
+    def dream(self, hours: int = 24, deep: bool = False) -> Dict:
         """
-        Run dream consolidation.
+        Run dream consolidation via the DreamEngine.
         
         Processes recent memories through:
-        1. Schema extraction (identify patterns)
-        2. FE-ranked replay (novel memories first)
-        3. Pattern & insight extraction
+        1. FE-ranked memory replay (novel first)
+        2. Pattern detection (emotion, participant, cross-domain)
+        3. Schema extraction (Hopfield-based)
+        4. Creative synthesis (cross-domain connections)
+        5. Insight generation ("aha moments")
         
         Args:
             hours: How many hours of memories to process
+            deep: If True, use tighter thresholds and more passes
         
         Returns:
-            Dict with consolidation results
+            Dict with consolidation results including patterns, insights, schemas
         """
         try:
-            from .cognition.schema_extractor import SchemaExtractor
+            from .cognition.dream_engine import DreamEngine
             from .config import NIMA_DATA_DIR
             
-            # Load memories
-            memories = self._load_memories()
-            if not memories:
-                return {"status": "no_memories", "schemas": 0}
-            
-            # Extract schemas
-            extractor = SchemaExtractor()
-            # This is simplified — full dream engine would do more
+            engine = DreamEngine(
+                data_dir=str(NIMA_DATA_DIR),
+                nima_core=self,
+            )
+            session = engine.dream(hours=hours, deep=deep)
             
             return {
                 "status": "complete",
-                "memories_processed": len(memories),
+                "memories_processed": session.memories_processed,
+                "patterns": engine.get_patterns(),
+                "insights": engine.get_insights(),
+                "schemas": session.schemas_extracted,
+                "summary": session.summary,
+                "duration_seconds": session.duration_seconds,
                 "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
@@ -334,6 +498,48 @@ class NimaCore:
     
     # ---- Private helpers ----
     
+    @staticmethod
+    def _ensure_temporal(memory: Dict) -> Dict:
+        """Ensure memory has full temporal metadata.
+        
+        Every memory gets:
+        - timestamp_ms: epoch milliseconds (for math/sorting)
+        - timestamp_iso: ISO 8601 string (for readability)
+        - when: human-readable relative/absolute time
+        """
+        now = datetime.now()
+        
+        # Set epoch ms
+        if "timestamp_ms" not in memory:
+            # Try to recover from existing fields
+            ts = memory.get("timestamp")
+            if isinstance(ts, (int, float)) and ts > 1e12:
+                memory["timestamp_ms"] = int(ts)
+            elif isinstance(ts, str) and ts.replace("-", "").replace(":", "").replace("T", "").replace(".", "")[:8].isdigit():
+                try:
+                    dt = datetime.fromisoformat(ts)
+                    memory["timestamp_ms"] = int(dt.timestamp() * 1000)
+                except (ValueError, TypeError):
+                    memory["timestamp_ms"] = int(now.timestamp() * 1000)
+            else:
+                memory["timestamp_ms"] = int(now.timestamp() * 1000)
+        
+        # Set ISO timestamp
+        if "timestamp_iso" not in memory:
+            dt = datetime.fromtimestamp(memory["timestamp_ms"] / 1000)
+            memory["timestamp_iso"] = dt.isoformat()
+        
+        # Set human-readable 'when'
+        if not memory.get("when") or memory["when"] == "None":
+            dt = datetime.fromtimestamp(memory["timestamp_ms"] / 1000)
+            memory["when"] = dt.strftime("%Y-%m-%d %H:%M")
+        
+        # Keep legacy 'timestamp' field for compatibility
+        if "timestamp" not in memory:
+            memory["timestamp"] = memory["timestamp_iso"]
+        
+        return memory
+
     def _store_memory(self, memory: Dict):
         """Store a memory to latest.pt (thread-safe)."""
         with self._lock:
@@ -350,6 +556,9 @@ class NimaCore:
                 existing_texts = {m.get("what", "")[:100] for m in metadata}
                 if memory.get("what", "")[:100] in existing_texts:
                     return
+                
+                # Ensure temporal metadata
+                memory = self._ensure_temporal(memory)
                 
                 metadata.append(memory)
                 data["state"]["metadata"] = metadata
@@ -374,9 +583,14 @@ class NimaCore:
                 logger.warning(f"Load failed: {e}")
                 return []
     
-    def _text_search(self, query: str, top_k: int) -> List[Dict]:
+    def _text_search(
+        self, query: str, top_k: int,
+        since_ms: Optional[int] = None, until_ms: Optional[int] = None,
+    ) -> List[Dict]:
         """Simple text-based search fallback."""
         memories = self._load_memories()
+        if since_ms or until_ms:
+            memories = self._filter_by_time(memories, since_ms, until_ms)
         query_lower = query.lower()
         scored = []
         for mem in memories:

@@ -130,14 +130,14 @@ class NimaV2Bridge:
                     logger.info("Binding layer initialized")
                 except Exception as e:
                     logger.warning(f"Binding layer failed: {e}")
-        
-        # Free Energy (from cognition, not nima_v2)
-        if self.config.consolidation_fe and HAS_FE:
-            try:
-                self._fe_consolidation = FreeEnergyConsolidation()
-                logger.info("FE consolidation initialized")
-            except Exception as e:
-                logger.warning(f"FE consolidation failed: {e}")
+            
+            # Free Energy (from cognition, not nima_v2)
+            if self.config.consolidation_fe and HAS_FE:
+                try:
+                    self._fe_consolidation = FreeEnergyConsolidation()
+                    logger.info("FE consolidation initialized")
+                except Exception as e:
+                    logger.warning(f"FE consolidation failed: {e}")
             
             # Schema Extractor
             if HAS_SCHEMA:

@@ -67,8 +67,10 @@ def main(argv=None) -> int:
         return 0 if status != "error" else 1
         
     except Exception as e:
-        error_data = {"error": str(e)}
-        print(json.dumps(error_data), file=sys.stderr)
+        if args.verbose:
+            print(json.dumps({"error": str(e)}), file=sys.stderr)
+        else:
+            print(f"Error: {e}", file=sys.stderr)
         return 1
 
 

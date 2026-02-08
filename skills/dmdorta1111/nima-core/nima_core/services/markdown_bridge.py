@@ -136,7 +136,18 @@ class MarkdownBridge:
         lines.append(f"*Auto-generated from NIMA memory store.*")
         
         content = "\n".join(lines)
-        output.write_text(content, encoding='utf-8')
+        # Atomic write: write to temp file then rename
+        import tempfile
+        tmp_fd, tmp_path = tempfile.mkstemp(
+            dir=str(output.parent), suffix='.tmp', prefix='.nima_export_'
+        )
+        try:
+            with os.fdopen(tmp_fd, 'w', encoding='utf-8') as f:
+                f.write(content)
+            Path(tmp_path).replace(output)
+        except Exception:
+            Path(tmp_path).unlink(missing_ok=True)
+            raise
         
         logger.info(f"Exported {len(memories)} memories to {output}")
         return len(memories)

@@ -20,10 +20,33 @@ pip install torch numpy sentence-transformers
 ```python
 from nima_core import NimaCore
 
-nima = NimaCore(name="MyBot")
-nima.experience("User asked about weather", who="user", importance=0.7)
-results = nima.recall("weather")
+nima = NimaCore(
+    name="MyBot",
+    important_people={"Alice": 1.5, "Bob": 1.3},  # These people's memories get priority
+)
+nima.experience("Alice asked about the project", who="Alice", importance=0.7)
+results = nima.recall("project")
 ```
+
+## Smart Consolidation
+
+Configure which people, emotions, and topics matter most:
+
+```python
+from nima_core.services.heartbeat import NimaHeartbeat, SmartConsolidation
+
+smart = SmartConsolidation(
+    important_people={"Alice": 1.5, "Bob": 1.3},  # Weight multipliers
+    emotion_words={"love", "excited", "proud", "worried"},  # Force-consolidate
+    importance_markers={"family", "milestone", "decision"},  # Force-consolidate
+    noise_patterns=["system exec", "heartbeat_ok"],  # Skip these
+)
+
+heartbeat = NimaHeartbeat(nima, message_source=my_source, smart_consolidation=smart)
+heartbeat.start_background()
+```
+
+Memories from important people get boosted. Emotional content is always kept. Noise is filtered out.
 
 ## Enable Components
 
