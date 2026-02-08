@@ -18,9 +18,12 @@ const DEFAULT_URL = 'https://ethermail.io/accounts/login';
 const DEFAULT_TIMEOUT = 30000;
 
 async function extractWalletConnectURI(url, timeout) {
+  // Note: Running without --no-sandbox for better security isolation
+  // If you encounter permission issues on Linux, consider running with proper user permissions
+  // rather than disabling sandbox
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    // Security: Sandbox enabled by default (removed --no-sandbox)
   });
   
   try {

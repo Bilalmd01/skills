@@ -1,11 +1,17 @@
 {
   "owner": "daaab",
   "slug": "ethermail",
-  "displayName": "EtherMail (Web3 Email)",
+  "displayName": "Ethermail",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770455351140,
-    "commit": "https://github.com/openclaw/skills/commit/b256bc1dce58c6a889b6b53e6c909692231a53ff"
+    "version": "1.1.0",
+    "publishedAt": 1770549900637,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770455351140,
+      "commit": "https://github.com/openclaw/skills/commit/b256bc1dce58c6a889b6b53e6c909692231a53ff"
+    }
+  ]
 }

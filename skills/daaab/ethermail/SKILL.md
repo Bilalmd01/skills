@@ -85,14 +85,22 @@ node scripts/extract-wc-uri.js
 
 #### Step 4: Connect with WalletConnect
 
-Using walletconnect-agent or your own connector:
+Use the `walletconnect-agent` skill (install from ClawdHub):
 
 ```bash
-# Background process - auto-signs login request
-node path/to/wc-connect.js "<WC_URI>" &
+# Install walletconnect-agent skill first
+clawdhub install walletconnect-agent
+
+# Then use its wc-connect.js script
+cd ~/clawd/skills/walletconnect-agent
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "<WC_URI>"
 ```
 
 The connector will automatically sign the `personal_sign` request, completing login.
+
+> ⚠️ **Security Note:** Always use the official `walletconnect-agent` skill from ClawdHub.
+> Do not use untrusted third-party WalletConnect scripts.
 
 #### Step 5: Access Inbox
 
@@ -152,6 +160,20 @@ node scripts/extract-wc-uri.js --url "https://ethermail.io/accounts/login"
 - Store credentials in environment variables or secure files
 - EtherMail only requires message signing (no transaction needed for login)
 - Use dedicated wallet for agent operations
+- Use official `walletconnect-agent` skill from ClawdHub for WalletConnect integration
+- Browser automation runs with Puppeteer sandbox enabled for security isolation
+
+---
+
+## Changelog
+
+### v1.1.0 (2026-02-08) - Security Update
+- 🔐 Removed `--no-sandbox` flag from Puppeteer for better security isolation
+- 📝 Clarified to use official `walletconnect-agent` skill from ClawdHub
+- 📝 Added supply chain security notes
+
+### v1.0.0
+- 🎉 Initial release
 
 ---
 
