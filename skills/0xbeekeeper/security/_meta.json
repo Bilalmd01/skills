@@ -1,0 +1,11 @@
+{
+  "owner": "0xbeekeeper",
+  "slug": "security",
+  "displayName": "Agentguard",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770528636501,
+    "commit": null
+  },
+  "history": []
+}
