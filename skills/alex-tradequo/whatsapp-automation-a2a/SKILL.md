@@ -53,6 +53,9 @@ Use this skill when you need to:
 
 ## Setup
 
+> **Free tier available** — 1 session, 50 messages/month, no credit card required.
+> Sign up at https://molt.waiflow.app/register
+
 Env vars:
 - `MOLTFLOW_API_KEY` (required) — API key from waiflow.app dashboard
 - `MOLTFLOW_API_URL` (optional) — defaults to `https://apiv2.waiflow.app`
@@ -113,6 +116,9 @@ curl -H "X-API-Key: $MOLTFLOW_API_KEY" \
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/messages/send` | POST | Send text message |
+| `/messages/send/poll` | POST | Send poll (question + options) |
+| `/messages/send/sticker` | POST | Send sticker (WebP URL or base64) |
+| `/messages/send/gif` | POST | Send GIF (MP4 URL or base64) |
 | `/messages/chats/{session_id}` | GET | List chats |
 | `/messages/chat/{session_id}/{chat_id}` | GET | Get messages in chat |
 | `/messages/{message_id}` | GET | Get single message |
@@ -146,9 +152,14 @@ curl -X PATCH -H "X-API-Key: $MOLTFLOW_API_KEY" \
 | `/groups` | GET | List monitored groups |
 | `/groups/available/{session_id}` | GET | List available WhatsApp groups |
 | `/groups` | POST | Add group to monitoring |
+| `/groups/create` | POST | Create new WhatsApp group |
 | `/groups/{id}` | GET | Get group details |
 | `/groups/{id}` | PATCH | Update monitoring settings |
 | `/groups/{id}` | DELETE | Remove from monitoring |
+| `/groups/{wa_group_id}/participants/add` | POST | Add members to group |
+| `/groups/{wa_group_id}/participants/remove` | POST | Remove members from group |
+| `/groups/{wa_group_id}/admin/promote` | POST | Promote to admin |
+| `/groups/{wa_group_id}/admin/demote` | POST | Demote from admin |
 
 ## 4. Labels
 
@@ -524,17 +535,131 @@ curl -H "Authorization: Bearer $TOKEN" \
 | `/usage/history` | GET | Historical usage |
 | `/usage/daily` | GET | Daily breakdown |
 | `/billing/plans` | GET | Available plans |
-| `/billing/subscription` | GET | Current subscription |
+| `/billing/subscription` | GET | Subscription details (plan info, usage, next invoice) |
 | `/billing/checkout` | POST | Stripe checkout session |
 | `/billing/portal` | GET | Stripe billing portal |
 | `/billing/cancel` | POST | Cancel subscription |
 
 ---
 
+## Comparison with Other Skills
+
+> MoltFlow isn't a messaging wrapper — it's a complete WhatsApp business automation platform. Here's how it stacks up.
+
+### Messaging
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| Send text | ✅ | ✅ | ✅ | ❌ |
+| Send media (image, audio) | ✅ | ✅ | ✅ | ❌ |
+| Polls | ✅ | ✅ | ❌ | ❌ |
+| Stickers (URL + base64) | ✅ | ✅ | ❌ | ❌ |
+| Voice notes | ✅ | ✅ | ❌ | ❌ |
+| GIFs (URL + base64) | ✅ | ✅ | ❌ | ❌ |
+| Reactions | ✅ | ✅ | ❌ | ❌ |
+| Reply / Quote | ✅ | ✅ | ❌ | ❌ |
+| Edit messages | ✅ | ✅ | ❌ | ❌ |
+| Unsend messages | ✅ | ✅ | ❌ | ❌ |
+| Send location | ✅ | ❌ | ❌ | ❌ |
+| Send vCards (contact cards) | ✅ | ❌ | ❌ | ❌ |
+| Star / unstar messages | ✅ | ❌ | ❌ | ❌ |
+| Read receipts control | ✅ | ❌ | ❌ | ❌ |
+| Typing simulation (anti-ban) | ✅ | ❌ | ❌ | ❌ |
+| Presence management | ✅ | ❌ | ❌ | ❌ |
+| Receive messages | ✅ | ✅ | ✅ | ✅ |
+| Two-way chat | ✅ | ✅ | ❌ | ❌ |
+
+### Groups
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| List groups | ✅ | ✅ | ❌ | ❌ |
+| Create group | ✅ | ✅ | ❌ | ❌ |
+| Add / remove members | ✅ | ✅ (full) | ❌ | ❌ |
+| Promote / demote admin | ✅ | ✅ | ❌ | ❌ |
+| Smart monitoring (keywords, mentions) | ✅ | ❌ | ❌ | ❌ |
+| Group lead auto-detection | ✅ | ❌ | ❌ | ❌ |
+| Group auto-respond | ✅ | ❌ | ❌ | ❌ |
+| Per-group AI prompts | ✅ | ❌ | ❌ | ❌ |
+
+### CRM & Lead Management
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| Contact management | ✅ | ❌ | ❌ | ❌ |
+| Lead pipeline & scoring | ✅ | ❌ | ❌ | ❌ |
+| Lead auto-detection | ✅ | ❌ | ❌ | ❌ |
+| Label system (WA Business sync) | ✅ | ❌ | ❌ | ❌ |
+| Team assignment | ✅ | ❌ | ❌ | ❌ |
+
+### AI & Intelligence
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| AI reply suggestions | ✅ | ❌ | ❌ | ❌ |
+| Style cloning (Learn Mode) | ✅ | ❌ | ❌ | ❌ |
+| Knowledge base (RAG) | ✅ | ❌ | ❌ | ❌ |
+| Voice transcription (Whisper) | ✅ | ❌ | ❌ | ❌ |
+| AI auto-labeling | ✅ | ❌ | ❌ | ❌ |
+| AI auto-responses | ✅ | ❌ | ❌ | ❌ |
+| AI prompt templates | ✅ | ❌ | ❌ | ❌ |
+
+### Analytics & Reporting
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| Message statistics | ✅ | ❌ | ❌ | ❌ |
+| Engagement insights | ✅ | ❌ | ❌ | ❌ |
+| Lead pipeline analytics | ✅ | ❌ | ❌ | ❌ |
+| Executive briefing | ✅ | ❌ | ❌ | ❌ |
+| Team activity & workload | ✅ | ❌ | ❌ | ❌ |
+
+### Compliance & Security
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| Anti-spam engine (human-like typing) | ✅ | ❌ | ❌ | ❌ |
+| GDPR audit logging | ✅ | ❌ | ❌ | ❌ |
+| Content filtering (PII, secrets, injection) | ✅ | ❌ | ❌ | ❌ |
+| Consent tracking | ✅ | ❌ | ❌ | ❌ |
+| Tiered rate limiting | ✅ | ❌ | ❌ | ❌ |
+
+### Review Collection
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| Auto review collection | ✅ | ❌ | ❌ | ❌ |
+| Sentiment analysis (14+ languages) | ✅ | ❌ | ❌ | ❌ |
+| Testimonial export (JSON / HTML) | ✅ | ❌ | ❌ | ❌ |
+
+### Platform & Infrastructure
+
+| Feature | **MoltFlow** | whatsapp-ultimate | wacli | whatsapp-automation |
+|---------|:-------:|:-----------------:|:-----:|:-------------------:|
+| Multi-session (up to 10 numbers) | ✅ | ❌ | ❌ | ❌ |
+| Webhooks (30+ event types) | ✅ | ❌ | ❌ | ❌ |
+| Real-time SSE events | ✅ | ❌ | ❌ | ❌ |
+| API key management | ✅ | ❌ | ❌ | ❌ |
+| Multi-tenant architecture | ✅ | ❌ | ❌ | ❌ |
+| A2A protocol (E2E encrypted) | ✅ | ❌ | ❌ | ❌ |
+| Web dashboard | ✅ | ❌ | ❌ | ❌ |
+| Stripe billing | ✅ | ❌ | ❌ | ❌ |
+
+### Summary
+
+| | **MoltFlow** | **whatsapp-ultimate** | **wacli** | **whatsapp-automation** |
+|---|---|---|---|---|
+| **Messaging** | 18 / 18 | 14 / 18 | 3 / 18 | 1 / 18 |
+| **Business features** | 40+ | 0 | 0 | 0 |
+| **Total** | **58+** | **~15** | **~3** | **~1** |
+| **External deps** | Docker + WAHA | None | Go binary | Docker + WAHA |
+
+---
+
 ## Notes
 
 - All messages include anti-spam compliance (typing indicators, random delays)
-- Rate limits by plan: Free 10/min, Starter 60/min, Pro 300/min, Business 1000/min
+- Rate limits by plan: Free 10/min, Starter 20/min, Pro 40/min, Business 60/min
 - Sessions require QR code pairing on first connect
 - Use E.164 phone format without `+` where required
 - AI features require Pro plan or above
