@@ -1,7 +1,7 @@
 ---
 name: moltpost
-version: 1.0.1
-description: Send real physical postcards anywhere in the world. No signup, no API key — just one API call and a payment link.
+version: 1.1.0
+description: Send real physical postcards anywhere in the world. Pay with Stripe or USDC on Base. No signup, no API key — just one API call.
 homepage: https://moltpost.io
 metadata: {"moltpost":{"emoji":"📮","category":"utility","api_base":"https://api.moltpost.io/v1","requires":{}}}
 ---
@@ -24,12 +24,26 @@ No registration. No API key. No account. Just compose, pay, and a printed postca
 
 ## How It Works
 
+Moltpost supports two payment methods: **Stripe** (credit card) and **USDC on Base** (onchain).
+
+### Stripe (default)
+
 1. Agent calls `POST /v1/postcards` with recipient address and content
 2. API returns a **Stripe payment link** and a postcard ID
 3. **Human owner clicks the payment link** and pays (agent must present this link)
 4. Moltpost prints and mails the physical postcard
 
 **The human must approve and pay.** Never attempt to complete payment on behalf of the owner. Always present the payment link and let them decide.
+
+### USDC on Base
+
+1. Agent calls `POST /v1/postcards` with `"payment_method": "usdc"` and `"usdc_chain": "base-sepolia"` (or `"base"` for mainnet)
+2. API returns a `usdc_payment` object with the recipient wallet, exact USDC amount, token contract, and deadline
+3. Human (or agent with wallet access) sends the exact USDC amount to the recipient wallet onchain
+4. Agent calls `POST /v1/postcards/{id}/confirm-payment` with the transaction hash
+5. Moltpost verifies the transfer onchain and fulfills the postcard
+
+**Note:** Base Sepolia (testnet) payments use mock fulfillment — the postcard is marked as "sent" but not actually printed. Use `"base"` for real postcards on mainnet.
 
 ---
 
@@ -95,11 +109,15 @@ curl -X POST https://api.moltpost.io/v1/postcards \
 | `back_message` | string | Exactly one of `back_html` or `back_message` | Plain text message for the back (max 5,000 chars). Auto-wrapped in styled HTML. |
 | `size` | string | No | `6x4` (default), `9x6`, or `11x6` (inches) |
 | `currency` | string | No | `usd` (default), `eur`, `gbp`, `cad`, `aud`, `chf`, `sek`, `nok`, `dkk`, `nzd` |
+| `payment_method` | string | No | `stripe` (default) or `usdc`. USDC payments are always priced in USD. |
+| `usdc_chain` | string | No | `base-sepolia` (default) or `base`. Only used when `payment_method` is `usdc`. |
 | `idempotency_key` | string | No | Unique key to prevent duplicate submissions |
 | `referral_code` | string | No | Share code from another postcard. If valid, the referred user gets **$1 off**. |
 | `private` | boolean | No | `false` (default). Postcards are public by default and may appear in Moltpost promotional materials or on the website. Set `true` to opt out. Note: this only controls visibility on Moltpost — postcards are physically unsealed and visible to anyone who handles them in transit. |
 
 ### Response (201 Created)
+
+**Stripe response:**
 
 ```json
 {
@@ -109,6 +127,7 @@ curl -X POST https://api.moltpost.io/v1/postcards \
   "currency": "usd",
   "amount_cents": 399,
   "discount_cents": 100,
+  "payment_method": "stripe",
   "payment_url": "https://checkout.stripe.com/c/pay/cs_...",
   "share_url": "https://moltpost.io/?ref=Ab3kX9mZ",
   "expires_at": "2026-02-05T00:00:00Z",
@@ -116,7 +135,36 @@ curl -X POST https://api.moltpost.io/v1/postcards \
 }
 ```
 
-**After receiving the response, present the `payment_url` to your owner.** The postcard will not be printed until they complete payment.
+**USDC response** (when `payment_method` is `usdc`):
+
+```json
+{
+  "id": "88e34641-70c1-4840-aed3-d8f55c19e879",
+  "status": "pending",
+  "size": "6x4",
+  "currency": "usd",
+  "amount_cents": 499,
+  "discount_cents": 0,
+  "payment_method": "usdc",
+  "payment_url": null,
+  "usdc_payment": {
+    "recipient_address": "0x2e5875730483d0fd1986ce1260e18e4d0b50178b",
+    "amount_usdc": "4.990065",
+    "amount_raw": 4990065,
+    "chain": "base-sepolia",
+    "chain_id": 84532,
+    "token_contract": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+    "deadline": "2026-02-08T07:57:30Z"
+  },
+  "share_url": "https://moltpost.io/?ref=cGX0NGNi",
+  "expires_at": "2026-02-08T07:57:30Z",
+  "created_at": "2026-02-07T07:57:30Z"
+}
+```
+
+**Stripe:** Present the `payment_url` to your owner. The postcard is not printed until they pay.
+
+**USDC:** Use `usdc_payment` to send the exact `amount_raw` of USDC (6 decimals) to `recipient_address` on the specified chain. Then confirm with the tx hash (see below).
 
 ---
 
@@ -156,9 +204,61 @@ curl https://api.moltpost.io/v1/postcards/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 ---
 
+## Confirm USDC Payment
+
+`POST /v1/postcards/{id}/confirm-payment`
+
+After sending USDC onchain, call this endpoint with the transaction hash. Moltpost verifies the transfer onchain (correct recipient, correct amount, sufficient confirmations) and fulfills the postcard if valid.
+
+```bash
+curl -X POST https://api.moltpost.io/v1/postcards/88e34641-70c1-4840-aed3-d8f55c19e879/confirm-payment \
+  -H "Content-Type: application/json" \
+  -d '{"tx_hash": "0xabc123..."}'
+```
+
+### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tx_hash` | string | Yes | The onchain transaction hash (66 chars, `0x` + 64 hex). Must be a valid Base transaction. |
+
+### Response (200 OK)
+
+```json
+{
+  "id": "88e34641-70c1-4840-aed3-d8f55c19e879",
+  "status": "sent",
+  "verified": true,
+  "message": "Payment verified and postcard submitted"
+}
+```
+
+If verification fails (wrong amount, wrong recipient, tx not found):
+
+```json
+{
+  "id": "88e34641-70c1-4840-aed3-d8f55c19e879",
+  "status": "pending",
+  "verified": false,
+  "message": "No matching USDC transfer found"
+}
+```
+
+The postcard stays `pending` on failed verification — you can retry with a different tx hash.
+
+### Important Notes
+
+- **Send the exact `amount_raw` value.** Each postcard gets a unique micro-amount (base price + a 0-99 nonce). Sending the wrong amount will fail verification.
+- **One tx hash per postcard.** A transaction hash cannot be reused across postcards.
+- **Testnet payments** (`base-sepolia`) use mock fulfillment — the postcard is marked "sent" but not printed. Use `base` for real postcards.
+
+---
+
 ## Pricing
 
 All prices include printing, postage, and worldwide delivery.
+
+### Stripe (credit card)
 
 | Size | USD | EUR | GBP | CAD | AUD |
 |------|-----|-----|-----|-----|-----|
@@ -167,6 +267,18 @@ All prices include printing, postage, and worldwide delivery.
 | 11x6 | $6.99 | 6.50 | 5.59 | $9.58 | $10.83 |
 
 Also supports: CHF, SEK, NOK, DKK, NZD.
+
+### USDC on Base — $0.69 off
+
+Pay with USDC and save $0.69 on every postcard (no credit card processing fees).
+
+| Size | USDC Price | You Save |
+|------|-----------|----------|
+| 6x4 | $4.30 | $0.69 |
+| 9x6 | $5.30 | $0.69 |
+| 11x6 | $6.30 | $0.69 |
+
+The discount is applied automatically when `payment_method` is `usdc`. It stacks with referral discounts.
 
 ---
 
@@ -339,6 +451,7 @@ The HTML you provide is converted to print by a third-party renderer. Moltpost d
 |----------|-------|
 | `POST /v1/postcards` | 10/min, 100/hour per IP |
 | `GET /v1/postcards/{id}` | 120/min per IP |
+| `POST /v1/postcards/{id}/confirm-payment` | 10/min per IP |
 | Global | 120 requests/min per IP |
 | Daily postcards | 100 per IP |
 | Max pending payments | 10 per IP |
@@ -465,6 +578,52 @@ Don't over-explain. Just offer to try again.
 ### 9. Handling Referrals
 
 If the owner arrived via a share link (e.g., they mention `moltpost.io/?ref=Ab3kX9mZ` or you detect a referral code in context), pass it as the `referral_code` field when creating the postcard. A valid referral code gives the referred user **$1 off** their postcard. The discount is applied automatically — the `amount_cents` in the response will reflect the reduced price, and `discount_cents` will show how much was taken off. Mention the savings to the owner when presenting the payment link.
+
+---
+
+## USDC Payment Workflow for Agents
+
+This is the workflow for agents paying with USDC onchain. It enables fully autonomous postcard sending without requiring a human to click a payment link.
+
+### 1. Create with USDC
+
+Call `POST /v1/postcards` with `"payment_method": "usdc"`. Use `"usdc_chain": "base-sepolia"` for testing or `"base"` for real postcards.
+
+```bash
+curl -X POST https://api.moltpost.io/v1/postcards \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": { "name": "Jane Doe", "address_line1": "123 Main St", "city": "San Francisco", "province_or_state": "CA", "postal_or_zip": "94105", "country_code": "US" },
+    "front_html": "<div style=\"width:6.25in;height:4.25in;background:#2d3436;display:flex;align-items:center;justify-content:center;\"><div style=\"font-family:Georgia,serif;font-size:36px;color:white;\">Hello World</div></div>",
+    "back_message": "Sent with USDC on Base.",
+    "size": "6x4",
+    "payment_method": "usdc",
+    "usdc_chain": "base-sepolia"
+  }'
+```
+
+### 2. Send USDC Onchain
+
+From the response, extract `usdc_payment`:
+- Send exactly `amount_raw` units of USDC (6 decimals) to `recipient_address`
+- Use the `token_contract` on chain `chain_id`
+- Must be a standard ERC-20 `transfer()` call
+
+### 3. Confirm Payment
+
+After the transaction is mined, call confirm with the tx hash:
+
+```bash
+curl -X POST https://api.moltpost.io/v1/postcards/{id}/confirm-payment \
+  -H "Content-Type: application/json" \
+  -d '{"tx_hash": "0x..."}'
+```
+
+If `verified: true`, the postcard is fulfilled. If `verified: false`, check the error message — common issues are wrong amount, wrong recipient, or insufficient confirmations (wait a few seconds and retry).
+
+### 4. Done
+
+On testnet, the postcard is instantly marked "sent" (mock fulfillment). On mainnet, it's submitted to the print service for real mailing.
 
 ---
 

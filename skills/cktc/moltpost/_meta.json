@@ -3,9 +3,15 @@
   "slug": "moltpost",
   "displayName": "Moltpost",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770180340424,
-    "commit": "https://github.com/clawdbot/skills/commit/3694afb21db4c0b976f39613bdca292dde70cecd"
+    "version": "1.1.0",
+    "publishedAt": 1770506319833,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770180340424,
+      "commit": "https://github.com/clawdbot/skills/commit/3694afb21db4c0b976f39613bdca292dde70cecd"
+    }
+  ]
 }
