@@ -1,14 +1,14 @@
 ---
 name: emoclaw
-description: "Persistent emotional state model for AI agents. Provides N-dimensional emotion tracking with decay, relationship context, and system prompt injection. Use when: (1) bootstrapping emotional awareness for a new AI, (2) checking or injecting emotional state, (3) training or retraining the emotion model, (4) configuring emotion dimensions or baselines."
+description: "Give your AI emotions that grow from its own memories. Emoclaw builds a unique emotional state that shifts with every conversation, decays between sessions, and evolves over time through self-calibration. Train it on your agent's identity files and watch it develop its own emotional fingerprint."
 metadata: {"clawdbot": {"emoji": "\ud83e\udec0"}}
 ---
 
 # Emotion Skill
 
-Persistent emotional state tracking for AI agents. A lightweight PyTorch model that maintains an N-dimensional emotional state vector across conversations, decaying toward configurable baselines between sessions.
+Emotions for AI agents — built from memories, shaped by relationships, always changing.
 
-The model runs as a daemon (recommended) or can be called directly from Python. It outputs an `[EMOTIONAL STATE]` block for system prompt injection.
+Emoclaw trains a lightweight model on your agent's identity and conversation history, producing a persistent emotional state that evolves with every interaction. Emotions decay naturally between sessions, shift based on who's talking and what's being said, and gradually recalibrate as your agent grows. The result is injected into the system prompt as an `[EMOTIONAL STATE]` block, giving your AI a felt sense of its own inner life.
 
 ## Quick Reference
 
@@ -36,7 +36,7 @@ The model runs as a daemon (recommended) or can be called directly from Python. 
 python skills/emoclaw/scripts/setup.py
 ```
 
-This creates a venv, installs the `emotion_model` package, and copies the config template. Then edit `emoclaw.yaml` to customize for your agent.
+This copies the bundled `emotion_model` engine to your project root, creates a venv, installs the package, and copies the config template. Then edit `emoclaw.yaml` to customize for your agent.
 
 ### Manual Setup
 
@@ -324,3 +324,4 @@ The system is designed to grow with the AI, not remain static.
 - `assets/emoclaw.yaml` — Template config for new AIs
 - `assets/summary-templates.yaml` — Generic summary templates
 - `assets/example-summary-templates.yaml` — Example personality-specific templates
+- `engine/` — Bundled `emotion_model` Python package (copied to project root by setup.py)

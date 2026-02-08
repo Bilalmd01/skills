@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""First-time setup for the emotion skill.
+"""First-time setup for the emoclaw skill.
 
-Creates a venv, installs the emotion_model package, and copies the
-config template to the project root.
+Copies the bundled emotion_model engine to the project root,
+creates a venv, installs it, and copies the config template.
 
 Usage:
     python skills/emoclaw/scripts/setup.py
@@ -20,6 +20,11 @@ SCRIPT_DIR = Path(__file__).parent
 SKILL_DIR = SCRIPT_DIR.parent
 REPO_ROOT = SKILL_DIR.parent.parent
 
+# Bundled engine lives inside the skill
+BUNDLED_ENGINE = SKILL_DIR / "engine" / "emotion_model"
+BUNDLED_PYPROJECT = SKILL_DIR / "engine" / "pyproject.toml"
+
+# Destination at project root
 PACKAGE_DIR = REPO_ROOT / "emotion_model"
 VENV_DIR = PACKAGE_DIR / ".venv"
 CONFIG_TEMPLATE = SKILL_DIR / "assets" / "emoclaw.yaml"
@@ -29,24 +34,30 @@ CONFIG_DEST = REPO_ROOT / "emoclaw.yaml"
 def main() -> None:
     skip_config = "--no-config" in sys.argv
 
-    print("Emotion Skill Setup")
-    print(f"  Repo root: {REPO_ROOT}")
-    print(f"  Package:   {PACKAGE_DIR}")
+    print("Emoclaw Setup")
+    print(f"  Skill dir:  {SKILL_DIR}")
+    print(f"  Repo root:  {REPO_ROOT}")
     print()
 
-    # --- Check that emotion_model package exists ---
-    pyproject = PACKAGE_DIR / "pyproject.toml"
-    if not pyproject.exists():
+    # --- Copy bundled engine to project root ---
+    if PACKAGE_DIR.exists() and (PACKAGE_DIR / "config.py").exists():
+        print(f"  Engine already exists at {PACKAGE_DIR.relative_to(REPO_ROOT)}")
+    elif BUNDLED_ENGINE.exists():
+        print(f"  Copying bundled engine to {PACKAGE_DIR.relative_to(REPO_ROOT)}...")
+        shutil.copytree(BUNDLED_ENGINE, PACKAGE_DIR, dirs_exist_ok=True)
+        # Copy pyproject.toml to parent of emotion_model/ (the engine root)
+        if BUNDLED_PYPROJECT.exists():
+            shutil.copy2(BUNDLED_PYPROJECT, PACKAGE_DIR / "pyproject.toml")
+        print("  Engine installed.")
+    else:
         print(
-            "ERROR: emotion_model package not found.\n"
+            "ERROR: No bundled engine found and no existing engine at project root.\n"
             "\n"
-            "The emotion skill requires the emotion_model Python package\n"
-            "at the project root. Expected to find:\n"
-            f"  {pyproject}\n"
+            "Expected bundled engine at:\n"
+            f"  {BUNDLED_ENGINE}\n"
             "\n"
-            "If you installed via ClawdHub, you also need to clone or copy\n"
-            "the emotion_model package into your project root.\n"
-            "See SKILL.md for details."
+            "This may indicate a corrupted skill package.\n"
+            "Re-install via: clawdhub install emoclaw"
         )
         sys.exit(1)
 
@@ -66,7 +77,7 @@ def main() -> None:
     if not pip.exists():
         pip = VENV_DIR / "Scripts" / "pip.exe"  # Windows fallback
 
-    print(f"  Installing emotion_model package (editable)...")
+    print("  Installing emotion_model package (editable)...")
     result = subprocess.run(
         [str(pip), "install", "-e", str(PACKAGE_DIR)],
         capture_output=True,
@@ -102,7 +113,7 @@ def main() -> None:
     print("Next steps:")
     print(f"  1. Edit {CONFIG_DEST.relative_to(REPO_ROOT)} to customize for your agent")
     print("  2. Run the bootstrap pipeline:")
-    print("     python scripts/bootstrap.py")
+    print("     python skills/emoclaw/scripts/bootstrap.py")
     print("  3. Or extract + label + train manually (see SKILL.md)")
     print()
     print("To activate the venv manually:")
