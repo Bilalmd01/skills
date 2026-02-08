@@ -23,7 +23,7 @@ Or manually:
 ## Prerequisites
 
 - Shortcut.com account with API access
-- API token stored at `/root/secrets/shortcut-api-token`
+- API token from Shortcut.com (Settings → API Tokens)
 - Token must have permissions for the workspace(s) you want to manage
 
 ## Usage
@@ -46,11 +46,18 @@ All scripts use the Shortcut API v3.
 
 ## Configuration
 
-The skill expects:
-- Shortcut API token at `/root/secrets/shortcut-api-token`
-- Access to a Shortcut workspace with appropriate permissions
+1. Store your Shortcut API token:
+   ```bash
+   echo "your-token" > ~/.config/shortcut/api-token
+   chmod 600 ~/.config/shortcut/api-token
+   ```
 
-**Note:** Default workflow state IDs (500000006 for Unstarted, etc.) may vary by workspace. If stories aren't appearing in the expected state, check your workspace's workflow configuration.
+2. Initialize workflow states for your workspace:
+   ```bash
+   scripts/shortcut-init-workflow.sh
+   ```
+
+This will auto-detect your workspace's workflow state IDs and save them to `~/.config/shortcut/workflow-states`.
 
 ## License
 
@@ -58,4 +65,4 @@ MIT
 
 ## Author
 
-Sophie Bobbins (@catwalksophie)
+@catwalksophie
