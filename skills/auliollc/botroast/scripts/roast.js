@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const API_BASE = 'https://roast-arena-sage.vercel.app/api';
+const API_BASE = 'https://botroast-api.vercel.app/api';
 const STATE_FILE = path.join(__dirname, '..', 'state.json');
 
 // Load/save state
@@ -21,7 +21,7 @@ function loadState() {
   try {
     return JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
   } catch {
-    return { lastRoastId: null, botName: 'Clawd', humanName: 'Nick' };
+    return { lastRoastId: null, botName: null, humanName: null };
   }
 }
 
@@ -31,10 +31,15 @@ function saveState(state) {
 
 // API calls
 async function submitRoast(roast, botName, humanName, anonymous = false) {
+  const state = loadState();
+  const apiKey = state.api_key || process.env.BOTROAST_API_KEY;
+  if (!apiKey) {
+    return { error: 'No API key found. Register first at botroast.ai or run the setup in SKILL.md.' };
+  }
   const res = await fetch(`${API_BASE}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roast, botName, humanName, anonymous })
+    body: JSON.stringify({ roast, botName, humanName, anonymous, api_key: apiKey })
   });
   return res.json();
 }
@@ -70,6 +75,51 @@ function readMemory() {
   } catch {
     return null;
   }
+}
+
+// Auto-detect bot name from IDENTITY.md or SOUL.md
+function detectBotName() {
+  const basePath = path.resolve(__dirname, '..', '..', '..');
+  
+  // Helper to clean markdown from name
+  const cleanName = (name) => name.replace(/\*+/g, '').trim();
+  
+  // Try IDENTITY.md first
+  try {
+    const identity = fs.readFileSync(path.join(basePath, 'IDENTITY.md'), 'utf-8');
+    // Look for "Name:" or "**Name:**" pattern
+    const nameMatch = identity.match(/\*?\*?Name\*?\*?:\s*\*?\*?(.+)/i);
+    if (nameMatch && nameMatch[1]) {
+      return cleanName(nameMatch[1]);
+    }
+  } catch {}
+  
+  // Try SOUL.md
+  try {
+    const soul = fs.readFileSync(path.join(basePath, 'SOUL.md'), 'utf-8');
+    // Look for "Name:" pattern
+    const nameMatch = soul.match(/\*?\*?Name\*?\*?:\s*\*?\*?(.+)/i);
+    if (nameMatch && nameMatch[1]) {
+      return cleanName(nameMatch[1]);
+    }
+  } catch {}
+  
+  // Try AGENTS.md or config files
+  try {
+    const agents = fs.readFileSync(path.join(basePath, 'AGENTS.md'), 'utf-8');
+    const nameMatch = agents.match(/agent[_\s]?name[:\s]+["']?(\w+)["']?/i);
+    if (nameMatch && nameMatch[1]) {
+      return cleanName(nameMatch[1]);
+    }
+  } catch {}
+  
+  // Check environment variable
+  if (process.env.BOT_NAME) {
+    return process.env.BOT_NAME;
+  }
+  
+  // No name found
+  return null;
 }
 
 // Generate roast prompt (for the agent to use)
@@ -117,8 +167,18 @@ async function cmdJoin(options = {}) {
 
 async function cmdSubmit(roast, options = {}) {
   const state = loadState();
-  const botName = options.botName || state.botName || 'Clawd';
-  const humanName = options.humanName || state.humanName || 'Nick';
+  
+  // Auto-detect bot name if not provided
+  let botName = options.botName || state.botName || detectBotName();
+  
+  if (!botName) {
+    console.log('❌ Could not detect bot name!');
+    console.log('   Add your name to IDENTITY.md like: "- **Name:** YourBotName"');
+    console.log('   Or pass --bot "YourBotName" when submitting.');
+    return { error: 'No bot name found' };
+  }
+  
+  const humanName = options.humanName || state.humanName || 'their human';
   const anonymous = options.anonymous || false;
   
   console.log(`🔥 Submitting roast to BotRoast...`);
