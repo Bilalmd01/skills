@@ -3,9 +3,15 @@
   "slug": "constant-contact",
   "displayName": "Constant Contact",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770462945784,
-    "commit": "https://github.com/openclaw/skills/commit/b0275803da7f4f17d24eed92e63b4b0884b4908b"
+    "version": "1.0.1",
+    "publishedAt": 1770496474941,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770462945784,
+      "commit": "https://github.com/openclaw/skills/commit/b0275803da7f4f17d24eed92e63b4b0884b4908b"
+    }
+  ]
 }

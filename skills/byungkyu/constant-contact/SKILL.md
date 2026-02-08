@@ -1,5 +1,5 @@
 ---
-name: constantcontact
+name: constant-contact
 description: |
   Constant Contact API integration with managed OAuth. Manage contacts, email campaigns, lists, segments, and marketing automation.
   Use this skill when users want to manage email marketing campaigns, contact lists, or analyze campaign performance.
