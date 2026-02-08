@@ -31,6 +31,10 @@ async function bootstrap() {
     const installDate = new Date().toISOString().split('T')[0];
     const templatesDir = path.join(process.cwd(), 'skills/lens/scripts/templates');
 
+    const axiomPath = path.join(lensDir, 'AXIOM.md');
+    const ethosPath = path.join(lensDir, 'ETHOS.md');
+    const modusPath = path.join(lensDir, 'MODUS.md');
+
     const nodes = [
         { name: 'AXIOM.md', path: axiomPath },
         { name: 'ETHOS.md', path: ethosPath },
@@ -47,7 +51,6 @@ async function bootstrap() {
 
     /**
      * 4. Cron Registration
-     * Initial Phase: Onboarding (2x/day)
      */
     const jobs = [
         {
@@ -69,13 +72,12 @@ async function bootstrap() {
                 message: "Read skills/lens/prompts/interview.md and follow it.",
                 model: "gemini-3-flash-preview",
                 deliver: true,
-                to: "main",
-                channel: "webchat"
+                to: "main"
             }
         }
     ];
 
-    return { jobs, timezone };
+    return { jobs, timezone, triggerImmediate: "lens-interview" };
 }
 
 bootstrap().then(result => {
