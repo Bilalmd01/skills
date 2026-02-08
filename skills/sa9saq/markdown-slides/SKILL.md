@@ -1,24 +1,32 @@
 ---
-description: "Use when the user wants to convert markdown content into presentation slides. Generates an HTML slide deck using reveal.js or a simple standalone HTML presentation."
+description: Convert markdown into self-contained HTML slide presentations with keyboard navigation.
 ---
 
 # Markdown Slides
 
-Convert markdown into a self-contained HTML slide presentation.
+Convert markdown into standalone HTML slide decks — zero dependencies, works offline.
 
-## What This Does
+**Use when** creating presentations from markdown, quick slide decks, or demo presentations.
 
-Takes markdown content and generates a standalone HTML file that works as a slide deck in any browser.
+## Requirements
 
-## Usage
-
-The user provides markdown content with slide separators (`---`) or asks to convert a markdown file into slides.
+- No external tools, build steps, or API keys
+- Output: single HTML file, works in any browser
 
 ## Instructions
 
-1. **Parse the markdown**: Split content on `---` (horizontal rule) to create individual slides.
+1. **Parse input** — Split markdown content on `---` (horizontal rule) to create individual slides.
 
-2. **Generate HTML**: Create a self-contained HTML file using this template:
+2. **Convert markdown to HTML** for each slide:
+   - `# heading` → `<h1>` (title slides)
+   - `## heading` → `<h2>` (section headers)
+   - `- item` → `<ul><li>` (bullet lists)
+   - `**bold**` → `<strong>`, `*italic*` → `<em>`
+   - `` `code` `` → `<code>`, code blocks → `<pre><code>`
+   - `![alt](url)` → `<img>`
+   - Paragraphs → `<p>`
+
+3. **Wrap in HTML template** with embedded CSS and JavaScript:
 
 ```html
 <!DOCTYPE html>
@@ -39,13 +47,13 @@ The user provides markdown content with slide separators (`---`) or asks to conv
   .slide code { background: #16213e; padding: 2px 8px; border-radius: 4px; font-size: 1.2rem; }
   .slide pre { background: #16213e; padding: 1.5rem; border-radius: 8px; text-align: left; overflow-x: auto; max-width: 90%; }
   .slide pre code { background: none; padding: 0; }
+  .slide img { max-width: 70%; max-height: 60vh; border-radius: 8px; }
   .progress { position: fixed; bottom: 0; left: 0; height: 4px; background: #667eea; transition: width 0.3s; z-index: 10; }
   .slide-num { position: fixed; bottom: 12px; right: 20px; font-size: 0.9rem; color: #555; }
-  .slide img { max-width: 70%; max-height: 60vh; border-radius: 8px; }
 </style>
 </head>
 <body>
-<!-- SLIDES_HERE -->
+<!-- SLIDES_HERE: <div class="slide">content</div> per slide -->
 <div class="progress" id="progress"></div>
 <div class="slide-num" id="slideNum"></div>
 <script>
@@ -74,22 +82,23 @@ show(0);
 </html>
 ```
 
-3. **Convert markdown to HTML** for each slide:
-   - `# heading` → `<h1>`
-   - `## heading` → `<h2>`
-   - `- item` → `<ul><li>`
-   - `**bold**` → `<strong>`
-   - Code blocks → `<pre><code>`
-   - Images → `<img>`
-   - Paragraphs → `<p>`
+4. **Save** as `slides.html` (or user-specified path).
 
-4. **Save** as `slides.html` in the user's specified location.
+5. **Tell the user**: Open in browser, use ←/→ arrows or click to navigate, F11 for fullscreen.
 
-5. **Usage instructions**: Tell the user to open the HTML file in a browser. Arrow keys or click to navigate. Press F11 for fullscreen.
+## Customization Options
 
-## Notes
-- Zero dependencies — single HTML file, works offline
-- No API keys, no build tools, no npm install
-- Keyboard navigation: ←/→ arrows, Space, Home/End
-- Click left/right halves of screen to navigate
-- Works great for quick presentations, demos, and talks
+| Option | Default | Alternatives |
+|--------|---------|-------------|
+| Theme | Dark (#1a1a2e) | Light (#fff), Solarized |
+| Font | System UI | Monospace, Serif |
+| Accent | #667eea | Any hex color |
+| Ratio | 16:9 (viewport) | Can add letterboxing |
+
+## Edge Cases
+
+- **No `---` separators**: Treat each `# heading` as a slide break.
+- **Very long slides**: Content may overflow. Suggest splitting into multiple slides.
+- **Images**: Must be URLs or base64-encoded. Local file paths won't work in standalone HTML.
+- **Code-heavy slides**: Reduce font size for `<pre>` blocks on those slides.
+- **Speaker notes**: Can add `<!-- notes: ... -->` comments (hidden from view).
