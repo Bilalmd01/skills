@@ -1,31 +1,28 @@
 ---
-name: sns-auto-poster
-version: 1.0.0
-description: Automated SNS posting with cron scheduling. Supports X (Twitter), with extensible architecture for Bluesky, Mastodon, and other platforms. Use when user says "auto post", "scheduled post", "SNS自動投稿", "定期投稿", or "schedule tweet".
+description: Schedule and automate social media posts to X/Twitter with cron-based queue management.
 ---
 
 # SNS Auto Poster
 
-Automated social media posting with cron-based scheduling and multi-platform support.
+Automated social media posting with cron scheduling and queue management.
 
-## Features
+## Requirements
 
-- **Cron scheduling** — Set up recurring posts via OpenClaw cron jobs
-- **Multi-platform** — X (Twitter) built-in, extensible to Bluesky/Mastodon
-- **Post queue** — JSON-based post queue with status tracking
-- **Templates** — Use post templates with variable substitution
-- **Image support** — Attach images to scheduled posts
+- Python 3.8+
+- `requests` library (`pip install requests`)
+- Platform API credentials (see Configuration)
+- OpenClaw cron (for scheduling)
 
 ## Quick Start
 
 ```bash
 # Add a post to the queue
-python3 {skill_dir}/poster.py add --platform x --text "Scheduled post!" --schedule "2025-01-15 09:00"
+python3 {skill_dir}/poster.py add --platform x --text "Hello world!" --schedule "2025-01-15 09:00"
 
 # Add with image
-python3 {skill_dir}/poster.py add --platform x --text "Morning update" --image /path/to/img.png
+python3 {skill_dir}/poster.py add --platform x --text "Check this out" --image /path/to/img.png
 
-# Process pending posts (run this from cron)
+# Process pending posts now
 python3 {skill_dir}/poster.py run
 
 # List queued posts
@@ -37,21 +34,17 @@ python3 {skill_dir}/poster.py clean
 
 ## Cron Setup
 
-Use OpenClaw cron to schedule automatic posting:
-
-```
-# Process post queue every 15 minutes
+```bash
+# Process queue every 15 minutes
 openclaw cron add --schedule "*/15 * * * *" --command "python3 {skill_dir}/poster.py run"
 
-# Daily morning post
+# Daily morning post from template
 openclaw cron add --schedule "0 9 * * *" --command "python3 {skill_dir}/poster.py run-template morning"
 ```
 
-Or use the agent to set up cron jobs conversationally.
-
 ## Configuration
 
-### Environment Variables
+### Required Environment Variables
 
 | Variable | Platform | Description |
 |----------|----------|-------------|
@@ -59,64 +52,41 @@ Or use the agent to set up cron jobs conversationally.
 | `X_CONSUMER_SECRET` | X/Twitter | API Consumer Secret |
 | `X_ACCESS_TOKEN` | X/Twitter | OAuth Access Token |
 | `X_ACCESS_TOKEN_SECRET` | X/Twitter | OAuth Access Token Secret |
-| `BLUESKY_HANDLE` | Bluesky | Bluesky handle (user.bsky.social) |
-| `BLUESKY_APP_PASSWORD` | Bluesky | Bluesky app password |
 
-### Post Queue File
+Store in `~/.openclaw/secrets.env` — never commit to git.
 
-Posts are stored in `{skill_dir}/queue.json`:
+### Post Queue (`queue.json`)
 
 ```json
-[
-  {
-    "id": "uuid",
-    "platform": "x",
-    "text": "Hello world!",
-    "image": null,
-    "schedule": "2025-01-15T09:00:00",
-    "status": "pending",
-    "posted_at": null
-  }
-]
+[{"id": "uuid", "platform": "x", "text": "Hello!", "image": null, "schedule": "2025-01-15T09:00:00", "status": "pending"}]
 ```
 
-### Templates
-
-Create templates in `{skill_dir}/templates/`:
+### Templates (`templates/morning.json`)
 
 ```json
-// templates/morning.json
-{
-  "platform": "x",
-  "text": "☀️ Good morning! Today is {date}. {custom_message}",
-  "schedule_time": "09:00"
-}
+{"platform": "x", "text": "☀️ Good morning! Today is {date}. {custom_message}", "schedule_time": "09:00"}
 ```
 
 ## Supported Platforms
 
-| Platform | Status | Auth Method |
-|----------|--------|-------------|
+| Platform | Status | Auth |
+|----------|--------|------|
 | X (Twitter) | ✅ Ready | OAuth 1.0a |
 | Bluesky | 🔜 Planned | App Password |
 | Mastodon | 🔜 Planned | OAuth 2.0 |
 
-## Requirements
+## Edge Cases & Troubleshooting
 
-- Python 3.8+
-- `requests` library
-- OpenClaw cron (for scheduling)
-- Platform API credentials
+- **Duplicate posts**: X API rejects identical tweets within a short window. Add a timestamp or vary text.
+- **Rate limits**: X allows ~300 tweets/3 hours. The queue processor respects this.
+- **Image too large**: X max image size is 5MB. Compress before posting.
+- **Expired tokens**: If posting fails with 401, tokens need regeneration at developer.x.com.
+- **Queue corruption**: If `queue.json` is malformed, back it up and recreate.
+- **Missed schedule**: Posts scheduled in the past are posted on next `run` — they don't expire.
 
-## Architecture
+## Security
 
-```
-sns-auto-poster/
-├── poster.py        # Main CLI entry point
-├── platforms/
-│   ├── x.py         # X/Twitter posting (OAuth 1.0a)
-│   ├── bluesky.py   # Bluesky posting (planned)
-│   └── base.py      # Base platform interface
-├── queue.json       # Post queue
-└── templates/       # Post templates
-```
+- **Never log or display API credentials** in output.
+- Store credentials in `secrets.env` with `chmod 600`.
+- Validate post content before sending (check character limits: X=280 chars).
+- Review queued posts before enabling automated cron processing.

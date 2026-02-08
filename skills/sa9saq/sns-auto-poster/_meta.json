@@ -3,9 +3,15 @@
   "slug": "sns-auto-poster",
   "displayName": "Sns Auto Poster",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770482321760,
-    "commit": "https://github.com/openclaw/skills/commit/78f9291b97caa02c2672add90282345034d7d546"
+    "version": "1.1.0",
+    "publishedAt": 1770526246449,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770482321760,
+      "commit": "https://github.com/openclaw/skills/commit/78f9291b97caa02c2672add90282345034d7d546"
+    }
+  ]
 }
