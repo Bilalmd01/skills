@@ -1,5 +1,5 @@
 ---
-name: googlemerchant
+name: google-merchant
 description: |
   Google Merchant Center API integration with managed OAuth. Manage products, inventories, data sources, promotions, and reports for Google Shopping.
   Use this skill when users want to manage their Merchant Center product catalog, check product status, configure data sources, or analyze shopping performance.
