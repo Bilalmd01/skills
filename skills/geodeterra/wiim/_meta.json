@@ -1,0 +1,11 @@
+{
+  "owner": "geodeterra",
+  "slug": "wiim",
+  "displayName": "WiiM",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770573610519,
+    "commit": null
+  },
+  "history": []
+}
