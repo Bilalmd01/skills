@@ -3,9 +3,15 @@
   "slug": "x-api-poster",
   "displayName": "X Api Poster",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770482313598,
-    "commit": "https://github.com/openclaw/skills/commit/25daf3c3ad4600601aae516afc147c2b656a8886"
+    "version": "1.1.0",
+    "publishedAt": 1770526267545,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770482313598,
+      "commit": "https://github.com/openclaw/skills/commit/25daf3c3ad4600601aae516afc147c2b656a8886"
+    }
+  ]
 }
