@@ -3,9 +3,15 @@
   "slug": "janitor",
   "displayName": "Janitor the Cleaner",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770478706316,
-    "commit": "https://github.com/openclaw/skills/commit/cf662f178143ad800d0e7c7524e5d12b9526910b"
+    "version": "1.0.3",
+    "publishedAt": 1770514291955,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770478706316,
+      "commit": "https://github.com/openclaw/skills/commit/cf662f178143ad800d0e7c7524e5d12b9526910b"
+    }
+  ]
 }
