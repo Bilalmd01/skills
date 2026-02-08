@@ -3,9 +3,15 @@
   "slug": "unimarket",
   "displayName": "UniMarket P2P Marketplace",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1770496275562,
-    "commit": "https://github.com/openclaw/skills/commit/f1f68b49befc4cab9f9e48329dd641bfecea6d54"
+    "version": "0.1.1",
+    "publishedAt": 1770574570301,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1770496275562,
+      "commit": "https://github.com/openclaw/skills/commit/f1f68b49befc4cab9f9e48329dd641bfecea6d54"
+    }
+  ]
 }
