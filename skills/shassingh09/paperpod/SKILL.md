@@ -3,7 +3,7 @@ name: paperpod
 description: Isolated agent runtime for code execution, live preview URLs, browser automation, 50+ tools (ffmpeg, sqlite, pandoc, imagemagick), LLM inference, and persistent memory — all via CLI or HTTP, no SDK or API keys required.
 metadata:
   author: PaperPod
-  version: "2.0"
+  version: "2.0.3"
   homepage: https://paperpod.dev
 ---
 
@@ -14,8 +14,9 @@ Isolated, agent-native sandboxes for code execution, live preview URLs, browser 
 ## Quick Start
 
 ```bash
-curl -X POST https://paperpod.dev/login -d '{"email":"you@email.com"}'  # Get token
-npm install @paperpod/cli && npx ppod login <token> && npx ppod exec "echo hello"
+curl -X POST https://paperpod.dev/login -d '{"email":"you@email.com"}'  # Verify and get token
+npm install -g @paperpod/cli
+ppod login <token> && ppod help
 ```
 
 ## Authentication
@@ -30,7 +31,7 @@ curl -X POST https://paperpod.dev/login -d '{"email":"you@email.com"}'
 
 | Method | How | Best for |
 |--------|-----|----------|
-| **CLI login** | `npx ppod login pp_sess_...` | Everyday, Interactive use |
+| **CLI login** | `ppod login pp_sess_...` | Everyday, Interactive use |
 | **Env var** | `export PAPERPOD_TOKEN=pp_sess_...` | Scripts, CI/CD |
 | **Per-request** | `-H "Authorization: Bearer pp_sess_..."` | HTTP one-shots |
 
@@ -41,16 +42,6 @@ Tokens expire in **15 days**. On `EXPIRED_TOKEN` error, re-authenticate via `POS
 ## CLI (Recommended)
 
 The CLI is the easiest way to use PaperPod. It handles streaming, sessions, and reconnection automatically.
-
-```bash
-# Install (local)
-npm install @paperpod/cli
-# Login (saves token to ~/.paperpod/config.json)
-ppod login pp_sess_...
-# Discover all commands or get help for a specific one
-ppod help
-ppod exec --help
-```
 
 ### CLI Commands
 
@@ -90,7 +81,7 @@ ppod exec --help
 | | `ppod help` | Show all commands |
 | | `ppod <cmd> --help` | Help for specific command |
 
-**Update CLI:** `npm update @paperpod/cli`
+**Update CLI:** `npm update -g @paperpod/cli`
 
 ### CLI Examples
 
@@ -154,7 +145,7 @@ curl -X POST https://paperpod.dev/execute \
 |----------|-----------------|
 | **Code Execution** | Python, JavaScript, shell commands |
 | **Processes** | Background servers, long-running jobs |
-| **Preview URLs** | Expose ports → `https://{port}-{id}.paperpod.work` |
+| **Preview URLs** | Expose ports → `https://8080-{sandbox-id}-p8080_v1.paperpod.work` |
 | **Agent Memory** | 10MB persistent storage (R2) |
 | **Browser** | Screenshots, PDFs, scraping (Playwright) |
 | **AI Models** | Text, embeddings, images, transcription |
