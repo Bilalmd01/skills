@@ -1,11 +1,17 @@
 {
   "owner": "gianni-dalerta",
   "slug": "memory-tools",
-  "displayName": "Memory Tools",
+  "displayName": "Openclaw Memory Tools",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770503852256,
-    "commit": "https://github.com/openclaw/skills/commit/83d1cb806d4c3cb8a44fb1fcd8c8c9c936c83cc4"
+    "version": "1.1.0",
+    "publishedAt": 1770580948606,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770503852256,
+      "commit": "https://github.com/openclaw/skills/commit/83d1cb806d4c3cb8a44fb1fcd8c8c9c936c83cc4"
+    }
+  ]
 }
