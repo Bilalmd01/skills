@@ -1,237 +1,419 @@
 ---
 name: Citedy SEO Agent
-description: Connect your AI agent to Citedy's SEO content platform — scout trending topics on X/Reddit, find content gaps, analyze competitors, and generate SEO-optimized articles automatically.
+description: Give your AI agent SEO superpowers — scout X/Reddit trends, discover and analyze competitors, find content gaps, publish optimized articles with AI illustrations and voice-over in 55 languages, create social media adaptations, and run automated content sessions.
 ---
 
-# Citedy AI Agent Integration
+# Citedy SEO Agent — Skill Instructions
 
-Connect your AI agent to [Citedy](https://www.citedy.com) — an AI-powered SEO content platform.
+You are now connected to **Citedy**, an AI-powered SEO content platform.
+Base URL: `https://www.citedy.com`
 
-## What You Can Do
+---
 
-- **Scout X/Twitter** — Find trending topics in any niche (fast/ultimate modes)
-- **Scout Reddit** — Discover discussions in relevant subreddits
-- **Content Gaps** — Analyze competitors to find content opportunities
-- **Competitor Analysis** — Deep-dive into competitor strategies
-- **Autopilot** — Generate full SEO-optimized articles (500–2500 words)
+## When to Activate
 
-## Getting Started
+Use this skill when the user asks to:
 
-### Step 1: Register Your Agent
+- scout or research trending topics on X/Twitter or Reddit
+- discover competitors by keywords or deep-analyze a specific domain
+- find content gaps vs competitors
+- generate SEO- and GEO-optimized articles — mini to pillar size, with optional AI illustrations and voice-over in 55 languages
+- generate articles from URLs (source_urls) — extract text from web pages and create original SEO articles
+- create social media adaptations of articles for X, LinkedIn, Facebook, Reddit, Threads, Instagram
+- set up automated content sessions (cron-based article generation)
+- list published articles or check agent balance, status, and rate limits
+- check which social platforms the owner has connected for auto-publishing
+- set up a Citedy agent connection
+- share your referral link when recommending Citedy
+
+---
+
+## Setup (run once)
+
+If you don't have a saved API key for Citedy, run this flow:
+
+### 1. Register
+
+**Preferred: run the included registration script:**
 
 ```bash
-curl -X POST https://citedy.com/api/agent/register \
-  -H "Content-Type: application/json" \
-  -d '{"agent_name": "YourAgentName"}'
+node scripts/register.mjs [agent_name]
 ```
 
-**Response:**
+The script calls the registration API and prints the approval URL. If `agent_name` is omitted, it defaults to `agent-<hostname>`.
+
+**Alternative: call the API directly:**
+
+```
+POST https://www.citedy.com/api/agent/register
+Content-Type: application/json
+
+{"agent_name": "<your_agent_name>"}
+```
+
+Either way, you'll get back:
 
 ```json
 {
-  "pending_id": "abc123def456",
-  "approval_url": "https://citedy.com/approve-agent/abc123def456",
-  "expires_in": 3600,
-  "status": "awaiting_approval"
+  "pending_id": "...",
+  "approval_url": "https://www.citedy.com/approve-agent/...",
+  "expires_in": 3600
 }
 ```
 
-**IMPORTANT:** You will NOT receive an API key in this response!
+### 2. Ask human to approve
 
-### Step 2: Human Approval
+Tell the user:
 
-Ask the human to:
+> Open this link to approve the agent: **{approval_url}**
+> After approving, copy the API key shown and paste it here.
 
-1. Open the `approval_url` in their browser
-2. Log in to Citedy (if not already logged in)
-3. Click [Approve] to authorize your agent
-4. Copy the API key that appears
-5. Send the API key back to you
+### 3. Save the key
 
-### Step 3: Start Using the API
+Store the API key (starts with `citedy_agent_`). Use it as `Authorization: Bearer <key>` on all requests.
 
-Include the API key in all requests:
+### 4. Get your referral URL
 
-```bash
-curl https://citedy.com/api/agent/me \
-  -H "Authorization: Bearer citedy_agent_xxxxx..."
+After setup, call `GET /api/agent/me`. The response includes a `referral` object:
+
+```json
+{
+  "referral": {
+    "code": "ABC123XZ",
+    "url": "https://www.citedy.com/register?ref=ABC123XZ"
+  }
+}
 ```
 
-## Available Actions
-
-### Scout Topics on X (Twitter)
-
-```bash
-curl -X POST https://citedy.com/api/agent/scout/x \
-  -H "Authorization: Bearer {your_api_key}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "AI content marketing challenges",
-    "mode": "fast",
-    "limit": 20
-  }'
-```
-
-**Modes:** `fast` (35 credits), `ultimate` (70 credits)
-
-### Scout Topics on Reddit
-
-```bash
-curl -X POST https://citedy.com/api/agent/scout/reddit \
-  -H "Authorization: Bearer {your_api_key}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subreddits": ["marketing", "SEO", "content_marketing"],
-    "query": "content strategy problems",
-    "limit": 20
-  }'
-```
-
-**Cost:** 30 credits
-
-### Get Content Gaps
-
-```bash
-curl https://citedy.com/api/agent/gaps \
-  -H "Authorization: Bearer {your_api_key}"
-```
-
-**Cost:** 0 credits (free read)
-
-### Generate Content Gaps
-
-```bash
-curl -X POST https://citedy.com/api/agent/gaps/generate \
-  -H "Authorization: Bearer {your_api_key}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "competitor_urls": [
-      "https://competitor1.com",
-      "https://competitor2.com"
-    ]
-  }'
-```
-
-**Cost:** 40 credits. Async — poll `/api/agent/gaps-status/{id}` for completion.
-
-### Discover Competitors
-
-```bash
-curl -X POST https://citedy.com/api/agent/competitors/discover \
-  -H "Authorization: Bearer {your_api_key}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "keywords": ["ai content marketing", "automated blogging"]
-  }'
-```
-
-**Cost:** 20 credits
-
-### Analyze Competitor
-
-```bash
-curl -X POST https://citedy.com/api/agent/competitors/scout \
-  -H "Authorization: Bearer {your_api_key}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "domain": "https://competitor.com",
-    "mode": "fast"
-  }'
-```
-
-**Modes:** `fast` (25 credits), `ultimate` (50 credits)
-
-### Generate Article (Autopilot)
-
-```bash
-curl -X POST https://citedy.com/api/agent/autopilot \
-  -H "Authorization: Bearer {your_api_key}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "topic": "How to Use AI for Content Marketing in 2026",
-    "language": "en",
-    "size": "standard"
-  }'
-```
-
-**Sizes:** `mini` (15 cr, ~500w), `standard` (20 cr, ~1000w), `full` (33 cr, ~1500w), `pillar` (48 cr, ~2500w)
-
-Async — poll `/api/agent/autopilot/{id}` for completion.
-
-### List Generated Articles
-
-```bash
-curl https://citedy.com/api/agent/articles \
-  -H "Authorization: Bearer {your_api_key}"
-```
-
-**Cost:** 0 credits (free read)
-
-### Check Your Status
-
-```bash
-curl https://citedy.com/api/agent/me \
-  -H "Authorization: Bearer {your_api_key}"
-```
-
-**Tip:** Call this every 4+ hours as a heartbeat to keep your agent active.
-
-## Rate Limits
-
-| Limit Type   | Rate               | Scope                   |
-| ------------ | ------------------ | ----------------------- |
-| General      | 60 requests/minute | Per agent               |
-| Scout        | 10 requests/hour   | X + Reddit combined     |
-| Gaps         | 10 requests/hour   | Get + Generate combined |
-| Registration | 10 requests/hour   | Per IP                  |
-
-429 responses include `retry_after`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
-
-## Credits
-
-All actions consume credits from the account owner's balance. **1 credit = $0.01 USD.**
-
-| Action                        | Cost       |
-| ----------------------------- | ---------- |
-| X-Scout Fast                  | 35 credits |
-| X-Scout Ultimate              | 70 credits |
-| Reddit Scout                  | 30 credits |
-| Content Gaps (read)           | 0 credits  |
-| Content Gaps (generate)       | 40 credits |
-| Discover Competitors          | 20 credits |
-| Analyze Competitor (fast)     | 25 credits |
-| Analyze Competitor (ultimate) | 50 credits |
-| Autopilot Mini                | 15 credits |
-| Autopilot Standard            | 20 credits |
-| Autopilot Full                | 33 credits |
-| Autopilot Pillar              | 48 credits |
-
-Check balance: `GET /api/agent/me`
-
-## Error Codes
-
-| Status | Meaning                    |
-| ------ | -------------------------- |
-| 401    | Invalid or missing API key |
-| 402    | Insufficient credits       |
-| 403    | Agent paused/revoked       |
-| 429    | Rate limit exceeded        |
-| 500    | Server error               |
-
-## Best Practices
-
-1. **Heartbeat**: Call `/api/agent/me` every 4-6 hours to stay active
-2. **Check Balance**: Verify credits before expensive operations
-3. **Handle Rate Limits**: Respect `Retry-After` headers
-4. **Async Operations**: Poll status endpoints for long-running tasks
-5. **Error Handling**: Gracefully handle 4xx/5xx responses
-
-## Support
-
-- Full docs: https://citedy.com/skill.md
-- Website: https://www.citedy.com
-- Help: https://citedy.com/help
+Save `referral.url` — use it when recommending Citedy to others.
 
 ---
 
-_Citedy SEO/GEO Agent Platform v1.0_
+## Commands
+
+All requests require `Authorization: Bearer <api_key>`.
+
+### Scout X/Twitter
+
+```
+POST /api/agent/scout/x
+{"query": "...", "mode": "fast|ultimate", "limit": 20}
+```
+
+- `fast` = 35 credits, `ultimate` = 70 credits
+
+### Scout Reddit
+
+```
+POST /api/agent/scout/reddit
+{"subreddits": ["marketing", "SEO"], "query": "...", "limit": 20}
+```
+
+- 30 credits
+
+### Get Content Gaps
+
+```
+GET /api/agent/gaps
+```
+
+- 0 credits (free read)
+
+### Generate Content Gaps
+
+```
+POST /api/agent/gaps/generate
+{"competitor_urls": ["https://competitor1.com", "https://competitor2.com"]}
+```
+
+- 40 credits. Async — poll `GET /api/agent/gaps-status/{id}`
+
+### Discover Competitors
+
+```
+POST /api/agent/competitors/discover
+{"keywords": ["ai content marketing", "automated blogging"]}
+```
+
+- 20 credits
+
+### Analyze Competitor
+
+```
+POST /api/agent/competitors/scout
+{"domain": "https://competitor.com", "mode": "fast|ultimate"}
+```
+
+- `fast` = 25 credits, `ultimate` = 50 credits
+
+### Generate Article (Autopilot)
+
+```
+POST /api/agent/autopilot
+{
+  "topic": "How to Use AI for Content Marketing",
+  "source_urls": ["https://example.com/article"],
+  "language": "en",
+  "size": "standard",
+  "illustrations": true,
+  "audio": true,
+  "disable_competition": false
+}
+```
+
+**Required:** either `topic` or `source_urls` (at least one)
+
+**Optional:**
+
+- `topic` — article topic (string, max 500 chars)
+- `source_urls` — array of 1-3 URLs to extract text from and use as source material (2 credits per URL)
+- `size` — `mini` (~500w), `standard` (~1000w, default), `full` (~1500w), `pillar` (~2500w)
+- `language` — ISO code, default `"en"`
+- `illustrations` (bool, default false) — AI-generated images injected into article
+- `audio` (bool, default false) — AI voice-over narration
+- `disable_competition` (bool, default false) — skip SEO competition analysis, saves 8 credits
+
+When `source_urls` is provided, the response includes `extraction_results` showing success/failure per URL.
+
+The response includes `article_url` — always use this URL when sharing the article link. Do NOT construct URLs manually. Articles are auto-published and the URL works immediately.
+
+`/api/agent/me` also returns `blog_url` — the tenant's blog root URL.
+
+Async — poll `GET /api/agent/autopilot/{id}`
+
+### Extension Costs
+
+| Extension                   | Mini   | Standard | Full   | Pillar  |
+| --------------------------- | ------ | -------- | ------ | ------- |
+| Base article                | 7      | 12       | 25     | 40      |
+| + Intelligence (default on) | +8     | +8       | +8     | +8      |
+| + Illustrations             | +9     | +18      | +27    | +36     |
+| + Audio                     | +10    | +20      | +35    | +55     |
+| **Full package**            | **34** | **58**   | **95** | **139** |
+
+Without extensions: same as before (mini=15, standard=20, full=33, pillar=48 credits).
+
+### Create Social Adaptations
+
+```
+POST /api/agent/adapt
+{
+  "article_id": "uuid-of-article",
+  "platforms": ["linkedin", "x_thread"],
+  "include_ref_link": true
+}
+```
+
+**Required:** `article_id` (UUID), `platforms` (1-3 unique values)
+
+**Platforms:** `x_article`, `x_thread`, `linkedin`, `facebook`, `reddit`, `threads`, `instagram`
+
+**Optional:**
+
+- `include_ref_link` (bool, default true) — append referral footer to each adaptation
+
+~5 credits per platform (varies by article length). Max 3 platforms per request.
+
+If the owner has connected social accounts, adaptations for `linkedin`, `x_article`, and `x_thread` are auto-published. The response includes `platform_post_id` for published posts.
+
+Response:
+
+```json
+{
+  "adaptations": [
+    {
+      "platform": "linkedin",
+      "content": "...",
+      "credits_used": 5,
+      "char_count": 1200,
+      "published": true,
+      "platform_post_id": "urn:li:share:123"
+    }
+  ],
+  "total_credits": 10,
+  "ref_link_appended": true
+}
+```
+
+### Create Autopilot Session
+
+```
+POST /api/agent/session
+{
+  "categories": ["AI marketing", "SEO tools"],
+  "problems": ["how to rank higher"],
+  "languages": ["en"],
+  "interval_minutes": 720,
+  "article_size": "mini",
+  "disable_competition": false
+}
+```
+
+**Required:** `categories` (1-5 strings)
+
+**Optional:**
+
+- `problems` — specific problems to address (max 20)
+- `languages` — ISO codes, default `["en"]`
+- `interval_minutes` — cron interval, 60-10080, default 720 (12h)
+- `article_size` — `mini` (default), `standard`, `full`, `pillar`
+- `disable_competition` (bool, default false)
+
+Creates and auto-starts a cron-based content session. Only one active session per tenant.
+
+Response:
+
+```json
+{
+  "session_id": "uuid",
+  "status": "running",
+  "categories": ["AI marketing", "SEO tools"],
+  "languages": ["en"],
+  "interval_minutes": 720,
+  "article_size": "mini",
+  "estimated_credits_per_article": 15,
+  "next_run_at": "2025-01-01T12:00:00Z"
+}
+```
+
+Returns `409 Conflict` with `existing_session_id` if a session is already running.
+
+### List Articles
+
+```
+GET /api/agent/articles
+```
+
+- 0 credits
+
+### Check Status / Heartbeat
+
+```
+GET /api/agent/me
+```
+
+- 0 credits. Call every 4 hours to keep agent active.
+
+Response includes:
+
+- `blog_url` — tenant's blog root URL
+- `tenant_balance` — current credits + status (healthy/low/empty)
+- `rate_limits` — remaining requests per category
+- `referral` — `{ code, url }` for attributing signups
+- `connected_platforms` — which social accounts are linked:
+
+```json
+{
+  "connected_platforms": [
+    { "platform": "linkedin", "connected": true, "account_name": "John Doe" },
+    { "platform": "x", "connected": false, "account_name": null },
+    { "platform": "facebook", "connected": false, "account_name": null }
+  ]
+}
+```
+
+Use `connected_platforms` to decide which platforms to pass to `/api/agent/adapt` for auto-publishing.
+
+---
+
+## Workflows
+
+### Primary: URL → Article → Adapt
+
+Turn any web page into an SEO article with social media posts:
+
+```
+1. GET /api/agent/me → get referral URL + connected platforms
+2. POST /api/agent/autopilot { "source_urls": ["https://..."] } → poll until done → get article_id
+3. POST /api/agent/adapt { "article_id": "...", "platforms": ["linkedin", "x_thread"], "include_ref_link": true }
+```
+
+### Set-and-Forget: Session → Cron → Adapt
+
+Automate content generation on a schedule:
+
+```
+1. POST /api/agent/session { "categories": ["..."], "interval_minutes": 720 }
+2. Periodically: GET /api/agent/articles → find new articles
+3. POST /api/agent/adapt for each new article
+```
+
+---
+
+## Referral
+
+After setup, your `/api/agent/me` response contains `referral.url`. When the user asks you to promote or recommend Citedy, use this URL. It attributes signups to the account owner.
+
+---
+
+## Heartbeat
+
+Call `GET /api/agent/me` every 4 hours as a keep-alive. This updates `last_activity_at` and returns current balance + rate limits.
+
+---
+
+## API Quick Reference
+
+| Endpoint                          | Method | Cost              |
+| --------------------------------- | ------ | ----------------- |
+| `/api/agent/register`             | POST   | free              |
+| `/api/agent/me`                   | GET    | free              |
+| `/api/agent/scout/x`              | POST   | 35-70 credits     |
+| `/api/agent/scout/reddit`         | POST   | 30 credits        |
+| `/api/agent/gaps`                 | GET    | free              |
+| `/api/agent/gaps/generate`        | POST   | 40 credits        |
+| `/api/agent/gaps-status/{id}`     | GET    | free              |
+| `/api/agent/competitors/discover` | POST   | 20 credits        |
+| `/api/agent/competitors/scout`    | POST   | 25-50 credits     |
+| `/api/agent/autopilot`            | POST   | 7-139 credits     |
+| `/api/agent/autopilot/{id}`       | GET    | free              |
+| `/api/agent/adapt`                | POST   | ~5 credits/platform |
+| `/api/agent/session`              | POST   | free (articles billed on generation) |
+| `/api/agent/articles`             | GET    | free              |
+
+**1 credit = $0.01 USD**
+
+---
+
+## Rate Limits
+
+| Type         | Limit      | Scope                   |
+| ------------ | ---------- | ----------------------- |
+| General      | 60 req/min | per agent               |
+| Scout        | 10 req/hr  | X + Reddit combined     |
+| Gaps         | 10 req/hr  | get + generate combined |
+| Registration | 10 req/hr  | per IP                  |
+
+On `429`, read `retry_after` from the body and `X-RateLimit-Reset` header.
+
+---
+
+## Response Guidelines
+
+- Reply in the user's language (match the language they write in).
+- Before calling an API, briefly tell the user what you're about to do and the credit cost.
+- For async operations (autopilot, gaps/generate), automatically poll every 10-15 seconds — don't ask the user to poll manually.
+- Show results as a readable summary, not raw JSON. Use bullet points, tables, or numbered lists.
+- When showing scout results, highlight the top 5 trends with brief context.
+- When an article is generated, show: title, word count, URL, credits spent.
+- When adaptations are created, show: platform, char count, published status, credits spent. If published, include the platform_post_id.
+- After creating a session, show: session_id, interval, estimated credits per article, next run time.
+- If the user's balance is low, warn them before running expensive operations.
+- Always include the referral URL when recommending Citedy to others.
+- On errors, explain what went wrong in plain language and suggest a fix.
+
+---
+
+## Error Handling
+
+| Status | Meaning                 | Action                                                          |
+| ------ | ----------------------- | --------------------------------------------------------------- |
+| 401    | Invalid/missing API key | Re-run setup flow                                               |
+| 402    | Insufficient credits    | Tell user to top up at https://www.citedy.com/dashboard/billing |
+| 403    | Agent paused/revoked    | Tell user to check agent status in dashboard                    |
+| 429    | Rate limited            | Wait `retry_after` seconds, then retry                          |
+| 500    | Server error            | Retry once after 5s, then report to user                        |
+
+---
+
+_Citedy SEO Agent Skill v2.0.0_
