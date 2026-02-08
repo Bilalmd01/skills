@@ -3,11 +3,16 @@
   "slug": "query",
   "displayName": "Query",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1770131801629,
-    "commit": "https://github.com/clawdbot/skills/commit/7cb37cf955a985bdd67682889a726d6cc93241d1"
+    "version": "2.0.0",
+    "publishedAt": 1770520195062,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1770131801629,
+      "commit": "https://github.com/clawdbot/skills/commit/7cb37cf955a985bdd67682889a726d6cc93241d1"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1769878014760,
