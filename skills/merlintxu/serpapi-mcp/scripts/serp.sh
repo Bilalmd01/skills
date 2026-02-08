@@ -87,6 +87,19 @@ if [[ -z "$used_key" ]]; then
   exit 1
 fi
 
+# AI Overview enrichment:
+# If the result contains an AI Overview token, fetch the full content.
+enriched_file="$(mktemp)"
+# Use 'node' to run the fetch script. Capture output to enriched_file.
+# If it fails (node error), we just keep the original tmpfile (handled by the script printing original on error).
+if node "$(dirname "$0")/fetch_ai_overview.mjs" "$used_key" "$tmpfile" > "$enriched_file"; then
+  mv "$enriched_file" "$tmpfile"
+else
+  # If the script crashed completely (non-zero exit), warn but proceed with original data.
+  echo "[serpapi-mcp] Warning: fetch_ai_overview.mjs failed. Using original result." >&2
+  rm -f "$enriched_file"
+fi
+
 # Always print JSON to stdout (the skill's primary contract).
 cat "$tmpfile"
 
