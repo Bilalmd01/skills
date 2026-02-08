@@ -1,67 +1,73 @@
 ---
-name: nano-banana-image-gen
-description: AI image generation using Google Gemini API (Gemini 2.0 Flash). Generate SNS thumbnails, article images, banners, and more. Supports Japanese text rendering in images. Use when user says "generate image", "create thumbnail", "make banner", "image generation", or "Nano Banana".
+description: AI image generation using Google Gemini API. Create thumbnails, banners, and graphics with Japanese text support.
 ---
 
 # Nano Banana Image Gen
 
-AI-powered image generation using Google Gemini API. Create SNS thumbnails, article cover images, banners, and promotional graphics with Japanese text support.
+AI-powered image generation using Google Gemini 2.0 Flash.
 
-## Features
+**Use when** generating images, thumbnails, banners, or graphics. Supports Japanese text in images.
 
-- **Gemini API**: Uses Gemini 2.0 Flash for high-quality image generation
-- **Japanese text rendering**: Native support for Japanese text in generated images
-- **Multiple aspect ratios**: 16:9 (thumbnails), 1:1 (SNS), 9:16 (stories)
-- **Batch generation**: Generate multiple variations at once
-- **Auto-save**: Output to specified directory with organized naming
-
-## Quick Start
-
-```bash
-# Set API key
-export GOOGLE_AI_API_KEY=your_key
-
-# Generate an image
-python3 {skill_dir}/generate.py \
-  --prompt "A futuristic Tokyo cityscape at sunset" \
-  --output "./output.png" \
-  --aspect 16:9
-
-# Generate SNS thumbnail
-python3 {skill_dir}/generate.py \
-  --prompt "仮想通貨AIトレーディング解説記事のサムネイル" \
-  --output "./thumbnail.png" \
-  --aspect 16:9
-
-# Generate with text overlay
-python3 {skill_dir}/generate.py \
-  --prompt "Blog banner with text: AIエージェントの未来" \
-  --output "./banner.png"
-```
-
-## Use Cases
-
-1. **SNS Thumbnails** — Eye-catching images for Twitter/note.com posts
-2. **Article Cover Images** — Professional headers for blog posts
-3. **Banners** — Promotional graphics for services
-4. **Profile Images** — Unique AI-generated avatars
-5. **Presentation Slides** — Visual assets for decks
-
-## Aspect Ratios
-
-| Ratio | Use Case | Dimensions |
-|-------|----------|------------|
-| 16:9 | YouTube thumbnails, blog headers | 1792×1024 |
-| 1:1 | Instagram, profile pics | 1024×1024 |
-| 9:16 | Stories, vertical content | 1024×1792 |
-
-## Configuration
-
-Environment variables:
-- `GOOGLE_AI_API_KEY` — Google AI Studio API key (required)
+**Triggers**: "generate image", "create thumbnail", "make banner", "画像生成", "Nano Banana"
 
 ## Requirements
 
 - Python 3.10+
 - `google-genai` Python package
-- Google AI Studio API key
+- `GOOGLE_AI_API_KEY` environment variable (Google AI Studio API key)
+
+## Instructions
+
+1. **Set up API key**:
+   ```bash
+   export GOOGLE_AI_API_KEY=$(grep GOOGLE_AI_API_KEY ~/.openclaw/secrets.env | cut -d= -f2)
+   ```
+
+2. **Generate an image**:
+   ```bash
+   python3 {skill_dir}/generate.py \
+     --prompt "Description of the image you want" \
+     --output "./output.png" \
+     --aspect 16:9
+   ```
+
+3. **Prompt engineering tips**:
+   - Be specific: "A futuristic Tokyo skyline at sunset with neon lights" > "Tokyo"
+   - Include style: "in watercolor style", "photorealistic", "flat illustration"
+   - For text in images: Include exact text in prompt: `"Blog banner with text: AIの未来"`
+   - Specify mood: "warm tones", "minimalist", "vibrant and colorful"
+
+4. **Save output** to organized directory:
+   ```bash
+   # Default output location
+   --output /mnt/hdd/rey/images/YYYY-MM-DD_description.png
+   ```
+
+## Aspect Ratios
+
+| Ratio | Use Case | Resolution |
+|-------|----------|------------|
+| 16:9 | YouTube thumbnails, blog headers | 1792×1024 |
+| 1:1 | Instagram, profile pics | 1024×1024 |
+| 9:16 | Stories, vertical content | 1024×1792 |
+
+## Use Cases
+
+- **SNS Thumbnails** — Eye-catching images for Twitter/note.com posts
+- **Article Covers** — Professional headers for blog posts
+- **Banners** — Promotional graphics
+- **Presentation Assets** — Visual slides for decks
+
+## Edge Cases
+
+- **API key not set**: Error will mention authentication. Check `~/.openclaw/secrets.env`.
+- **Rate limiting**: Google AI API has per-minute limits. Wait and retry.
+- **Japanese text rendering**: Works natively but complex layouts may need iteration.
+- **NSFW content**: API will reject inappropriate prompts. Rephrase if blocked.
+- **Large batch generation**: Add delays between requests to avoid rate limits.
+
+## Security Considerations
+
+- Never log or display the API key in output.
+- Store API key in `~/.openclaw/secrets.env` with `chmod 600`, never in code or git.
+- Generated images may contain artifacts — always review before publishing.
