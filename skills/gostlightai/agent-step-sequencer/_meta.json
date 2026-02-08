@@ -1,0 +1,11 @@
+{
+  "owner": "gostlightai",
+  "slug": "agent-step-sequencer",
+  "displayName": "Agent Step Sequencer",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1770524880343,
+    "commit": null
+  },
+  "history": []
+}
