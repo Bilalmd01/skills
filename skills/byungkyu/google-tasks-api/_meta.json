@@ -3,9 +3,15 @@
   "slug": "google-tasks-api",
   "displayName": "Google Tasks",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770463373833,
-    "commit": "https://github.com/openclaw/skills/commit/053a8fcb8de47ae40fbc1b64dc327b28a96ebc6e"
+    "version": "1.0.1",
+    "publishedAt": 1770496700389,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770463373833,
+      "commit": "https://github.com/openclaw/skills/commit/053a8fcb8de47ae40fbc1b64dc327b28a96ebc6e"
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 ---
-name: googletasks
+name: google-tasks
 description: |
   Google Tasks API integration with managed OAuth. Manage task lists and tasks with full CRUD operations.
   Use this skill when users want to read, create, update, or delete tasks and task lists in Google Tasks.
