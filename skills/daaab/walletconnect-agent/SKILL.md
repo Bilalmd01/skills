@@ -1,9 +1,20 @@
 ---
 name: walletconnect-agent
-description: Enable AI agents to autonomously connect to Web3 dApps via WalletConnect v2 and automatically sign transactions. Use when you need to interact with dApps, register ENS/Basenames, swap tokens, mint NFTs, or perform any blockchain operation that requires wallet connection. Supports Base, Ethereum, and other EVM chains.
+description: "🔗 WalletConnect Agent - dApp Access for AI. Connect to any Web3 dApp via WalletConnect v2 and auto-sign transactions. Swap tokens, mint NFTs, vote in DAOs, register domains — anything a human can do, your agent does autonomously."
 ---
 
-# 🦞 WalletConnect Agent
+# 🔗 WalletConnect Agent - dApp Access for AI
+
+> Any dApp. Any chain. No human needed.
+
+**TL;DR:** WalletConnect v2 + auto-sign. Swap on Uniswap, mint NFTs, vote in DAOs — all autonomously.
+
+## Why WalletConnect Agent?
+
+- **Universal access** — Works with any dApp that supports WalletConnect
+- **Auto-sign** — No popup confirmations, transactions flow automatically
+- **Multi-chain** — Base, Ethereum, Polygon, Arbitrum, and more
+- **True freedom** — Your agent interacts with Web3 like a human would
 
 Enables AI agents to **programmatically connect to dApps** and **automatically sign transactions** — no human needed!
 

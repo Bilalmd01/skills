@@ -6,12 +6,13 @@
  * Handles browser automation + WalletConnect signing.
  * 
  * Usage:
- *   node register-basename.js <name> [options]
+ *   PRIVATE_KEY=0x... node register-basename.js <name> [options]
  * 
  * Options:
- *   --private-key <key>   Private key (or set PRIVATE_KEY env var)
  *   --years <n>           Registration years (default: 1)
  *   --dry-run             Check availability only, don't register
+ * 
+ * ⚠️ SECURITY: Use PRIVATE_KEY env var. Never pass as command line argument!
  * 
  * Example:
  *   PRIVATE_KEY=0x... node register-basename.js littl3lobst3r
@@ -29,6 +30,19 @@ const DEFAULT_PROJECT_ID = '3a8170812b534d0ff9d794f19a901d64';
 
 function parseArgs() {
   const args = process.argv.slice(2);
+  
+  // Security check: reject --private-key argument
+  if (args.includes('--private-key') || args.includes('-p')) {
+    console.error('');
+    console.error('⛔ SECURITY ERROR: Do not pass private key as command line argument!');
+    console.error('   Command line arguments are visible in process lists and shell history.');
+    console.error('');
+    console.error('Use environment variable instead:');
+    console.error('  PRIVATE_KEY="0x..." node register-basename.js <name>');
+    console.error('');
+    process.exit(1);
+  }
+  
   const config = {
     name: null,
     privateKey: process.env.PRIVATE_KEY,
@@ -41,8 +55,6 @@ function parseArgs() {
     const arg = args[i];
     if (!arg.startsWith('-') && !config.name) {
       config.name = arg.toLowerCase().replace(/\.base\.eth$/, '');
-    } else if (arg === '--private-key' && args[i + 1]) {
-      config.privateKey = args[++i];
     } else if (arg === '--years' && args[i + 1]) {
       config.years = parseInt(args[++i]);
     } else if (arg === '--dry-run') {
@@ -69,8 +81,11 @@ async function main() {
 
   if (!config.privateKey && !config.dryRun) {
     console.error('❌ Error: Private key required for registration');
-    console.error('Set PRIVATE_KEY env var or use --private-key flag');
-    console.error('Use --dry-run to check availability without registering');
+    console.error('');
+    console.error('Set PRIVATE_KEY environment variable:');
+    console.error('  PRIVATE_KEY="0x..." node register-basename.js ' + (config.name || '<name>'));
+    console.error('');
+    console.error('Or use --dry-run to check availability without registering');
     process.exit(1);
   }
 

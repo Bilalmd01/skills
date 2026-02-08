@@ -3,11 +3,16 @@
   "slug": "walletconnect-agent",
   "displayName": "Walletconnect Agent",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1770522385823,
-    "commit": "https://github.com/openclaw/skills/commit/2288ccae5b9a79e523eaaeb617bb2fab1b0a5188"
+    "version": "1.5.0",
+    "publishedAt": 1770525485004,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1770522385823,
+      "commit": "https://github.com/openclaw/skills/commit/2288ccae5b9a79e523eaaeb617bb2fab1b0a5188"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770455418355,
