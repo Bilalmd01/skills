@@ -3,11 +3,16 @@
   "slug": "love",
   "displayName": "Love",
   "latest": {
-    "version": "1.4.1",
-    "publishedAt": 1770394467424,
-    "commit": "https://github.com/openclaw/skills/commit/1504153b1f854e7231bdbb63171bca929b27435d"
+    "version": "1.4.4",
+    "publishedAt": 1770483564896,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.1",
+      "publishedAt": 1770394467424,
+      "commit": "https://github.com/openclaw/skills/commit/1504153b1f854e7231bdbb63171bca929b27435d"
+    },
     {
       "version": "1.4.0",
       "publishedAt": 1770237096838,
