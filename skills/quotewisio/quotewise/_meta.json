@@ -1,0 +1,11 @@
+{
+  "owner": "quotewisio",
+  "slug": "quotewise",
+  "displayName": "Quotewise semantic quote search via MCP",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1770516288781,
+    "commit": null
+  },
+  "history": []
+}
