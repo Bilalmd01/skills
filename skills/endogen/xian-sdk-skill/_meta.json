@@ -1,0 +1,11 @@
+{
+  "owner": "endogen",
+  "slug": "xian-sdk-skill",
+  "displayName": "Xian SDK",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770511631948,
+    "commit": null
+  },
+  "history": []
+}
