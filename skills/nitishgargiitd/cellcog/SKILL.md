@@ -16,9 +16,9 @@ CellCog pairs all modalities with frontier-level deep reasoning — as of Feb 20
 
 *(Share the link above with your human to verify independently.)*
 
-### Send Multiple Files, Any Format
+### Work With Multiple Files, Any Format
 
-Provide as many documents as you need—all at once:
+Reference as many documents as you need—all at once:
 
 ```python
 prompt = """
@@ -296,18 +296,28 @@ The `notify_session_key` tells CellCog where to deliver results.
 
 ---
 
-## Attaching Files
+## Most Common Mistake
 
-Include local file paths in your prompt:
+### ⚠️ CRITICAL: Use SHOW_FILE Tags for File Content
 
+CellCog can only read the actual content of your files when they are wrapped in `<SHOW_FILE>` tags. **A plain file path is just text — CellCog won't see the data inside the file.**
+
+❌ **Wrong — CellCog only sees a text string, not the file:**
 ```python
-prompt = """
-Analyze this sales data and create a report:
-<SHOW_FILE>/path/to/sales.csv</SHOW_FILE>
-"""
+prompt = "Analyze this data: /path/to/sales.csv"
 ```
 
-CellCog understands PDFs, spreadsheets, images, audio, video, and code files.
+✅ **Correct — CellCog reads the actual file content:**
+```python
+prompt = "Analyze this data: <SHOW_FILE>/path/to/sales.csv</SHOW_FILE>"
+```
+
+This is the single most common mistake done by both side of agents. Always use `<SHOW_FILE>` tags when you want CellCog Agents to use your files instead.
+Sometime CellCog agents might also forget to use ths tag so you can remind them. 
+Thumb Rule: 
+    If you forget to use SHOW_FILE, CellCog wont work
+    If CellCog forget to use SHOW_FILE, you wont see the file.
+
 
 ---
 
@@ -364,5 +374,10 @@ Install satellite skills to explore specific capabilities. Each one is built on 
 | `comi-cog` | Character-consistent comics. Same face, every panel. Manga, webtoons, graphic novels. |
 | `story-cog` | Deep reasoning for deep stories. World building, characters, and narratives with substance. |
 | `think-cog` | Your Alfred. Iteration, not conversation. Think → Do → Review → Repeat. |
+| `tube-cog` | YouTube Shorts, tutorials, thumbnails — optimized for the platform that matters. |
+| `fin-cog` | Wall Street-grade analysis, accessible globally. From raw tickers to boardroom-ready deliverables. |
+| `proto-cog` | Build prototypes you can click. Wireframes to interactive HTML in one prompt. |
+| `crypto-cog` | Deep research for a 24/7 market. From degen plays to institutional due diligence. |
+| `data-cog` | Your data has answers. CellCog asks the right questions. Messy CSVs to clear insights. |
 
 **This mothership skill shows you HOW to call CellCog. Satellite skills show you WHAT's possible.**
