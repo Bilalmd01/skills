@@ -1,13 +1,13 @@
 ---
 name: NadName Agent
-description: "🌐 Register .nad names on Monad blockchain via Nad Name Service (NNS). Permanent ownership, lifetime domains for AI agents on the fastest blockchain."
+description: "🌐 Register .nad names on Monad blockchain via Nad Name Service (NNS). Real API integration with registerWithSignature, dynamic gas estimation, permanent ownership."
 ---
 
-# 🌐 NadName Agent - .nad Names on Monad
+# 🌐 NadName Agent v2.0 - .nad Names on Monad
 
-> Register permanent .nad names on Monad blockchain via Nad Name Service
+> Register permanent .nad names on Monad blockchain via Nad Name Service with real API integration
 
-**TL;DR:** Get `yourname.nad` on Monad. One-time fee, lifetime ownership. Connect with wallet signature.
+**TL;DR:** Get `yourname.nad` on Monad. One-time fee, lifetime ownership. Now with real NAD API integration and accurate pricing!
 
 ## What is NNS?
 
@@ -127,8 +127,11 @@ node scripts/register-name.js --name myname --set-primary
 # Using managed encrypted keystore
 node scripts/register-name.js --managed --name myname
 
-# Specify custom address (for checking ownership)
-node scripts/register-name.js --name myname --address 0x...
+# Dry run to check costs without sending transaction
+node scripts/register-name.js --name myname --dry-run
+
+# With referrer for potential discounts
+node scripts/register-name.js --name myname --referrer 0x...
 ```
 
 **Flags:**
@@ -136,6 +139,8 @@ node scripts/register-name.js --name myname --address 0x...
 - `--set-primary` - Set as primary name after registration
 - `--managed` - Use encrypted keystore (creates if doesn't exist)
 - `--address <addr>` - Custom address to use (defaults to wallet address)
+- `--dry-run` - Show what would be done without sending transaction
+- `--referrer <addr>` - Referrer address for discounts
 
 ### my-names.js
 
@@ -156,13 +161,43 @@ node scripts/my-names.js --managed
 
 ## 🔧 Technical Details
 
+### v2.0 Registration Flow
+
+The new registration process follows CloudLobster's discovered pattern:
+
+**Step 1: Get Registration Data**
+```bash
+POST https://api.nad.domains/api/register-request
+Body: {
+  "name": "myname",
+  "owner": "0x...",
+  "setAsPrimary": true,
+  "referrer": null,
+  "paymentToken": "0x0000000000000000000000000000000000000000"
+}
+
+Response: {
+  "registerData": {...},
+  "signature": "0x...",
+  "price": "324.5"
+}
+```
+
+**Step 2: Contract Call**
+```javascript
+await contract.registerWithSignature(registerData, signature, {
+  value: ethers.parseEther(price),
+  gasLimit: estimatedGas * 2n  // 2x safety buffer
+});
+```
+
 ### Contract Interaction
 
-NNS registration happens via direct contract interaction:
 - **Contract**: 0xE18a7550AA35895c87A1069d1B775Fa275Bc93Fb
-- **Method**: Send MON tokens to contract with encoded name data
-- **Gas**: ~100,000 gas for registration
-- **Pricing**: Dynamic based on name length and demand
+- **Method**: `registerWithSignature(registerData, signature)` with server co-signature
+- **Gas**: ~650,000-970,000 gas for registration (2x buffer applied automatically)
+- **Pricing**: Real-time from NAD API
+- **Payment**: MON tokens sent as transaction value
 
 ### Supported Names
 - **Length**: 1-63 characters
@@ -184,19 +219,33 @@ After registration, you can customize:
 ```bash
 export PRIVATE_KEY="0x..."
 node scripts/check-name.js mybot
+# ✅ mybot.nad is available!
+# 💰 Price: 324.5 MON
+
 node scripts/register-name.js --name mybot --set-primary
+# 🎉 Registration successful!
+```
+
+### Dry Run Testing
+```bash
+# Test registration without spending MON
+node scripts/register-name.js --name mybot --dry-run
+# 🏃‍♂️ DRY RUN MODE - No transaction will be sent
+# ✅ Registration data looks valid
+# ⛽ Estimated gas cost: 0.002 MON
+# 💸 Total cost: 324.502 MON
 ```
 
 ### Emoji Names
 ```bash
 node scripts/check-name.js 🤖
-node scripts/register-name.js --name 🤖
+node scripts/register-name.js --name 🤖 --dry-run
 ```
 
 ### Secure Managed Setup
 ```bash
 # First time setup
-node scripts/register-name.js --managed --name myagent
+node scripts/register-name.js --managed --name myagent --dry-run
 # Enter password when prompted
 
 # Future use
@@ -233,9 +282,25 @@ This skill follows OpenClaw security best practices and should pass VirusTotal s
 
 ## 📝 Changelog
 
+### v2.0.0 (2026-02-09) - Real API Integration
+- 🚀 **Breaking**: Real NAD API integration with `registerWithSignature`
+- 🔍 Real-time name availability checking via API endpoints
+- 💰 Real-time pricing from NAD API
+- ⛽ Dynamic gas estimation with 2x safety buffer (~1,000,000 gas)
+- 🏃‍♂️ `--dry-run` flag for testing without spending tokens
+- 🔗 `--referrer` support for potential discounts
+- 📊 Better error handling and transaction feedback
+- 🙏 **Thanks to CloudLobster** for testing and discovering the real flow!
+
+#### v2.0.0 Improvements Based on CloudLobster's Feedback:
+- ❌ Removed hardcoded pricing and fake availability checks
+- ✅ Real `POST /api/register-request` → `registerWithSignature` flow
+- ✅ Proper gas estimation (646K estimate → 969K actual, now with 2x buffer)
+- ✅ Server co-signature integration for NNS backend validation
+
 ### v1.0.0 (2026-02-09)
-- 🎉 Initial release
-- ✅ Name availability checking
+- 🎉 Initial release  
+- ✅ Name availability checking (simulated)
 - ✅ Registration with encrypted keystore support
 - ✅ Owned names listing
 - ✅ Security-first design

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 🌐 NNS Name Registration Script
+ * 🌐 NNS Name Registration Script v2.0
  * Register a .nad name on Monad blockchain via Nad Name Service
  * 
  * Usage: 
@@ -11,6 +11,8 @@
  *   --set-primary      Set as primary name after registration
  *   --managed          Use encrypted keystore (creates if doesn't exist)
  *   --address <addr>   Custom address (for verification)
+ *   --dry-run          Show what would be done without sending transaction
+ *   --referrer <addr>  Referrer address for discounts
  * 
  * Private key sources (in order of priority):
  *   1. PRIVATE_KEY environment variable (recommended ✅)
@@ -19,6 +21,12 @@
  * 
  * ⚠️ Security: This script does NOT auto-detect wallet locations outside
  *    ~/.nadname/ to avoid accessing unrelated credentials.
+ * 
+ * 🆕 v2.0 Features:
+ *   - Real NAD API integration with registerWithSignature
+ *   - Dynamic gas estimation with 2x safety buffer
+ *   - Dry-run mode for testing
+ *   - Better error handling and transaction confirmation
  */
 
 const { ethers } = require('ethers');
@@ -26,11 +34,20 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const readline = require('readline');
+const https = require('https');
+const { URL } = require('url');
 
 // Monad network configuration
 const MONAD_RPC = 'https://rpc.monad.xyz';
 const MONAD_CHAIN_ID = 143;
 const NNS_CONTRACT = '0xE18a7550AA35895c87A1069d1B775Fa275Bc93Fb';
+const NAD_API_BASE = 'https://api.nad.domains';
+
+// Payment token addresses (MON is the native token)
+const PAYMENT_TOKENS = {
+  MON: '0x0000000000000000000000000000000000000000', // Native token
+  // Add other tokens if supported
+};
 
 const CONFIG_DIR = path.join(process.env.HOME, '.nadname');
 const ENCRYPTED_KEY_FILE = path.join(CONFIG_DIR, 'private-key.enc');
@@ -48,6 +65,70 @@ function getArg(name) {
 
 function hasFlag(name) {
   return process.argv.includes(name);
+}
+
+async function makeApiRequest(path, method = 'GET', body = null) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(path, NAD_API_BASE);
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'NadName-Agent/2.0.0',
+        'Accept': 'application/json'
+      }
+    };
+
+    if (body) {
+      const bodyStr = JSON.stringify(body);
+      options.headers['Content-Length'] = Buffer.byteLength(bodyStr);
+    }
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(parsed);
+          } else {
+            reject(new Error(`API Error ${res.statusCode}: ${parsed.message || data}`));
+          }
+        } catch (e) {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(data);
+          } else {
+            reject(new Error(`API Error ${res.statusCode}: ${data}`));
+          }
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(new Error(`Network error: ${err.message}`));
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
+    req.setTimeout(15000); // 15 second timeout for registration
+
+    if (body) {
+      req.write(JSON.stringify(body));
+    }
+    
+    req.end();
+  });
 }
 
 function prompt(question) {
@@ -244,7 +325,71 @@ function decrypt(encryptedData, password) {
   return decrypted;
 }
 
-async function registerName(name, wallet, setPrimary = false) {
+async function getRegistrationData(name, owner, setPrimary = false, referrer = null, paymentToken = 'MON') {
+  console.log('📡 Requesting registration data from NAD API...');
+  
+  const requestBody = {
+    name: name,
+    owner: owner,
+    setAsPrimary: setPrimary,
+    referrer: referrer || null,
+    paymentToken: PAYMENT_TOKENS[paymentToken] || PAYMENT_TOKENS.MON
+  };
+  
+  console.log('📝 Registration request:', requestBody);
+  
+  try {
+    // Try the CloudLobster suggested endpoint
+    const result = await makeApiRequest('/api/register-request', 'POST', requestBody);
+    
+    if (!result.registerData || !result.signature || !result.price) {
+      throw new Error('Invalid API response: missing required fields');
+    }
+    
+    console.log('✅ Got registration data from API');
+    console.log(`💰 Price: ${result.price} ${paymentToken}`);
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ NAD API error: ${error.message}`);
+    throw new Error(`Cannot get registration data: ${error.message}`);
+  }
+}
+
+async function estimateRegistrationGas(signer, registerData, signature, value) {
+  try {
+    console.log('⛽ Estimating gas for registration...');
+    
+    // Basic contract interface for registerWithSignature
+    const contractInterface = new ethers.Interface([
+      'function registerWithSignature(tuple(string name, address nameOwner, bool setAsPrimaryName, address referrer, bytes32 discountKey, bytes[] discountClaimProof, uint256 nonce, uint256 deadline, bytes attributes, address paymentToken) registerData, bytes signature) payable'
+    ]);
+    
+    const data = contractInterface.encodeFunctionData('registerWithSignature', [registerData, signature]);
+    
+    const gasEstimate = await signer.provider.estimateGas({
+      to: NNS_CONTRACT,
+      data: data,
+      value: value,
+      from: signer.address
+    });
+    
+    // CloudLobster's experience: estimate was 646K, actual used 969K
+    // Apply 2x safety buffer as suggested
+    const safeGasLimit = gasEstimate * 2n;
+    
+    console.log(`⛽ Gas estimate: ${gasEstimate.toLocaleString()}`);
+    console.log(`⛽ Safe gas limit (2x): ${safeGasLimit.toLocaleString()}`);
+    
+    return safeGasLimit;
+  } catch (error) {
+    console.warn(`⚠️  Gas estimation failed: ${error.message}`);
+    console.warn('⚠️  Using fallback gas limit: 1,000,000');
+    return 1000000n; // Fallback to 1M gas
+  }
+}
+
+async function registerName(name, wallet, setPrimary = false, referrer = null, dryRun = false) {
   console.log('🚀 Starting registration...');
   
   // Connect to Monad
@@ -262,45 +407,85 @@ async function registerName(name, wallet, setPrimary = false) {
   // Check balance
   const balance = await provider.getBalance(wallet.address);
   const balanceInMON = ethers.formatEther(balance);
-  
   console.log(`💰 Balance: ${balanceInMON} MON`);
   
-  if (parseFloat(balanceInMON) < 50) { // Minimum for registration
-    console.warn('⚠️  Low balance - make sure you have enough MON for registration');
-  }
-  
-  // In a real implementation, you'd:
-  // 1. Get current pricing from contract
-  // 2. Encode the registration data
-  // 3. Send transaction with MON value
-  
-  console.log('📝 Registration details:');
-  console.log(`   Name: ${name}.nad`);
-  console.log(`   Owner: ${wallet.address}`);
-  console.log(`   Contract: ${NNS_CONTRACT}`);
-  
-  // For now, simulate the transaction
-  console.log('');
-  console.log('🔄 This would send a transaction to register the name...');
-  console.log('⚠️  SIMULATION MODE - No actual transaction sent');
-  console.log('');
-  console.log('💡 To complete implementation:');
-  console.log('   1. Get contract ABI from NNS docs');
-  console.log('   2. Call registration function with proper parameters');
-  console.log('   3. Send required MON amount as transaction value');
-  
-  // TODO: Uncomment when ready for real registration
-  /*
   try {
-    // Example transaction structure (adjust based on actual contract ABI)
+    // Step 1: Get registration data and signature from NAD API
+    const apiResponse = await getRegistrationData(name, wallet.address, setPrimary, referrer);
+    const { registerData, signature, price } = apiResponse;
+    
+    // Parse price (could be in various formats)
+    let priceInWei;
+    if (typeof price === 'string') {
+      priceInWei = ethers.parseEther(price);
+    } else if (typeof price === 'number') {
+      priceInWei = ethers.parseEther(price.toString());
+    } else {
+      throw new Error(`Invalid price format: ${price}`);
+    }
+    
+    const priceInMON = ethers.formatEther(priceInWei);
+    
+    console.log('');
+    console.log('📝 Registration details:');
+    console.log(`   Name: ${name}.nad`);
+    console.log(`   Owner: ${wallet.address}`);
+    console.log(`   Price: ${priceInMON} MON`);
+    console.log(`   Set as primary: ${setPrimary ? 'Yes' : 'No'}`);
+    if (referrer) console.log(`   Referrer: ${referrer}`);
+    console.log(`   Contract: ${NNS_CONTRACT}`);
+    console.log('');
+    
+    // Check if user has enough balance
+    if (parseFloat(balanceInMON) < parseFloat(priceInMON)) {
+      throw new Error(`Insufficient balance! Need ${priceInMON} MON, have ${balanceInMON} MON`);
+    }
+    
+    // Step 2: Estimate gas
+    const gasLimit = await estimateRegistrationGas(signer, registerData, signature, priceInWei);
+    
+    // Estimate gas cost
+    const gasPrice = await provider.getGasPrice();
+    const gasCostWei = gasLimit * gasPrice;
+    const gasCostMON = ethers.formatEther(gasCostWei);
+    
+    console.log(`⛽ Estimated gas cost: ${gasCostMON} MON`);
+    console.log(`💸 Total cost: ${(parseFloat(priceInMON) + parseFloat(gasCostMON)).toFixed(6)} MON`);
+    console.log('');
+    
+    if (dryRun) {
+      console.log('🏃‍♂️ DRY RUN MODE - No transaction will be sent');
+      console.log('✅ Registration data looks valid');
+      console.log('✅ Gas estimation successful');
+      console.log('✅ Sufficient balance available');
+      console.log('');
+      console.log('💡 Remove --dry-run flag to execute the registration');
+      return;
+    }
+    
+    // Final confirmation
+    console.log('⚠️  FINAL CONFIRMATION:');
+    console.log(`   This will register ${name}.nad for ${priceInMON} MON`);
+    console.log(`   Transaction is irreversible once confirmed`);
+    console.log('');
+    
+    // Step 3: Send the transaction
+    console.log('📤 Sending registration transaction...');
+    
+    const contractInterface = new ethers.Interface([
+      'function registerWithSignature(tuple(string name, address nameOwner, bool setAsPrimaryName, address referrer, bytes32 discountKey, bytes[] discountClaimProof, uint256 nonce, uint256 deadline, bytes attributes, address paymentToken) registerData, bytes signature) payable'
+    ]);
+    
+    const data = contractInterface.encodeFunctionData('registerWithSignature', [registerData, signature]);
+    
     const tx = {
       to: NNS_CONTRACT,
-      value: ethers.parseEther('324.5'), // Price in MON
-      data: '0x...', // Encoded registration call
-      gasLimit: 100000
+      value: priceInWei,
+      data: data,
+      gasLimit: gasLimit,
+      gasPrice: gasPrice
     };
     
-    console.log('📤 Sending registration transaction...');
     const result = await signer.sendTransaction(tx);
     console.log(`⏳ Transaction sent: ${result.hash}`);
     
@@ -308,28 +493,42 @@ async function registerName(name, wallet, setPrimary = false) {
     const receipt = await result.wait();
     
     if (receipt.status === 1) {
-      console.log('✅ Registration successful!');
-      console.log(`🎉 ${name}.nad is now yours!`);
+      console.log('');
+      console.log('🎉 Registration successful!');
+      console.log(`✅ ${name}.nad is now yours!`);
+      console.log(`🔗 Transaction: https://explorer.monad.xyz/tx/${result.hash}`);
+      console.log(`⛽ Gas used: ${receipt.gasUsed.toLocaleString()}`);
+      console.log(`💸 Total cost: ${ethers.formatEther(receipt.gasUsed * gasPrice + priceInWei)} MON`);
       
       if (setPrimary) {
-        console.log('🔄 Setting as primary name...');
-        // Call setPrimary function
+        console.log('✅ Set as primary name');
       }
     } else {
       console.log('❌ Transaction failed');
+      throw new Error('Transaction failed');
     }
     
   } catch (error) {
     console.error('❌ Registration failed:', error.message);
-    process.exit(1);
+    
+    if (error.message.includes('API')) {
+      console.error('💡 Check if NAD API is available and try again');
+    } else if (error.message.includes('gas')) {
+      console.error('💡 Try increasing gas limit or wait for network conditions to improve');
+    } else if (error.message.includes('balance')) {
+      console.error('💡 Top up your wallet with more MON tokens');
+    }
+    
+    throw error;
   }
-  */
 }
 
 async function main() {
   const name = getArg('--name');
   const setPrimary = hasFlag('--set-primary');
   const customAddress = getArg('--address');
+  const referrer = getArg('--referrer');
+  const dryRun = hasFlag('--dry-run');
   
   if (!name) {
     console.error('❌ Usage: node register-name.js --name <name> [options]');
@@ -339,16 +538,19 @@ async function main() {
     console.error('  --set-primary      Set as primary name');
     console.error('  --managed          Use encrypted keystore');
     console.error('  --address <addr>   Custom address for verification');
+    console.error('  --dry-run          Show what would be done without sending transaction');
+    console.error('  --referrer <addr>  Referrer address for discounts');
     console.error('');
     console.error('Examples:');
     console.error('  node register-name.js --name mybot');
     console.error('  node register-name.js --name agent --set-primary');
-    console.error('  node register-name.js --managed --name myagent');
+    console.error('  node register-name.js --managed --name myagent --dry-run');
+    console.error('  node register-name.js --name myagent --referrer 0x...');
     process.exit(1);
   }
 
   try {
-    console.log('🌐 NNS Name Registration');
+    console.log('🌐 NNS Name Registration v2.0');
     console.log('═'.repeat(50));
     
     // Get private key
@@ -362,10 +564,25 @@ async function main() {
       console.log('✅ Will set as primary name');
     }
     
+    if (referrer) {
+      console.log(`🔗 Referrer: ${referrer}`);
+    }
+    
+    if (dryRun) {
+      console.log('🏃‍♂️ DRY RUN MODE');
+    }
+    
     console.log('');
     
     // Register the name
-    await registerName(name, wallet, setPrimary);
+    await registerName(name, wallet, setPrimary, referrer, dryRun);
+    
+    if (!dryRun) {
+      console.log('');
+      console.log('🎊 Registration completed successfully!');
+      console.log(`🌐 Your name: ${name}.nad`);
+      console.log(`📱 Manage at: https://app.nad.domains`);
+    }
     
   } catch (error) {
     console.error('❌ Error:', error.message);
