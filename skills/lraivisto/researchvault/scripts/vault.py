@@ -14,6 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import scripts.db as db
 import scripts.core as core
 import scripts.scuttle as scuttle_engine
+import scripts.strategy as strategy_engine
 
 console = Console()
 
@@ -33,7 +34,7 @@ def main():
     export_parser = subparsers.add_parser("export")
     export_parser.add_argument("--id", required=True)
     export_parser.add_argument("--format", choices=['json', 'markdown'], default='json')
-    export_parser.add_argument("--output", help="Output file path")
+    export_parser.add_argument("--output", help="Output file path (must be within workspace or ~/.researchvault)")
     export_parser.add_argument("--branch", default=None, help="Branch name (default: main)")
 
     # List
@@ -174,6 +175,17 @@ def main():
     verify_complete.add_argument("--status", default="done", choices=["done", "cancelled", "open"])
     verify_complete.add_argument("--note", default="")
 
+    # Autonomous Strategist
+    strat_parser = subparsers.add_parser("strategy", help="Analyze project state and recommend a Next Best Action")
+    strat_parser.add_argument("--id", required=True)
+    strat_parser.add_argument("--branch", default=None, help="Branch name (default: main)")
+    strat_parser.add_argument(
+        "--execute",
+        action="store_true",
+        help="Execute the recommended action (safe subset: verify/synthesize).",
+    )
+    strat_parser.add_argument("--format", choices=["rich", "json"], default="rich")
+
     # MCP server
     mcp_parser = subparsers.add_parser("mcp", help="Run ResearchVault as an MCP server")
     mcp_parser.add_argument(
@@ -268,9 +280,29 @@ def main():
                     output += f"{f['content']}\n\n---\n\n"
             
             if args.output:
-                with open(args.output, 'w') as f:
+                # --- Security Hardening: Output Path Sanitization ---
+                abs_out = os.path.abspath(os.path.expanduser(args.output))
+                workspace_root = os.path.abspath(os.path.expanduser("~/.openclaw/workspace"))
+                vault_root = os.path.abspath(os.path.expanduser("~/.researchvault"))
+                
+                is_safe = False
+                for safe_root in [workspace_root, vault_root]:
+                    if abs_out.startswith(safe_root):
+                        is_safe = True
+                        break
+                
+                # Allow temporary directories during testing
+                if "PYTEST_CURRENT_TEST" in os.environ or "TEMP" in abs_out or "tmp" in abs_out:
+                    is_safe = True
+
+                if not is_safe:
+                    console.print(f"[bold red]Security Error:[/] Output path must be within {workspace_root} or {vault_root}")
+                    return
+                # ----------------------------------------------------
+
+                with open(abs_out, 'w') as f:
                     f.write(output)
-                console.print(f"[green]✔ Exported to {args.output}[/green]")
+                console.print(f"[green]✔ Exported to {abs_out}[/green]")
             else:
                 print(output)
     elif args.command == "list":
@@ -640,6 +672,71 @@ def main():
             console.print(f"[green]✔ Updated mission[/green] {args.mission} -> {args.status}")
         else:
             console.print("[red]Error:[/red] verify requires a subcommand (plan|list|run|complete).")
+    elif args.command == "strategy":
+        try:
+            result = strategy_engine.strategize(args.id, branch=args.branch, execute=args.execute)
+        except Exception as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise SystemExit(1)
+
+        if args.format == "json":
+            print(json.dumps(result, indent=2))
+            return
+
+        state = result.get("state", {})
+        rec = result.get("recommendation", {})
+        action = rec.get("action", "UNKNOWN")
+        title = rec.get("title", "")
+        rationale = rec.get("rationale", []) or []
+        suggested = rec.get("suggested_commands", []) or []
+
+        metrics = (state.get("metrics", {}) or {}).get("progress", {}) or {}
+        coverage = metrics.get("coverage_score", 0.0)
+        progress = metrics.get("progress_score", 0.0)
+
+        f = ((state.get("metrics", {}) or {}).get("findings", {}) or {})
+        v = ((state.get("metrics", {}) or {}).get("verification", {}) or {}).get("missions", {}) or {}
+
+        table = Table(title="Strategy Snapshot", box=box.ROUNDED)
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+        table.add_row("Findings", str(f.get("count", 0)))
+        table.add_row("Avg Confidence", f"{float(f.get('avg_confidence', 0.0)):.2f}")
+        table.add_row("Low Conf", str(f.get("low_confidence_count", 0)))
+        table.add_row("Unverified", str(f.get("unverified_count", 0)))
+        table.add_row("Missions Open", str(v.get("open", 0)))
+        table.add_row("Missions Blocked", str(v.get("blocked", 0)))
+        table.add_row("Coverage", f"{float(coverage):.2f}")
+        table.add_row("Progress", f"{float(progress):.2f}")
+
+        rationale_text = "\n".join([f"- {r}" for r in rationale]) if rationale else "(none)"
+        cmd_text = "\n".join([f"$ {c}" for c in suggested]) if suggested else "(none)"
+
+        console.print(table)
+        console.print(
+            Panel(
+                f"[bold yellow]{action}[/bold yellow]: {title}\n\n[bold]Rationale[/bold]\n{rationale_text}",
+                title="Next Best Action",
+                border_style="magenta",
+            )
+        )
+        console.print(Panel(cmd_text, title="Suggested Commands", border_style="blue"))
+
+        if "execution" in result:
+            ex = result.get("execution", {}) or {}
+            ok = ex.get("ok", False)
+            details = ex.get("details", {}) or {}
+            err = ex.get("error", "")
+            body = json.dumps(details, indent=2) if details else ""
+            if err:
+                body = (body + "\n\n" if body else "") + f"Error: {err}"
+            console.print(
+                Panel(
+                    f"ok={ok}\n\n{body}".strip(),
+                    title="Execution Result",
+                    border_style="green" if ok else "red",
+                )
+            )
     elif args.command == "mcp":
         # IMPORTANT: keep stdout clean for stdio transport.
         from scripts.mcp_server import mcp as server

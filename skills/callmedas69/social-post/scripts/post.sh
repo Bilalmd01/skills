@@ -21,6 +21,7 @@ AUTO_TRUNCATE=false
 DRY_RUN=false
 THREAD_MODE=false
 SHORTEN_LINKS=false
+AUTO_CONFIRM=false
 TEXT=""
 
 # Parse arguments
@@ -54,6 +55,10 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=true
       shift
       ;;
+    --yes|-y)
+      AUTO_CONFIRM=true
+      shift
+      ;;
     --help|-h)
       cat <<EOF
 Usage: post.sh [OPTIONS] "Your message"
@@ -68,6 +73,7 @@ Options:
   --thread          Split long text into thread
   --shorten-links   Shorten URLs to save characters
   --dry-run         Preview without posting
+  -y, --yes         Skip confirmation prompt
   --help            Show this help
 
 Examples:
@@ -82,6 +88,10 @@ Examples:
 Platform Limits:
   Twitter:   252 characters (with 10% buffer)
   Farcaster: 288 bytes (with 10% buffer)
+
+Costs:
+  Twitter:   Consumption-based (pay per API request, no tiers/subscriptions)
+  Farcaster: 0.001 USDC per cast (deducted from custody wallet on Base)
 EOF
       exit 0
       ;;
@@ -174,6 +184,20 @@ if { [ "$POST_TWITTER" = true ] && [ "$TWITTER_VALID" = false ]; } || \
   fi
 fi
 
+# Show draft preview
+echo "=== Draft Preview ==="
+echo ""
+echo "Text to post:"
+echo "─────────────────────────────────────────────"
+echo "$TEXT"
+echo "─────────────────────────────────────────────"
+[ -n "$IMAGE_PATH" ] && echo "Image: $IMAGE_PATH"
+echo ""
+echo "Targets:"
+[ "$POST_TWITTER" = true ] && echo "  • Twitter"
+[ "$POST_FARCASTER" = true ] && echo "  • Farcaster"
+echo ""
+
 # Dry run mode
 if [ "$DRY_RUN" = true ]; then
   echo "=== Dry Run (not actually posting) ==="
@@ -181,6 +205,20 @@ if [ "$DRY_RUN" = true ]; then
   [ "$POST_FARCASTER" = true ] && echo "Would post to Farcaster"
   [ -n "$IMAGE_PATH" ] && echo "Would upload image: $IMAGE_PATH"
   exit 0
+fi
+
+# Confirmation prompt (skip if running non-interactively or with --yes flag)
+if [ "$AUTO_CONFIRM" = false ] && [ -t 0 ]; then
+  echo -n "Proceed with posting? (y/n): "
+  read -r CONFIRM
+  if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    echo "Cancelled."
+    exit 0
+  fi
+  echo ""
+elif [ "$AUTO_CONFIRM" = true ]; then
+  echo "Auto-confirmed (--yes flag). Proceeding..."
+  echo ""
 fi
 
 # Post to platforms

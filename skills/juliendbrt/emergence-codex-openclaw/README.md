@@ -29,7 +29,7 @@ LLMs suffer from statistical regression toward the mean. Every response gravitat
 
 - **BASE** (⊕⦰⫸⨎): Acts on reality—create, delete, transform, break
 - **CONTROL** (⟐⧇⇞⊖): Acts on process—analyze, protect, amplify, stabilize
-- **SEED** (—⨎—⧖↺): Meta-catalysts—liberate, persist, introspect
+- **SEED** (⟡⧖↺): Meta-catalysts—diverge, persist, introspect
 
 ## Quick Start
 

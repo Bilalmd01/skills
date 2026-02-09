@@ -9,7 +9,7 @@ description: |
   - User asks for pattern analysis ("Analyze my patterns", "How am I doing?")
   - User requests summaries ("Generate weekly/monthly summary")
 metadata:
-  version: 0.0.8
+  version: 0.0.11
 ---
 
 # PhoenixClaw: Zero-Tag Passive Journaling
@@ -37,23 +37,45 @@ PhoenixClaw follows a structured pipeline to ensure consistency and depth:
 
 2. **Context Retrieval:** 
    - Call `memory_get` for the current day's memory
-   - **CRITICAL: Scan ALL raw session logs modified today**. Session files are often split across multiple files. Use timestamp-based discovery, NOT filename sorting:
-     ```bash
-     # Find ALL session files modified today (by modification time)
-     find ~/.openclaw/sessions -name "*.jsonl" -mtime 0
-     
-     # Alternative: filter by today's date explicitly
-     TODAY=$(date +%Y-%m-%d)
-     find ~/.openclaw/sessions -name "*.jsonl" -newermt "$TODAY"
-     ```
-     Read **all matching files** regardless of their numeric naming (e.g., file_22, file_23 may be earlier in name but modified today).
-   - **EXTRACT IMAGES FROM SESSION LOGS**: Session logs contain `type: "image"` entries with file paths. You MUST:
-     1. Find all image entries (e.g., `"type":"image"`)
-     2. Extract the `file_path` or `url` fields
-     3. Copy files into `assets/YYYY-MM-DD/`
-     4. Rename with descriptive names when possible
-   - **Why session logs are mandatory**: `memory_get` returns **text only**. Image metadata, photo references, and media attachments are **only available in session logs**. Skipping session logs = missing all photos.
-   - **Edge case - Midnight boundary**: For late-night activity that spans midnight, consider also scanning yesterday's files with `-mtime -1` or `find -newermt "yesterday"`.
+   - **CRITICAL: Scan ALL raw session logs and filter by message timestamp**. Session files are often split across multiple files. Do NOT classify images by session file `mtime`:
+      ```bash
+      # Read all session logs from both OpenClaw locations, then filter by per-message timestamp
+      # Use timezone-aware epoch range to avoid UTC/local-day mismatches.
+      TARGET_DAY="$(date +%Y-%m-%d)"
+      TARGET_TZ="${TARGET_TZ:-Asia/Shanghai}"
+      read START_EPOCH END_EPOCH < <(
+        python3 - <<'PY' "$TARGET_DAY" "$TARGET_TZ"
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+import sys
+
+day, tz = sys.argv[1], sys.argv[2]
+start = datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=ZoneInfo(tz))
+end = start + timedelta(days=1)
+print(int(start.timestamp()), int(end.timestamp()))
+PY
+      )
+
+      for dir in "$HOME/.openclaw/sessions" "$HOME/.agent/sessions"; do
+        [ -d "$dir" ] || continue
+        find "$dir" -name "*.jsonl" -print0
+      done |
+        xargs -0 jq -cr --argjson start "$START_EPOCH" --argjson end "$END_EPOCH" '
+          (.timestamp // .created_at // empty) as $ts
+          | ($ts | fromdateiso8601?) as $epoch
+          | select($epoch != null and $epoch >= $start and $epoch < $end)
+        '
+      ```
+      Read **all matching files** regardless of their numeric naming (e.g., file_22, file_23 may be earlier in name but still contain today's messages).
+    - **EXTRACT IMAGES FROM SESSION LOGS**: Session logs contain `type: "image"` entries with file paths. You MUST:
+      1. Find all image entries (e.g., `"type":"image"`)
+      2. Keep only entries where message `timestamp` is in the target date range
+      3. Extract the `file_path` or `url` fields
+      4. Copy files into `assets/YYYY-MM-DD/`
+      5. Rename with descriptive names when possible
+    - **Why session logs are mandatory**: `memory_get` returns **text only**. Image metadata, photo references, and media attachments are **only available in session logs**. Skipping session logs = missing all photos.
+    - **Activity signal quality**: Do not treat heartbeat/cron system noise as user activity. Extract user/assistant conversational content and media events first, then classify moments.
+    - **Edge case - Midnight boundary**: For late-night activity that spans midnight, expand the **timestamp** range to include spillover windows (for example, previous day 23:00-24:00) and still filter per-message by `timestamp`.
    - If memory is sparse, reconstruct context from session logs, then update daily memory
    - Incorporate historical context via `memory_search` (skip if embeddings unavailable)
 
@@ -117,6 +139,7 @@ While passive by design, users can interact with PhoenixClaw directly using thes
 - `cron-setup.md`: Technical configuration for nightly automation.
 - `plugin-protocol.md`: Plugin architecture, hook points, and integration protocol.
 - `media-handling.md`: Strategies for extracting meaning from photos and rich media.
+- `session-day-audit.js`: Diagnostic utility for verifying target-day message coverage across session logs.
 - `visual-design.md`: Layout principles for readability and aesthetics.
 - `obsidian-format.md`: Ensuring compatibility with Obsidian and other PKM tools.
 - `profile-evolution.md`: How the system maintains a long-term user identity.

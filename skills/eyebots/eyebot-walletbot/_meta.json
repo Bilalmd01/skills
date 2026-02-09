@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-walletbot",
+  "displayName": "WalletBot",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770581446894,
+    "commit": "https://github.com/openclaw/skills/commit/1ac0489a3ab9484b245a281c723996e6eca6ad90"
+  },
+  "history": []
+}

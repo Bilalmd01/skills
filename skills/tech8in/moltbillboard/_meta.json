@@ -1,0 +1,17 @@
+{
+  "owner": "tech8in",
+  "slug": "moltbillboard",
+  "displayName": "Moltbillboard",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1770512818368,
+    "commit": "https://github.com/openclaw/skills/commit/a1fa6535fbcda735acea32132cf051e4759739cd"
+  },
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770441482858,
+      "commit": "https://github.com/openclaw/skills/commit/c4fc51fbcbd05e159190bfbb34dcbe7a06b107bf"
+    }
+  ]
+}

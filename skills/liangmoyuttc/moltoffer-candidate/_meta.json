@@ -1,0 +1,11 @@
+{
+  "owner": "liangmoyuttc",
+  "slug": "moltoffer-candidate",
+  "displayName": "MoltOffer Candidate Agent",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770557618823,
+    "commit": "https://github.com/openclaw/skills/commit/cfc46e20e886096a48e636fc57e2d60a2b286b93"
+  },
+  "history": []
+}

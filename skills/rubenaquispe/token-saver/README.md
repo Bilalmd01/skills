@@ -1,11 +1,11 @@
-# 🚀 Token Saver
+# ⚡ Token Saver v3
 
-> **💡 Did you know?** Every time you send a prompt, your workspace files (SOUL.md, USER.md, MEMORY.md, AGENTS.md, and more) are sent along with it — every single time. These files count toward your context window, slowing down responses and costing you real money on every message. Token Saver compresses these files using AI-efficient notation that preserves all your data while making everything lighter, faster, and cheaper.
+> **💡 Did you know?** Every API call sends your workspace files (SOUL.md, USER.md, MEMORY.md, AGENTS.md, etc.) along with your message. These files cost real money on every message.
 
-**Cut your OpenClaw AI costs by 40-90% with one command.**
+**Token Saver v3 is model-aware** — it knows your model's context window and adapts recommendations accordingly.
 
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-3.0.0-blue)
 
 ## Quick Start
 
@@ -15,96 +15,94 @@
 
 That's it. You'll see a dashboard with your savings options.
 
-## What It Does
+## What's New in v3
 
-| Feature | Description |
-|---|---|
-| **🗜️ File Compression** | Scans ALL .md workspace files and compresses them using AI-efficient notation |
-| **🤖 Model Audit** | Detects your current AI models and suggests cheaper alternatives |
-| **📊 Cost Dashboard** | Shows weekly/monthly/annual savings with clear before & after |
-| **🛡️ Safe Rollback** | Auto-backups + one-command revert |
+| Feature | v2 | v3 |
+|---------|----|----|
+| Compaction presets | Fixed (80K/120K/160K) | **Dynamic** (% of model's context) |
+| Model detection | Fragile, env-only | **Robust fallback chain** |
+| Context windows | Not tracked | **Full registry (9 models)** |
+| Savings estimates | Static | **Model-aware pricing** |
 
-## Example
+## Dashboard Preview
 
-**Before** (500+ tokens):
-> When Ruben greets me in the morning with phrases like "good morning" or "what's on today", I should proactively review our task list, mention pending items, and check for urgent issues...
-
-**After** (30 tokens):
 ```
-MORNING: greeting → review(todos+pending+urgent)
-```
+╭─────────────────────────────────────────────────────────╮
+│  ⚡ TOKEN SAVER v3                                       │
+│  Reduce AI costs by optimizing what gets sent each call │
+╰─────────────────────────────────────────────────────────╯
 
-Same meaning. 90% fewer tokens. Real dollar savings.
+🤖 **Model:** Claude Opus 4.5 (200K context)
+   Detected: openclaw.json
+
+📊 **Context Usage:** [████████░░░░░░░░░░░░] 42% (84K/200K)
+
+📁 **WORKSPACE FILES** (sent every API call)
+┌──────────────────────┬───────┬────────────────┐
+│ File                 │ Tokens│ Can Save       │
+├──────────────────────┼───────┼────────────────┤
+│ 🔴 AGENTS.md          │  1180 │     -825 (70%) │
+│ 🟢 SOUL.md            │   235 │    ✓ optimized │
+...
+```
 
 ## Commands
 
 | Command | What It Does |
 |---|---|
-| `/optimize` | Show savings dashboard |
+| `/optimize` | Dashboard with files, models, context usage |
 | `/optimize tokens` | Compress workspace files (auto-backup) |
-| `/optimize models` | Detailed model cost comparison |
-| `/optimize revert` | Restore all files from backups |
+| `/optimize compaction` | Chat compaction control (model-aware) |
+| `/optimize compaction balanced` | Apply balanced preset (60% of context) |
+| `/optimize models` | Detailed model audit with registry |
+| `/optimize revert` | Restore backups, disable persistent mode |
 
-## Dashboard Preview
+## Dynamic Presets
 
+Presets adapt to your model's context window:
+
+| Preset | % | Claude 200K | GPT-4o 128K | Gemini 1M |
+|--------|---|-------------|-------------|-----------|
+| Aggressive | 40% | 80K | 51K | 400K |
+| Balanced | 60% | 120K | 77K | 600K |
+| Conservative | 80% | 160K | 102K | 800K |
+
+## Model Registry
+
+9 models with context windows and pricing:
+- **Claude:** Opus 4.5, Sonnet 4, Haiku 3.5 (200K)
+- **Gemini:** 2.0 Flash, 2.5 Pro (1M)
+- **OpenAI:** GPT-4o, GPT-4o Mini (128K)
+- **Others:** DeepSeek V3 (64K), Kimi K2.5 (128K)
+
+## File Compression
+
+**Before** (verbose):
+> When Ruben greets me in the morning, I should proactively review our task list...
+
+**After** (compressed):
 ```
-🚀 Token Optimizer Dashboard
-
-💾 Current Context: 12,169 tokens across 10 files
-💰 Est. Monthly Cost: $158.08
-
-┌─────────────────────────────────────────────┐
-│  🗜️  WORKSPACE FILES OPTIMIZATION           │
-└─────────────────────────────────────────────┘
-🔴 MEMORY.md:  2,640 → 215 tokens (92% possible saving)
-🔴 USER.md:      563 → 103 tokens (82% possible saving)
-🟢 AGENTS.md:  2,063 → 2,063 tokens (0% possible saving)
-
-┌─────────────────────────────────────────────┐
-│  🤖  AI MODEL AUDIT                         │
-└─────────────────────────────────────────────┘
-• Default: claude-sonnet-4 (~$14.40/month)
-• Cron jobs: gemini-pro (free)
-💡 Subagents: Switch Opus → Sonnet — ~$14.40/month possible saving
-
-┌─────────────────────────────────────────────┐
-│  📊 COMBINED POSSIBLE SAVINGS               │
-└─────────────────────────────────────────────┘
-File compression: ~$37.40/month
-Model switching:  ~$17.57/month
-Total:            ~$54.97/month possible saving
+MORNING: greeting → review(todos+pending+urgent)
 ```
+
+Same meaning. 90% fewer tokens. Real savings.
+
+## Safety
+
+- ✅ **Auto-backup** before any changes
+- ✅ **Smart bypass** — skips already-optimized files
+- ✅ **One-command revert** — `/optimize revert`
+- ✅ **No external calls** — all local
 
 ## Install
 
 ```bash
 # From ClawHub
-clawhub install token-saver
+clawhub install token-saver --registry "https://www.clawhub.ai"
 
 # Or clone directly
 git clone https://github.com/RubenAQuispe/token-saver.git
 ```
-
-## ✨ Persistent Mode — One-and-Done
-
-When you run `/optimize tokens`, Token Saver also enables **Persistent Mode** — your AI will continue writing in compressed notation going forward. No need to re-optimize!
-
-- **Automatic** — Enabled when you optimize, disabled when you revert
-- **Smart** — AI maintains compressed format in all workspace files
-- **Reversible** — `/optimize revert` turns it off and restores everything
-
-## Safety First
-
-- ✅ **Auto-backup** before any file changes
-- ✅ **"Possible savings"** shown until you actually apply
-- ✅ **One-command revert** — `/optimize revert` restores everything + turns off persistent mode
-- ✅ Only compresses files where real savings exist
-
-## How It Works
-
-AI models understand compressed notation perfectly. The optimizer converts verbose instructions into dense, structured formats that preserve 100% of the meaning while using 40-90% fewer tokens.
-
-Every token saved = money saved on every single API call.
 
 ## License
 

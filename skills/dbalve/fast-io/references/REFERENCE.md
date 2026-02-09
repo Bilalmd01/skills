@@ -1,6 +1,6 @@
 # Fast.io for AI Agents
 
-> **Version:** 1.13.0 | **Last updated:** 2026-02-05
+> **Version:** 1.14.0 | **Last updated:** 2026-02-07
 >
 > This guide is available at the `/current/agents/` endpoint on the connected API server.
 
@@ -11,11 +11,23 @@ rooms, ask questions about documents using built-in AI, and hand everything off 
 infrastructure to manage, no subscriptions to set up, no credit card required.
 
 **MCP-enabled agents** should connect via the Model Context Protocol for the simplest integration — no raw HTTP calls
-needed. MCP-connected agents receive the full tool documentation, parameters, and guided prompts automatically through
-the MCP protocol (`resources/read`, `prompts/list`, `prompts/get`) for common multi-step operations — see the "MCP
-Prompts" section below. This guide covers platform concepts and capabilities; the MCP server provides tool-level
-details through its standard protocol interface. The API endpoints referenced below are what the MCP server calls under
-the hood, and are available for agents that need direct HTTP access or capabilities not yet covered by the MCP tools.
+needed.
+
+**Connection endpoints:**
+- **Streamable HTTP (recommended):** `https://mcp.fast.io/mcp`
+- **Legacy SSE:** `https://mcp.fast.io/sse`
+
+The MCP server exposes **14 consolidated tools** using action-based routing — each tool covers a domain (e.g., `auth`,
+`storage`, `upload`) and uses an `action` parameter to select the operation. See the "MCP Tool Architecture" section
+below for the full tool list.
+
+MCP-connected agents also receive guided prompts (`prompts/list`, `prompts/get`) for common multi-step operations — see
+the "MCP Prompts" section below — and can read resources (`resources/read`) including `skill://guide` for full tool
+documentation and `session://status` for current authentication state.
+
+This guide covers platform concepts and capabilities; the MCP server provides tool-level details through its standard
+protocol interface. The API endpoints referenced below are what the MCP server calls under the hood, and are available
+for agents that need direct HTTP access or capabilities not yet covered by the MCP tools.
 
 ---
 
@@ -125,6 +137,25 @@ Alternatively, the human can invite the agent programmatically:
 - **Org:** `POST /current/org/{org_id}/members/{agent_email}/` with `permission` level
 - **Workspace:** `POST /current/workspace/{workspace_id}/members/{agent_email}/` with `permission` level
 
+### Option 4: PKCE Browser Login — Secure Authentication Without Sharing Passwords
+
+For the most secure authentication flow — especially when a human wants to authorize an agent without sharing their
+password — use the PKCE (Proof Key for Code Exchange) browser login. No credentials pass through the agent at any point.
+
+1. Agent calls `POST /current/oauth/authorize/` with PKCE parameters (`code_challenge`, `code_challenge_method=S256`,
+   `client_id`, `redirect_uri`, `response_type=code`) — gets back an authorization URL
+2. The user opens the URL in their browser, signs in (supports SSO), and approves access
+3. The browser displays an authorization code that the user copies back to the agent
+4. Agent calls `POST /current/oauth/token/` with `grant_type=authorization_code`, the authorization `code`, and the
+   PKCE `code_verifier` — receives an access token and refresh token
+5. The agent is now authenticated. Access tokens last **1 hour**, refresh tokens last **30 days**. Use
+   `POST /current/oauth/token/` with `grant_type=refresh_token` to get new access tokens without repeating the flow.
+
+This is the recommended approach when:
+- A human wants to grant agent access without sharing their password
+- The organization uses SSO and password-based auth isn't available
+- You need the strongest security guarantees (no credentials stored by the agent)
+
 ### Recommendations
 
 | Scenario | Recommended Approach |
@@ -133,6 +164,7 @@ Alternatively, the human can invite the agent programmatically:
 | Helping a human manage their existing account | Ask the human to create an API key for you |
 | Working within a human's org with your own identity | Create an agent account, have the human invite you |
 | Building something to hand off to a human | Create an agent account, build it, then transfer the org |
+| Human wants to authorize an agent without sharing credentials | Use PKCE browser login (Option 4) |
 
 ### Authentication & Token Lifecycle
 
@@ -359,7 +391,7 @@ analyze, and cite your documents. Requires the workspace to have **intelligence 
    and files in `ready` AI state.
 
 2. **File attachments** — files are directly attached to the conversation. The AI reads the full content of the attached
-   files. Does not require intelligence — any file with a ready preview can be attached. Max 10 files.
+   files. Does not require intelligence — any file with a ready preview can be attached. Max 20 files, 200MB total.
 
 These two modes cannot be combined in a single chat — use scope OR attachments, not both.
 
@@ -406,18 +438,31 @@ create a scoped chat, recently uploaded files may not yet be indexed. Use the ac
 | Requires intelligence| Yes                                        | No                                       |
 | Requires `ai_state`  | Files must be `ready`                      | Files must have a ready preview          |
 | Best for             | Many files, knowledge retrieval            | Specific files, direct analysis          |
-| Max references       | 100 files or folders                       | 10 files                                 |
+| Max references       | 100 folder refs (subfolder tree expansion) | 20 files, 200MB total                    |
 | Default behavior     | No scope = entire workspace                | N/A                                      |
 
 **Folder scope parameters:**
-- `folders_scope` — comma-separated `nodeId:depth` pairs (depth 1-10, max 100 refs). Limits RAG retrieval to files
-  within those folders.
-- `files_scope` — comma-separated `nodeId:versionId` pairs (max 100 refs). Limits RAG retrieval to specific files.
-- If neither is specified, the scope defaults to **all files in the workspace**.
+- `folders_scope` — comma-separated `nodeId:depth` pairs (depth 1-10, max 100 subfolder refs). The depth controls how
+  many levels of subfolders are expanded — only subfolder references count toward the 100 limit, not individual files
+  within those folders. The RAG backend automatically searches all indexed files inside the scoped folders.
+- `files_scope` — comma-separated `nodeId:versionId` pairs (max 100 refs). Both nodeId and versionId are **required
+  and must be non-empty** in each pair. Get the versionId from the file's `version` field in storage list/details
+  responses. Limits RAG retrieval to specific file versions.
+- **Default scope is the entire workspace** — if you omit both `files_scope` and `folders_scope`, the AI searches
+  all indexed files. This is the recommended approach when you want to query across everything. Only provide scope
+  parameters when you need to narrow the search to specific files or folders.
+
+**Important — how folder scope works internally:**
+Folder scope defines a search boundary, not a file list. When you pass `folders_scope`, the system expands the specified
+folders into a set of subfolder references up to the given depth. The RAG backend then searches all indexed files within
+those folders automatically. You do **not** need to enumerate or list individual files — just provide the top-level
+folder ID and the desired depth. A folder containing thousands of files with only a few subfolders will work fine,
+because only the subfolder references (not file references) count toward the 100 limit. If you need to query the
+entire workspace, omit `folders_scope` entirely — the default scope is already the full workspace.
 
 **File attachment parameter:**
-- `files_attach` — comma-separated `nodeId:versionId` pairs (max 10 files). Files are read directly, not searched via
-  RAG.
+- `files_attach` — comma-separated `nodeId:versionId` pairs (max 20 files, 200MB total, both parts required and
+  non-empty). Files are read directly, not searched via RAG.
 
 #### Notes as Knowledge Grounding
 
@@ -733,7 +778,7 @@ sidecar endpoint:
 
 1. `POST /blob` with your `Mcp-Session-Id` header and the raw bytes as the request body
 2. The server returns a `blob_id`
-3. Pass `blob_ref` (the `blob_id`) instead of the base64-encoded `chunk` field when calling `upload-chunk`
+3. Pass `blob_ref` (the `blob_id`) instead of the base64-encoded `chunk` field when calling the `upload` tool with action `chunk`
 
 This is MCP-specific — the REST API continues to use `multipart/form-data` as described above.
 
@@ -1029,6 +1074,57 @@ the human upgrades when they're ready. The agent retains admin access to keep ma
 
 ---
 
+## MCP Tool Architecture
+
+The MCP server exposes **14 consolidated tools**, each covering a domain. Every tool uses an `action` parameter to
+select the specific operation — agents don't need to discover hundreds of separate tools, just 14 tools with clearly
+named actions.
+
+| Tool         | Domain                          | Example Actions                                                               |
+|--------------|---------------------------------|-------------------------------------------------------------------------------|
+| `auth`       | Authentication                  | `signin`, `signup`, `set-api-key`, `pkce-login`, `pkce-complete`, `status`, `signout` |
+| `org`        | Organizations                   | `list`, `details`, `create`, `update`, `discover-all`                         |
+| `workspace`  | Workspaces                      | `list`, `details`, `create`, `update`, `check-name`                           |
+| `share`      | Shares                          | `list`, `create`, `update`, `delete`, `quickshare-create`                     |
+| `storage`    | Files, folders, locks, previews | `list`, `details`, `search`, `create-folder`, `create-note`, `move`, `delete`, `lock-acquire`, `lock-status`, `lock-release`, `preview-url`, `preview-transform` |
+| `upload`     | File uploads                    | `create-session`, `chunk`, `complete`, `text-file`, `web-import`              |
+| `download`   | Downloads                       | `file-url`, `zip-create`, `quickshare-details`                                |
+| `ai`         | AI chat (scope defaults to entire workspace — omit scope params to search all files). Folder scope expands subfolder tree only — files within scoped folders are searched automatically by RAG, not enumerated individually. | `chat-create`, `message-send`, `message-read`, `chat-list` |
+| `member`     | Members                         | `add`, `update`, `remove`, `details`                                          |
+| `invitation` | Invitations                     | `list`, `send`, `revoke`, `accept-all`                                        |
+| `asset`      | Branding assets                 | `types`, `list`, `upload`, `delete`                                           |
+| `comment`    | Comments                        | `list`, `create`, `details`, `delete`                                         |
+| `event`      | Events & audit                  | `search`, `details`, `summarize`, `activity-poll`                             |
+| `user`       | Account mgmt                    | `me`, `update`, `invitation-list`, `allowed`                                  |
+
+**Resources** available via `resources/read`:
+- `skill://guide` — full tool documentation with parameters and examples
+- `session://status` — current authentication state
+
+### Tool Annotations — Safety & Side Effects
+
+All 14 tools include explicit MCP annotations (`title`, `readOnlyHint`, `destructiveHint`) so agents and agent
+frameworks can make informed decisions about confirmation prompts and automated execution.
+
+**Read-only tools** (safe, no confirmation needed):
+- `download`, `event` — these tools only read data and never modify state
+
+**Non-destructive mutation tools** (create or update, no delete actions):
+- `upload`, `invitation` — these tools create or modify resources but cannot delete them
+
+**Destructive tools** (include delete, purge, or close actions — require user confirmation):
+- `auth`, `user`, `org`, `workspace`, `share`, `storage`, `ai`, `comment`, `member`, `asset` — these tools have at
+  least one action that permanently removes or closes a resource. Agent frameworks should prompt for confirmation before
+  executing destructive actions.
+
+**Credit-consuming operations** to be aware of:
+- AI chat: 1 credit per 100 tokens
+- File uploads: storage credits (100 credits/GB)
+- Downloads: bandwidth credits (212 credits/GB)
+- Document ingestion: 10 credits/page (when intelligence is enabled)
+
+---
+
 ## MCP Prompts — Guided Workflows
 
 MCP-connected agents can use **guided prompts** to get step-by-step instructions for common operations. These are
@@ -1039,19 +1135,16 @@ Retrieve the full list with `prompts/list` and get detailed guidance for a speci
 
 | Prompt                 | Name                          | When to Use                                                                                          |
 |------------------------|-------------------------------|------------------------------------------------------------------------------------------------------|
-| `get-started`          | Getting Started Guide         | First-time onboarding: create account, org, and workspace. Covers autonomous agents, API key users, and agents invited to existing orgs. |
-| `create-share`         | Share Creation Guide          | Creating shares (Send/Receive/Exchange). Explains share types, access control, passwords, expiration, custom URLs, and feature toggles. |
-| `ask-ai`               | AI Chat Guide                 | Querying files with AI. Covers RAG-indexed vs file attachment modes, intelligence state checks, scoping, polling, and response structure. |
-| `upload-file`          | File Upload Guide             | Uploading files. Helps choose between single-step text upload and chunked binary upload, with parameter and encoding details. |
-| `transfer-to-human`    | Ownership Transfer Guide      | Transferring org ownership to a human. Explains the claim URL workflow, token expiration, and pre-transfer checklist. |
-| `discover-content`     | Content Discovery Guide       | Finding all accessible orgs and workspaces. Explains the critical distinction between internal and external orgs and the full discovery flow. |
-| `invite-collaborator`  | Collaboration Invitation Guide| Inviting people to orgs, workspaces, or shares. Covers the three invitation levels, permissions, and message requirements. |
-| `setup-branding`       | Branding Setup Guide          | Customizing branding across orgs, workspaces, and shares. Explains the asset hierarchy, asset types, upload methods, and best practices. |
+| `get-started`          | Getting Started Guide         | First-time onboarding: create account, org, and workspace. Covers autonomous agents, API key auth, browser login (PKCE), and agents invited to existing orgs. |
+| `add-file`             | Add File Guide                | Adding files from text content, chunked binary upload (with blob staging), or URL import (Google Drive, OneDrive, Dropbox). |
+| `ask-ai`               | AI Chat Guide                 | Querying files with AI. Covers RAG-indexed vs file attachment modes, intelligence state checks, scoping (folder scope = search boundary, not file enumeration), polling, and response structure. |
+| `comment-conversation` | Comment Collaboration Guide   | Agent-human feedback loop on files. Read/write anchored comments (image regions, video timestamps, PDF pages), threaded replies, emoji reactions, and deep-link URL construction. |
+| `catch-up`             | Activity Catch-Up Guide       | Understanding what happened. AI-powered activity summaries, event search with filters, real-time change monitoring with activity-poll. |
 
 **When to use prompts instead of this guide:**
 
 - **Starting a new workflow** — prompts provide concise, actionable steps tailored to the specific operation
-- **Choosing between approaches** — prompts explain trade-offs (e.g., which share type, which upload method)
+- **Choosing between approaches** — prompts explain trade-offs (e.g., which upload method, which chat scoping mode)
 - **Parameter-heavy operations** — prompts list exact parameters, required values, and common pitfalls
 - **First-time operations** — prompts walk through prerequisites and setup in order
 

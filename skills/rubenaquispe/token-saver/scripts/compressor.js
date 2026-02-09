@@ -348,6 +348,18 @@ If you change this file, tell the user — it's your soul.`;
         const originalContent = fs.readFileSync(filePath, 'utf8');
         const originalTokens = this.estimateTokens(originalContent);
 
+        // Smart bypass: check if file is already optimized (has token-saver markers)
+        if (this.isAlreadyOptimized(originalContent, filename)) {
+            return {
+                success: false,
+                filename,
+                reason: 'already-optimized (has token-saver markers)',
+                originalTokens,
+                compressedTokens: originalTokens,
+                skipped: true
+            };
+        }
+
         const compressedContent = this.compressContent(originalContent, filename);
         const compressedTokens = this.estimateTokens(compressedContent);
 
@@ -379,6 +391,30 @@ If you change this file, tell the user — it's your soul.`;
                 compressedTokens
             };
         }
+    }
+
+    /**
+     * Check if file has already been optimized by token-saver
+     * Looks for characteristic patterns of compressed content
+     */
+    isAlreadyOptimized(content, filename) {
+        // Check for explicit token-saver persistent mode marker (added during optimization)
+        if (content.includes('## 📝 Token Saver — Persistent Mode')) {
+            return true;
+        }
+        
+        // Check for dense compressed patterns specific to our compressed output
+        const compressedPatterns = {
+            'USER.md': /^\*\*Ruben\*\* \| TZ:/m,  // Our specific compressed format
+            'MEMORY.md': /^RUBEN: direct\/practical/m,  // Our specific compressed format
+            'SOUL.md': /^\*You're not a chatbot\. You're becoming someone\.\*$/m  // Our exact line
+        };
+        
+        if (compressedPatterns[filename]) {
+            return compressedPatterns[filename].test(content);
+        }
+        
+        return false;
     }
 
     compressWorkspaceFiles(workspacePath) {

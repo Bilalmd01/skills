@@ -3,6 +3,12 @@ name: stp
 description: 结构化任务规划与分步执行（Structured Task Planning）。支持两种模式：(1) 文件模式 - 从 Markdown 任务文档加载步骤执行；(2) 自然语言模式 - 接受自然语言任务描述，自动生成计划书并确认后执行。触发词：/stp、任务规划、步骤执行。功能包括：步骤分解、状态跟踪、执行日志记录、快速失败策略。
 ---
 
+> **路径变量说明**（本文档通用）：
+> - `<STP_ROOT>` = `~/.openclaw/workspace/skills/stp`
+> - `<STP_SCRIPTS>` = `<STP_ROOT>/scripts`
+> - `<STP_TASK_LIST>` = `~/.openclaw/workspace/task-list`
+> - `<STP_TASKS>` = `~/.openclaw/workspace/tasks`
+
 # STP（Structured Task Planning）结构化任务规划与分步执行
 
 ## 功能概述
@@ -58,7 +64,7 @@ description: 结构化任务规划与分步执行（Structured Task Planning）�
 ### 第三步：保存并执行
 
 1. **生成文件名**：基于任务内容生成简短文件名（如 `stock-query.md`）
-2. **保存位置**：`~/.openclaw/workspace/task-list/<filename>.md`
+2. **保存位置**：`<STP_TASK_LIST>/<filename>.md`
 3. **开始执行**：按原有 STP 流程执行任务
 
 ### 计划书标准格式
@@ -119,7 +125,7 @@ description: 结构化任务规划与分步执行（Structured Task Planning）�
 ```
 
 **用户确认后**：
-- 保存到 `~/.openclaw/workspace/task-list/stock-query-20260207.md`
+- 保存到 `<STP_TASK_LIST>/<任务描述>-<日期>.md`
 - 开始执行 STP 任务流程
 
 ---
@@ -175,7 +181,7 @@ python3 execute_task.py --log task-8 1 success "脚本执行成功" --exec-file 
 ### 步骤2：生成任务目录和步骤文档
 
 ```bash
-python3 ~/.openclaw/workspace/skills/stp/scripts/execute_task.py --task-file /path/to/task.md
+python3 <STP_SCRIPTS>/execute_task.py --task-file /path/to/task.md
 ```
 
 **任务目录命名规则**：`task-{自增ID}`
@@ -250,6 +256,7 @@ tasks/
 
 ### task-list/
 - 存放自然语言模式生成的任务计划书
+- 路径：`<STP_TASK_LIST>`
 - 文件命名格式：`<简短描述>-<日期>.md`
 
 > **注意**：`stp` 是 `structured-task-planning` 的缩写。

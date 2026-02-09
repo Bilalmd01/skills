@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-bridgebot",
+  "displayName": "BridgeBot",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770580809674,
+    "commit": "https://github.com/openclaw/skills/commit/3c519796b891c26ee140a49703b86acc3ee7c13b"
+  },
+  "history": []
+}

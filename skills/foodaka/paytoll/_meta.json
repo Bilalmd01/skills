@@ -1,0 +1,11 @@
+{
+  "owner": "foodaka",
+  "slug": "paytoll",
+  "displayName": "Paytoll",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770483191669,
+    "commit": "https://github.com/openclaw/skills/commit/077e7568ab4014997bbe10caca0fb356d11d2f80"
+  },
+  "history": []
+}

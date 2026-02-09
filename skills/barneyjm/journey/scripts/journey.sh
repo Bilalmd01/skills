@@ -35,13 +35,7 @@ if [ -z "$CAMINO_API_KEY" ]; then
 fi
 
 # Check for required field
-WAYPOINTS=$(echo "$INPUT" | jq '.waypoints // empty')
 WAYPOINT_COUNT=$(echo "$INPUT" | jq '.waypoints | length // 0')
-
-if [ "$WAYPOINTS" = "null" ] || [ -z "$WAYPOINTS" ]; then
-    echo "Error: 'waypoints' array is required" >&2
-    exit 1
-fi
 
 if [ "$WAYPOINT_COUNT" -lt 2 ]; then
     echo "Error: At least 2 waypoints are required" >&2

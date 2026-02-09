@@ -22,6 +22,8 @@ function parseArgs(args) {
     dark: false,
     compact: false,
     rtl: false,
+    wrap: true,
+    maxLines: 3,
   };
   
   for (let i = 0; i < args.length; i++) {
@@ -44,6 +46,8 @@ function parseArgs(args) {
       case '--align': opts.align = next.split(',').map(s => s.trim().toLowerCase()); i++; break;
       case '--compact': opts.compact = true; break;
       case '--rtl': opts.rtl = true; break;
+      case '--no-wrap': opts.wrap = false; break;
+      case '--max-lines': opts.maxLines = parseInt(next); i++; break;
       case '--help':
         console.log(`
 table.mjs - Generate table images from JSON data
@@ -66,6 +70,8 @@ Options:
   --align         Column alignments: l,r,c (comma-separated)
   --compact       Reduce padding
   --rtl           Force RTL layout (auto-detected for Hebrew/Arabic)
+  --no-wrap       Disable word wrapping (truncate instead)
+  --max-lines N   Max lines per cell when wrapping (default: 3)
 `);
         process.exit(0);
     }
@@ -88,6 +94,44 @@ function truncateText(text, maxWidth, fontSize) {
   const maxChars = Math.floor(maxWidth / charWidth);
   if (str.length <= maxChars) return str;
   return str.slice(0, maxChars - 1) + '…';
+}
+
+// Word-wrap text into lines that fit within maxWidth
+function wrapText(text, maxWidth, fontSize, maxLines = 3) {
+  const str = String(text);
+  const charWidth = fontSize * 0.55;
+  const maxChars = Math.floor(maxWidth / charWidth);
+  
+  if (str.length <= maxChars) return [str];
+  
+  const words = str.split(/(\s+)/); // Keep whitespace as separate tokens
+  const lines = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    const testLine = currentLine + word;
+    if (testLine.length > maxChars && currentLine.length > 0) {
+      lines.push(currentLine.trimEnd());
+      if (lines.length >= maxLines) {
+        // Truncate last line
+        lines[lines.length - 1] = lines[lines.length - 1].slice(0, maxChars - 1) + '…';
+        return lines;
+      }
+      currentLine = word.trimStart();
+    } else {
+      currentLine = testLine;
+    }
+  }
+  
+  if (currentLine.trim()) {
+    if (lines.length >= maxLines) {
+      lines[lines.length - 1] = lines[lines.length - 1].slice(0, maxChars - 1) + '…';
+    } else {
+      lines.push(currentLine.trimEnd());
+    }
+  }
+  
+  return lines;
 }
 
 // Detect if value looks numeric
@@ -236,11 +280,41 @@ async function generateTableSvg(data, opts) {
     return Math.max(headerWidth, maxDataWidth, minColWidth) + padding.x * 2;
   });
   
-  // Constrain to max width
+  // Constrain to max width — when wrapping is on, be smarter about distribution
   let totalWidth = colWidths.reduce((a, b) => a + b, 0);
   if (totalWidth > opts.maxWidth) {
-    const scale = opts.maxWidth / totalWidth;
-    colWidths.forEach((w, i) => colWidths[i] = Math.floor(w * scale));
+    if (opts.wrap) {
+      // Smart distribution: ensure headers fit, shrink wide columns proportionally
+      const headerWidths = columns.map((col, i) => 
+        estimateTextWidth(headers[i] || col, fontSize) + padding.x * 2
+      );
+      const minWidths = headerWidths.map((hw, i) => Math.max(hw, minColWidth));
+      const totalMin = minWidths.reduce((a, b) => a + b, 0);
+      const excess = opts.maxWidth - totalMin;
+      
+      if (excess > 0) {
+        // Distribute extra space proportionally to how much each col wants beyond its min
+        const wants = colWidths.map((w, i) => Math.max(0, w - minWidths[i]));
+        const totalWant = wants.reduce((a, b) => a + b, 0);
+        colWidths.forEach((w, i) => {
+          if (totalWant > 0) {
+            colWidths[i] = Math.floor(minWidths[i] + (wants[i] / totalWant) * excess);
+          } else {
+            colWidths[i] = Math.floor(minWidths[i] + excess / columns.length);
+          }
+        });
+      } else {
+        // Not enough space even for headers — scale everything
+        const scale = opts.maxWidth / totalMin;
+        colWidths.forEach((w, i) => colWidths[i] = Math.floor(minWidths[i] * scale));
+      }
+    } else {
+      const scale = opts.maxWidth / totalWidth;
+      colWidths.forEach((w, i) => colWidths[i] = Math.floor(w * scale));
+    }
+    totalWidth = colWidths.reduce((a, b) => a + b, 0);
+    // Adjust last column to match maxWidth exactly
+    colWidths[colWidths.length - 1] += opts.maxWidth - totalWidth;
     totalWidth = opts.maxWidth;
   }
   
@@ -259,10 +333,28 @@ async function generateTableSvg(data, opts) {
     return 'start';
   });
   
+  // Pre-compute wrapped lines for each cell and row heights
+  const wrappedData = data.map(row => {
+    const cells = {};
+    let maxLines = 1;
+    columns.forEach((col, i) => {
+      const val = String(row[col] ?? '');
+      const availWidth = colWidths[i] - padding.x * 2;
+      if (opts.wrap) {
+        const lines = wrapText(val, availWidth, fontSize, opts.maxLines);
+        cells[col] = lines;
+        maxLines = Math.max(maxLines, lines.length);
+      } else {
+        cells[col] = [truncateText(val, availWidth, fontSize)];
+      }
+    });
+    return { cells, height: lineHeight * maxLines + padding.y * 2 };
+  });
+  
   // Calculate dimensions
   const titleHeight = opts.title ? fontSize * 2 : 0;
   const headerHeight = rowHeight;
-  const bodyHeight = data.length * rowHeight;
+  const bodyHeight = wrappedData.reduce((sum, r) => sum + r.height, 0);
   const totalHeight = titleHeight + headerHeight + bodyHeight;
   
   // Build SVG
@@ -303,10 +395,11 @@ async function generateTableSvg(data, opts) {
   y += headerHeight;
   
   // Data rows
-  data.forEach((row, rowIndex) => {
+  wrappedData.forEach((wrappedRow, rowIndex) => {
+    const thisRowHeight = wrappedRow.height;
     const rowBg = opts.stripe && rowIndex % 2 === 1 ? theme.rowAltBg : theme.rowBg;
     svg += `
-  <rect x="0" y="${y}" width="${totalWidth}" height="${rowHeight}" fill="${rowBg}"/>`;
+  <rect x="0" y="${y}" width="${totalWidth}" height="${thisRowHeight}" fill="${rowBg}"/>`;
     
     // Add subtle border between rows
     svg += `
@@ -314,18 +407,26 @@ async function generateTableSvg(data, opts) {
     
     let x = 0;
     columns.forEach((col, i) => {
-      const val = row[col] ?? '';
+      const lines = wrappedRow.cells[col];
       const textX = alignments[i] === 'end' ? x + colWidths[i] - padding.x :
                     alignments[i] === 'middle' ? x + colWidths[i] / 2 :
                     x + padding.x;
       const anchor = alignments[i] === 'end' ? 'end' :
                      alignments[i] === 'middle' ? 'middle' : 'start';
-      const cellText = truncateText(val, colWidths[i] - padding.x * 2, fontSize);
-      svg += renderCell(cellText, textX, y + rowHeight / 2 + fontSize / 3, anchor, 'cell', fontSize, emojiCache);
+      
+      // Vertically center the text block within the row
+      const textBlockHeight = lines.length * lineHeight;
+      const startY = y + (thisRowHeight - textBlockHeight) / 2 + fontSize;
+      
+      lines.forEach((line, lineIdx) => {
+        const lineY = startY + lineIdx * lineHeight;
+        svg += renderCell(line, textX, lineY, anchor, 'cell', fontSize, emojiCache);
+      });
+      
       x += colWidths[i];
     });
     
-    y += rowHeight;
+    y += thisRowHeight;
   });
   
   // Bottom border

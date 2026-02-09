@@ -12,7 +12,7 @@ openclaw cron add \
   --cron "0 8 * * *" \
   --tz "America/Los_Angeles" \
   --session isolated \
-  --message "Execute the full AI Persona OS daily protocol:
+  --message "Run the AI Persona OS daily protocol:
 
 Step 1: Load previous context — Read today's and yesterday's memory logs. Summarize key state, pending items, and open threads.
 

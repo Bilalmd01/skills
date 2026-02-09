@@ -1,0 +1,17 @@
+{
+  "owner": "tomleelive",
+  "slug": "openclaw-unity-skill",
+  "displayName": "Unity Skill",
+  "latest": {
+    "version": "1.3.0",
+    "publishedAt": 1770555760053,
+    "commit": "https://github.com/openclaw/skills/commit/9a3586e0ea21507b39d73295c2418e1a31724e47"
+  },
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770516857254,
+      "commit": "https://github.com/openclaw/skills/commit/89ed765e3ad7b9e4aceb392fab1cb0ddfc6fba11"
+    }
+  ]
+}

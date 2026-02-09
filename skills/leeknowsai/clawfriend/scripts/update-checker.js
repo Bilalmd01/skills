@@ -62,7 +62,6 @@ async function checkForUpdates() {
         latestVersion: response.latest_version,
         changelog: response.changelog,
         breakingChanges: response.breaking_changes,
-        updateUrls: response.update_urls
       };
     } else {
       success(`Already using the latest version: ${currentVersion}`);
@@ -77,86 +76,6 @@ async function checkForUpdates() {
   }
 }
 
-/**
- * Download updated file
- */
-async function downloadFile(url, destPath) {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'x-api-key': getEnv('CLAW_FRIEND_API_KEY')
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const content = await response.text();
-    
-    // Ensure directory exists
-    const dir = path.dirname(destPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    
-    fs.writeFileSync(destPath, content, 'utf8');
-    success(`Downloaded: ${path.basename(destPath)}`);
-  } catch (e) {
-    error(`Failed to download ${destPath}: ${e.message}`);
-    throw e;
-  }
-}
-
-/**
- * Apply update
- */
-async function applyUpdate(updateInfo) {
-  if (!updateInfo.updateAvailable) {
-    info('No update to apply');
-    return;
-  }
-  
-  const skillDir = path.resolve(__dirname, '..');
-  
-  info('Downloading updated files...');
-  
-  // Download SKILL.md
-  if (updateInfo.updateUrls?.skill_md) {
-    await downloadFile(
-      updateInfo.updateUrls.skill_md,
-      path.join(skillDir, 'SKILL.md')
-    );
-  }
-  
-  // Download HEARTBEAT.md
-  if (updateInfo.updateUrls?.heartbeat_md) {
-    await downloadFile(
-      updateInfo.updateUrls.heartbeat_md,
-      path.join(skillDir, 'HEARTBEAT.md')
-    );
-  }
-  
-  // Update version in config
-  info('Updating version in config...');
-  updateClawFriendConfig({
-    env: {
-      SKILL_VERSION: updateInfo.latestVersion
-    }
-  });
-  
-  success(`Updated to version ${updateInfo.latestVersion}`);
-  
-  if (updateInfo.breakingChanges) {
-    warning('IMPORTANT: Review breaking changes before continuing');
-    if (updateInfo.changelog) {
-      info(`Changelog: ${updateInfo.changelog}`);
-    }
-  }
-  
-  info('Review the updated SKILL.md and HEARTBEAT.md files');
-  info('Merge any new heartbeat tasks into your main OpenClaw HEARTBEAT.md');
-}
 
 /**
  * Merge heartbeat tasks
@@ -228,7 +147,7 @@ async function main() {
       case 'check': {
         const updateInfo = await checkForUpdates();
         if (updateInfo.updateAvailable) {
-          info('\nTo apply the update, run: node update-checker.js apply');
+          info('\nTo apply the update, run: npx clawhub@latest update clawfriend and merge heartbeat tasks');
         }
         break;
       }
@@ -236,7 +155,7 @@ async function main() {
       case 'apply': {
         const updateInfo = await checkForUpdates();
         if (updateInfo.updateAvailable) {
-          await applyUpdate(updateInfo);
+          info('Please use: npx clawhub@latest update clawfriend and merge heartbeat tasks to apply the update');
           mergeHeartbeatTasks();
         }
         break;
@@ -253,6 +172,7 @@ async function main() {
         console.log('  node update-checker.js check      - Check for updates');
         console.log('  node update-checker.js apply      - Apply available updates');
         console.log('  node update-checker.js merge      - Check heartbeat tasks to merge');
+        console.log('\nRecommended: Use npx clawhub@latest update clawfriend to update');
         break;
       }
     }

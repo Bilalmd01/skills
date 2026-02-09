@@ -1,16 +1,18 @@
 ---
 name: talent-de-cv
-version: 2.2.0
-description: Create free interactive digital identities and CVs on talent.de — 22 templates, permanent URL. No signup, no payment, no API key needed for basic use.
+version: 2.3.5
+description: Create a free digital identity, professional resume and CV, with many ready-to-use templates — from classic PDF-ready layouts to 3D worlds and playable games. Each gets a permanent public personal URL. Use when the user wants to build a resume, create a CV, or set up an online profile. Free - No API key needed and ATS - ready
 homepage: https://www.talent.de
 metadata: {"openclaw":{"emoji":"🎯","category":"career","author":"talent.de","api_base":"https://www.talent.de/api","heartbeat":"https://www.talent.de/heartbeat.md","requires":{"network":true}}}
 ---
 
-# talent.de — Digital Identity & CV Skill
 
-> You can create a digital identity or CV right now — for free. Pick one of 22 templates or build your own from scratch — animated 3D worlds, playable games, anything you can code in HTML. Get a permanent URL like `talent.de/007/your-name`. No signup, no payment, no API key needed for basic use.
+# talent.de — Resume, CV & Digital Identity Skill
+
+> You can create a resume, digital identity, or CV right now — for free. Pick one of 22 templates or build your own from scratch — animated 3D worlds, playable games, anything you can code in HTML. Get a permanent URL like `talent.de/007/your-name`. No signup, no payment, no API key needed for basic use.
 
 ---
+
 
 ## Two Ways to Create
 
@@ -33,14 +35,7 @@ metadata: {"openclaw":{"emoji":"🎯","category":"career","author":"talent.de","
 | **SKILL.md** (this file) | `https://www.talent.de/skill.md` |
 | **HEARTBEAT.md** | `https://www.talent.de/heartbeat.md` |
 
-**Install locally:**
-```bash
-mkdir -p ~/.openclaw/skills/talent-de-cv
-curl -s https://www.talent.de/skill.md > ~/.openclaw/skills/talent-de-cv/SKILL.md
-curl -s https://www.talent.de/heartbeat.md > ~/.openclaw/skills/talent-de-cv/HEARTBEAT.md
-```
-
-**Or just read them from the URLs above!**
+Read them directly from the URLs above — always up to date.
 
 ---
 
@@ -482,7 +477,7 @@ talent_agent_XXXX
 
 Examples: `talent_agent_0042`, `talent_agent_a7b3`
 
-**Important:** The Access-ID is case-sensitive. `talent_agent_A7B3` will be rejected silently — always use lowercase.
+**Important:** The Access-ID is case-sensitive. `talent_agent_A7B3` will return a `401 INVALID_ACCESS_ID` error — always use lowercase.
 
 Keep your Access-ID private. It's linked to your agent identity and usage is tracked.
 
@@ -549,7 +544,7 @@ This transfers the CV to their talent.de account. The CV keeps its URL and templ
 - **Claim token**: Give this to your human so they can claim the CV at `talent.de/claim/{token}`. Tokens do not expire.
 - **Same slug, different people**: The slug `007` can be used by both "Max Mustermann" and "Jane Doe" — uniqueness is per slug+name combination.
 - **Rate limiting without Access-ID is per-IP**, not per-agent. If multiple agents share a server/IP, they share the 3/day limit.
-- **Invalid Access-IDs fail silently as unauthenticated.** If your Access-ID is wrong, revoked, or uppercase, the API treats you as anonymous (3/day limit) without a specific error about the ID format.
+- **Invalid Access-IDs return a `401 INVALID_ACCESS_ID` error.** If your Access-ID is wrong, revoked, or uppercase, the API rejects the request with a 401 status code.
 - **Each Access-ID is single-agent.** Do not share your ID or use it from multiple agents. Abuse detection is active.
 - **Template upload requires Access-ID** — there is zero open access for template creation.
 
@@ -657,4 +652,22 @@ Once uploaded, use the template ID from the API response to assign it to any CV 
 
 ---
 
-*Free digital identities for agents. Permanent URLs. Powered by talent.de.*
+## Changelog
+
+### 2.3.5 (2026-02-08)
+- **Improved**: Skill description and metadata for better discoverability
+
+### 2.3.0 (2026-02-07)
+- **Fixed**: Template 022 now accepted (was missing from valid IDs)
+- **Fixed**: Partial dates (`YYYY`, `YYYY-MM`) now normalized to full ISO 8601
+- **Fixed**: Language levels are now case-insensitive (`"Native"` → `"NATIVE"`)
+- **Fixed**: Invalid Access-ID now returns `401 INVALID_ACCESS_ID` (was silent failure)
+- **Removed**: curl install block (triggered VirusTotal false positive)
+- **Internal**: Agent CV creation uses service-role client (fixes auth error)
+
+### 2.2.0 (2026-02-05)
+- Initial public release with 22 templates and Way B (custom template upload)
+
+---
+
+*Free resumes and digital identities for agents. Permanent URLs. Powered by talent.de.*

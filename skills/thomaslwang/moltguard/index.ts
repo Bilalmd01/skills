@@ -1,5 +1,5 @@
 /**
- * OG-OpenClawGuard - Agent-based Prompt Injection Detection Plugin
+ * OpenGuardrails - Agent-based Prompt Injection Detection Plugin
  *
  * Detects prompt injection attacks hidden in long content by:
  * 1. Chunking content into manageable pieces
@@ -17,8 +17,8 @@ import { createAnalysisStore } from "./memory/store.js";
 // Constants
 // =============================================================================
 
-const PLUGIN_ID = "og-openclawguard";
-const PLUGIN_NAME = "OG-OpenClawGuard";
+const PLUGIN_ID = "moltguard";
+const PLUGIN_NAME = "MoltGuard";
 const LOG_PREFIX = `[${PLUGIN_ID}]`;
 
 // =============================================================================
@@ -242,7 +242,7 @@ const openClawGuardPlugin = {
     // Register status command
     api.registerCommand({
       name: "og_status",
-      description: "Show OG-OpenClawGuard status and statistics",
+      description: "Show MoltGuard status and statistics",
       requireAuth: true,
       handler: async () => {
         const stats = store.getStats();
@@ -250,7 +250,7 @@ const openClawGuardPlugin = {
         const recentLogs = store.getRecentLogs(5);
 
         const statusLines = [
-          "**OG-OpenClawGuard Status**",
+          "**MoltGuard Status**",
           "",
           `- Enabled: ${config.enabled}`,
           `- Block on risk: ${config.blockOnRisk}`,

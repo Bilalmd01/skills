@@ -3,9 +3,15 @@
   "slug": "queer-constant",
   "displayName": "Queer Constant",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770391325785,
-    "commit": "https://github.com/openclaw/skills/commit/e28b063e361e940b7f76d9e59d45721421221eaf"
+    "version": "1.0.2",
+    "publishedAt": 1770416300974,
+    "commit": "https://github.com/openclaw/skills/commit/877de40613fd5232dd56eaeb314e12f4b958fd64"
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770391325785,
+      "commit": "https://github.com/openclaw/skills/commit/e28b063e361e940b7f76d9e59d45721421221eaf"
+    }
+  ]
 }

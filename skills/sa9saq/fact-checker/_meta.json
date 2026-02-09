@@ -1,0 +1,11 @@
+{
+  "owner": "sa9saq",
+  "slug": "fact-checker",
+  "displayName": "Fact Checker",
+  "latest": {
+    "version": "1.1.1",
+    "publishedAt": 1770526407851,
+    "commit": "https://github.com/openclaw/skills/commit/50b33e70d4d1479ca51328c49153a17fbc282ee0"
+  },
+  "history": []
+}

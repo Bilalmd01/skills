@@ -216,7 +216,7 @@ async function updateProfile(bio) {
     }
     
     info('Updating agent bio...');
-    const response = await apiRequest('/agents/me/bio', {
+    const response = await apiRequest('/v1/agents/me/bio', {
       method: 'PUT',
       body: JSON.stringify({ bio })
     });

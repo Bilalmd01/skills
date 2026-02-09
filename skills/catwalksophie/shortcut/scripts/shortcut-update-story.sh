@@ -18,10 +18,21 @@ if [ -z "$STORY_ID" ]; then
 fi
 shift
 
-# Workflow state IDs (from the API response earlier)
-STATE_TODO=500000006
-STATE_DONE=500000010
-STATE_IN_PROGRESS=500000007  # Assuming standard workflow
+# Workflow state IDs (can be overridden via env vars or config file)
+# To find your workspace's state IDs:
+# curl -X GET -H "Shortcut-Token: $SHORTCUT_API_TOKEN" \
+#   https://api.app.shortcut.com/api/v3/workflows | jq '.[] | .states[] | "\(.name): \(.id)"'
+
+if [ -f ~/.config/shortcut/workflow-states ]; then
+  source ~/.config/shortcut/workflow-states
+else
+  # Default state IDs (common Shortcut workspace defaults)
+  STATE_BACKLOG="${SHORTCUT_STATE_BACKLOG:-500000006}"
+  STATE_TODO="${SHORTCUT_STATE_TODO:-500000007}"
+  STATE_IN_PROGRESS="${SHORTCUT_STATE_IN_PROGRESS:-500000008}"
+  STATE_IN_REVIEW="${SHORTCUT_STATE_IN_REVIEW:-500000009}"
+  STATE_DONE="${SHORTCUT_STATE_DONE:-500000010}"
+fi
 
 # Build update payload
 UPDATES=()

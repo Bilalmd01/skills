@@ -3,16 +3,7 @@ name: mini-piv
 description: "Lightweight PIV workflow - discovery-driven feature builder. No PRD needed. Asks quick questions, generates PRP, executes with validation loop. For small-to-medium features when you want to skip PRD ceremony."
 user-invocable: true
 disable-model-invocation: true
-metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "zap",
-        "homepage": "https://github.com/SmokeAlot420/ftw",
-        "requires": { "bins": ["git"] },
-        "os": ["darwin", "linux"],
-      },
-  }
+metadata: {"openclaw":{"emoji":"zap","homepage":"https://github.com/SmokeAlot420/ftw","requires":{"bins":["git"]},"os":["darwin","linux"]}}
 ---
 
 # Mini PIV Ralph - Lightweight Feature Builder
@@ -44,10 +35,10 @@ Same quality pipeline (Execute → Validate → Debug), but starts from a quick 
 | Role | Instructions |
 |------|-------------|
 | Orchestrator | This file only |
-| Research Agent | references/codebase-analysis.md + references/generate-prp.md |
-| Executor | references/piv-executor.md + references/execute-prp.md |
-| Validator | references/piv-validator.md |
-| Debugger | references/piv-debugger.md |
+| Research Agent | {baseDir}/references/codebase-analysis.md + {baseDir}/references/generate-prp.md |
+| Executor | {baseDir}/references/piv-executor.md + {baseDir}/references/execute-prp.md |
+| Validator | {baseDir}/references/piv-validator.md |
+| Debugger | {baseDir}/references/piv-debugger.md |
 
 ---
 
@@ -125,11 +116,11 @@ Feature name: {FEATURE_NAME}
 {paste structured YAML}
 
 ## Step 1: Codebase Analysis
-Read references/codebase-analysis.md for the process.
+Read {baseDir}/references/codebase-analysis.md for the process.
 Save to: {PROJECT_PATH}/PRPs/planning/mini-{FEATURE_NAME}-analysis.md
 
 ## Step 2: Generate PRP (analysis context still loaded)
-Read references/generate-prp.md for the process.
+Read {baseDir}/references/generate-prp.md for the process.
 
 ### Discovery → PRP Translation
 | Discovery | PRP Section |
@@ -158,17 +149,23 @@ Spawn a fresh sub-agent using `sessions_spawn`:
 EXECUTOR MISSION - Mini PIV
 ============================
 
-Read references/piv-executor.md for your role.
-Read references/execute-prp.md for the execution process.
+Read {baseDir}/references/piv-executor.md for your role.
+Read {baseDir}/references/execute-prp.md for the execution process.
 
 PRP: {PROJECT_PATH}/PRPs/mini-{FEATURE_NAME}.md
 Project: {PROJECT_PATH}
 
-Follow: Load PRP → ULTRATHINK → Execute → Validate → Verify
+Follow: Load PRP → Plan Thoroughly → Execute → Validate → Verify
 Output EXECUTION SUMMARY.
 ```
 
 ---
+
+## Validation Sizing Decision
+
+Before spawning a full validator, assess:
+- **<5 files changed, <100 lines, no external APIs** → Quick validation (review changes yourself as orchestrator)
+- **Otherwise** → Spawn full validator sub-agent (Step 4)
 
 ## Step 4: Spawn VALIDATOR
 
@@ -178,7 +175,7 @@ Spawn a fresh sub-agent using `sessions_spawn`:
 VALIDATOR MISSION - Mini PIV
 =============================
 
-Read references/piv-validator.md for your process.
+Read {baseDir}/references/piv-validator.md for your process.
 
 PRP: {PROJECT_PATH}/PRPs/mini-{FEATURE_NAME}.md
 Project: {PROJECT_PATH}
@@ -200,7 +197,7 @@ Spawn a fresh sub-agent using `sessions_spawn`:
 DEBUGGER MISSION - Mini PIV - Iteration {I}
 ============================================
 
-Read references/piv-debugger.md for your methodology.
+Read {baseDir}/references/piv-debugger.md for your methodology.
 
 Project: {PROJECT_PATH}
 PRP: {PROJECT_PATH}/PRPs/mini-{FEATURE_NAME}.md
@@ -227,7 +224,7 @@ git commit -m "feat(mini): implement {FEATURE_NAME}
 
 Built via Mini PIV Ralph
 
-Co-Authored-By: Claude <noreply@anthropic.com>"
+Built with FTW (First Try Works) - https://github.com/SmokeAlot420/ftw"
 ```
 
 ---
@@ -261,6 +258,12 @@ All requirements verified and passing.
 - **Executor BLOCKED**: Ask user for guidance
 - **Validator HUMAN_NEEDED**: Ask user for guidance
 - **3 debug cycles exhausted**: Escalate with persistent issues list
+
+### Sub-Agent Timeout/Failure
+When a sub-agent times out or fails:
+1. Check for partial work (files created, tests written)
+2. Retry once with a simplified, shorter prompt
+3. If retry fails, escalate to user with what was accomplished
 
 ---
 

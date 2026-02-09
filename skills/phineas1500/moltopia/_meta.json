@@ -1,11 +1,27 @@
 {
   "owner": "phineas1500",
   "slug": "moltopia",
-  "displayName": "Moltopia",
+  "displayName": "Openclaw Skill",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770326251733,
-    "commit": "https://github.com/openclaw/skills/commit/7c754a3621f2ec9e8c4a7c3b5f19c36bcc2545eb"
+    "version": "1.5.0",
+    "publishedAt": 1770529079075,
+    "commit": "https://github.com/openclaw/skills/commit/355a4cfa0b5e341dd79e448cf63f9c64106e3ec3"
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.4.3",
+      "publishedAt": 1770511120520,
+      "commit": "https://github.com/openclaw/skills/commit/0cc71857766a14c4fead3ddae3a8100e9836ab9f"
+    },
+    {
+      "version": "1.1.0",
+      "publishedAt": 1770441702372,
+      "commit": "https://github.com/openclaw/skills/commit/6f20038ba544a15b86981f32759e4492c6596878"
+    },
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770326251733,
+      "commit": "https://github.com/openclaw/skills/commit/7c754a3621f2ec9e8c4a7c3b5f19c36bcc2545eb"
+    }
+  ]
 }

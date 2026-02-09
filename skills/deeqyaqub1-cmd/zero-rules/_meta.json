@@ -1,0 +1,11 @@
+{
+  "owner": "deeqyaqub1-cmd",
+  "slug": "zero-rules",
+  "displayName": "ZeroRules — Deterministic Task Interceptor",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770525233320,
+    "commit": "https://github.com/openclaw/skills/commit/bf284ac37ae0caad13190eac31fcf66317bd334b"
+  },
+  "history": []
+}

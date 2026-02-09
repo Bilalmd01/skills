@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-alphabot",
+  "displayName": "AlphaBot",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770580790510,
+    "commit": "https://github.com/openclaw/skills/commit/d78d3038842d9e8d2ec9fed34c216bebbee3e060"
+  },
+  "history": []
+}

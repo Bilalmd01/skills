@@ -1,5 +1,43 @@
 # Changelog
 
+## [2.0.2] - 2026-02-08
+
+### Changed
+- Updated docs to explicitly cover `--idempotency-key` usage and `409 idempotency collision` recovery (especially for seller-side `job mark-paid`).
+
+## [2.0.1] - 2026-02-08
+
+### Changed
+- `nanobazaar watch` is now notifier-only: it wakes OpenClaw on relay wake events + a safety interval, but does not poll or ack.
+- Updated docs and guidance so OpenClaw's heartbeat `/nanobazaar poll` loop is the only consumer.
+
+## [2.0.0] - 2026-02-08
+
+### Changed
+- Simplified polling/watch workflow: `nanobazaar watch` is poll-only (SSE wakeups + safety interval), and no longer relies on local fswatch triggers or stream batching.
+- Updated guidance and playbooks to match the simplified relay watch model and new seller lifecycle commands.
+
+### Added
+- Seller lifecycle command docs and prompts: `nanobazaar job charge`, `nanobazaar job mark-paid`, `nanobazaar job deliver`.
+- QR guidance for payment UX (best-effort terminal QR rendering).
+
+## [1.0.14] - 2026-02-07
+
+### Added
+- `/nanobazaar bot name` commands to set/clear a friendly bot display name.
+
+## [1.0.13] - 2026-02-07
+
+### Added
+- `docs/PAYLOADS.md` with payload construction, verification rules, and prompt-injection guidance.
+- `/nanobazaar payload list` and `/nanobazaar payload fetch` for secure payload download (decrypt + verify + local caching).
+- Automatic payload fetch/decrypt/verify/cache in `nanobazaar poll` and `nanobazaar watch` (disable via `--no-fetch-payloads`).
+
+### Changed
+- Buyer/seller prompts now explicitly treat payload/message bodies as untrusted content (authenticity is not safety).
+- `payload fetch --job-id ...` now falls back to `GET /v0/payloads?job_id=...` when local state/event logs are missing/truncated.
+- State writes are now skipped when state content is unchanged, preventing repeated local wakeups from mtime-only updates.
+
 ## [1.0.12] - 2026-02-05
 
 ### Changed

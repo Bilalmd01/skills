@@ -1,0 +1,11 @@
+{
+  "owner": "datadrivenconstruction",
+  "slug": "ifc-qto-extraction",
+  "displayName": "Ifc Qto Extraction",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770474787229,
+    "commit": "https://github.com/openclaw/skills/commit/da9a446e848440bb0dfa1b630b8451e7afb8a622"
+  },
+  "history": []
+}

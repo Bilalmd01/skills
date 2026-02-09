@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-yieldbot",
+  "displayName": "YieldBot",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770580812979,
+    "commit": "https://github.com/openclaw/skills/commit/a4aca20e88d51bf46d1de606b8efdc25817c9a82"
+  },
+  "history": []
+}

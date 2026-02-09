@@ -3,9 +3,15 @@
   "slug": "moltrade",
   "displayName": "moltrade",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770381399196,
-    "commit": "https://github.com/openclaw/skills/commit/3e9ed8caeeced4b5761d000963e14f912fbb2688"
+    "version": "1.0.2",
+    "publishedAt": 1770447924294,
+    "commit": "https://github.com/openclaw/skills/commit/c89491e3bbebe4b51993ebd6cb07a8bf05911a8a"
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770381399196,
+      "commit": "https://github.com/openclaw/skills/commit/3e9ed8caeeced4b5761d000963e14f912fbb2688"
+    }
+  ]
 }

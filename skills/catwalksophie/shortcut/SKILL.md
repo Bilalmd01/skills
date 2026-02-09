@@ -1,6 +1,6 @@
 ---
 name: shortcut
-version: 1.2.0
+version: 1.4.1
 description: Manage stories on Shortcut.com kanban boards. Use when creating, updating, or listing tasks/stories on Shortcut project management boards. Supports creating stories with descriptions and types (feature/bug/chore), updating story status, and listing active/completed stories. Includes full checklist task management and comment support.
 ---
 
@@ -21,9 +21,15 @@ Manage tasks and stories on Shortcut.com project boards via API.
 2. Store it either:
    - As environment variable: `export SHORTCUT_API_TOKEN="your-token"`
    - In a file: `echo "your-token" > ~/.config/shortcut/api-token && chmod 600 ~/.config/shortcut/api-token`
-3. Optionally add to `~/.bashrc` for persistence:
+3. Initialize workflow states for your workspace:
+   ```bash
+   scripts/shortcut-init-workflow.sh
+   ```
+   This creates `~/.config/shortcut/workflow-states` with your workspace's actual state IDs.
+4. Optionally add to `~/.bashrc` for persistence:
    ```bash
    export SHORTCUT_API_TOKEN=$(cat ~/.config/shortcut/api-token 2>/dev/null | tr -d '\n')
+   source ~/.config/shortcut/workflow-states
    ```
 
 ## Available Operations
@@ -68,12 +74,14 @@ Story types:
 scripts/shortcut-update-story.sh <story-id> [--complete|--todo|--in-progress] [--description "new text"]
 ```
 
-Workflow state IDs vary by workspace. Common defaults:
-- To Do (typically `500000006`)
-- In Progress (typically `500000007`)
-- Done (typically `500000010`)
+**Workflow states:** The script uses state IDs from `~/.config/shortcut/workflow-states` (created by `shortcut-init-workflow.sh`). If not configured, it falls back to common defaults:
+- Backlog: `500000006`
+- To Do: `500000007`
+- In Progress: `500000008`
+- In Review: `500000009`
+- Done: `500000010`
 
-To find your workspace's state IDs, use the Shortcut API or check your board settings.
+**Note:** Different Shortcut workspaces may use different state IDs. Always run `shortcut-init-workflow.sh` to configure your workspace's actual IDs.
 
 ### Manage Checklist Tasks
 

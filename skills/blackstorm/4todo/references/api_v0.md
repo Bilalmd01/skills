@@ -559,17 +559,6 @@ Possible values for `error`:
 - `invalid_token`
 - `invalid token`
 - `token_expired`
-- `token_paused`
-
-**Example: token paused**
-
-```json
-{
-  "error": "token_paused",
-  "message": "Your token has been paused because your subscription has expired. Please upgrade your subscription to continue using the API.",
-  "upgrade_url": "/settings/subscription"
-}
-```
 
 **Example: token expired**
 

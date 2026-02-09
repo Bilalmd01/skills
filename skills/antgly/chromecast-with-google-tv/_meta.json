@@ -1,0 +1,11 @@
+{
+  "owner": "antgly",
+  "slug": "chromecast-with-google-tv",
+  "displayName": "Chromecast With Google Tv",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770510363131,
+    "commit": "https://github.com/openclaw/skills/commit/23cea7dbbf1b9042ccb713382a91f767ee63ae46"
+  },
+  "history": []
+}

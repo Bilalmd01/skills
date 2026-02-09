@@ -1,0 +1,17 @@
+{
+  "owner": "jvsteiner",
+  "slug": "unimarket",
+  "displayName": "UniMarket P2P Marketplace",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1770574570301,
+    "commit": "https://github.com/openclaw/skills/commit/f0be8a274ccb3f8d5bb3e34acfac97d1ef286d1e"
+  },
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1770496275562,
+      "commit": "https://github.com/openclaw/skills/commit/f1f68b49befc4cab9f9e48329dd641bfecea6d54"
+    }
+  ]
+}

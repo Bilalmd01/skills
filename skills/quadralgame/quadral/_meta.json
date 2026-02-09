@@ -1,0 +1,11 @@
+{
+  "owner": "quadralgame",
+  "slug": "quadral",
+  "displayName": "Quadral Word Puzzle",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770421653936,
+    "commit": "https://github.com/openclaw/skills/commit/c91c806b617d13d0a97628661096462a3980783d"
+  },
+  "history": []
+}

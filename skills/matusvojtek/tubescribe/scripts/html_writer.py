@@ -20,15 +20,40 @@ def markdown_to_html(md_text: str) -> str:
     lines = md_text.split('\n')
     html_lines = []
     in_table = False
+    table_past_separator = False  # Track if we've passed the header separator
+    in_blockquote = False
+    blockquote_lines = []
+    
+    def flush_blockquote():
+        """Flush accumulated blockquote lines."""
+        nonlocal in_blockquote, blockquote_lines
+        if blockquote_lines:
+            content = '</p><p>'.join(blockquote_lines)
+            html_lines.append(f'<blockquote><p>{content}</p></blockquote>')
+            blockquote_lines = []
+        in_blockquote = False
     
     for line in lines:
+        # Blockquote handling: > text
+        if line.startswith('> '):
+            if in_table:
+                html_lines.append('</table>')
+                in_table = False
+                table_past_separator = False
+            quote_text = process_inline_formatting(line[2:])
+            blockquote_lines.append(quote_text)
+            in_blockquote = True
+            continue
+        elif in_blockquote:
+            flush_blockquote()
+        
         # Headers
         if line.startswith('# '):
-            html_lines.append(f'<h1>{escape_html(line[2:])}</h1>')
+            html_lines.append(f'<h1>{process_inline_formatting(line[2:])}</h1>')
         elif line.startswith('## '):
-            html_lines.append(f'<h2>{escape_html(line[3:])}</h2>')
+            html_lines.append(f'<h2>{process_inline_formatting(line[3:])}</h2>')
         elif line.startswith('### '):
-            html_lines.append(f'<h3>{escape_html(line[4:])}</h3>')
+            html_lines.append(f'<h3>{process_inline_formatting(line[4:])}</h3>')
         elif line.startswith('---'):
             html_lines.append('<hr>')
         elif line.startswith('|'):
@@ -36,24 +61,42 @@ def markdown_to_html(md_text: str) -> str:
             if not in_table:
                 html_lines.append('<table>')
                 in_table = True
-            if '---' in line:
+                table_past_separator = False
+            # Check for separator row (contains only |, -, :, and spaces)
+            if re.match(r'^[\s|:\-]+$', line):
+                table_past_separator = True
                 continue  # Skip separator row
             cells = [c.strip() for c in line.split('|')[1:-1]]
-            tag = 'th' if not any('<td>' in h for h in html_lines[-5:]) else 'td'
-            row = ''.join(f'<{tag}>{escape_html(c)}</{tag}>' for c in cells)
+            # First row before separator = <th>, all rows after = <td>
+            tag = 'td' if table_past_separator else 'th'
+            row = ''.join(f'<{tag}>{process_inline_formatting(c)}</{tag}>' for c in cells)
             html_lines.append(f'<tr>{row}</tr>')
         elif line.strip() == '':
             if in_table:
                 html_lines.append('</table>')
                 in_table = False
+                table_past_separator = False
             html_lines.append('')
+        elif line.lstrip().startswith('<') and not line.lstrip().startswith('<http'):
+            # Raw HTML line - pass through without wrapping in <p>
+            # Check if it looks like an HTML tag (not a markdown link starting with <http)
+            if in_table:
+                html_lines.append('</table>')
+                in_table = False
+                table_past_separator = False
+            html_lines.append(line)
         else:
             if in_table:
                 html_lines.append('</table>')
                 in_table = False
+                table_past_separator = False
             # Process inline formatting
             processed = process_inline_formatting(line)
             html_lines.append(f'<p>{processed}</p>')
+    
+    # Flush any remaining blockquote
+    if in_blockquote:
+        flush_blockquote()
     
     if in_table:
         html_lines.append('</table>')
@@ -67,30 +110,47 @@ def escape_html(text: str) -> str:
             .replace('&', '&amp;')
             .replace('<', '&lt;')
             .replace('>', '&gt;')
-            .replace('"', '&quot;'))
+            .replace('"', '&quot;')
+            .replace("'", '&#39;'))
 
 
 def process_inline_formatting(text: str) -> str:
-    """Process inline markdown formatting."""
+    """Process inline markdown formatting with XSS protection."""
+    # Extract links BEFORE escaping so URLs don't get double-encoded
+    link_placeholders = {}
+    link_counter = 0
+
+    def extract_link(match):
+        nonlocal link_counter
+        link_text, url = match.groups()
+        placeholder = f"\x00LINK{link_counter}\x00"
+        link_counter += 1
+        link_placeholders[placeholder] = (link_text, url)
+        return placeholder
+
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', extract_link, text)
+
+    # Escape HTML to prevent XSS
+    text = escape_html(text)
+
     # Bold: **text** or __text__
     text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
     text = re.sub(r'__(.+?)__', r'<strong>\1</strong>', text)
-    
+
     # Italic: *text* or _text_
     text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
     text = re.sub(r'(?<!\w)_(.+?)_(?!\w)', r'<em>\1</em>', text)
-    
-    # Links: [text](url) — only allow safe URLs
-    def safe_link(match):
-        link_text, url = match.groups()
-        # Only allow http, https, and relative URLs (prevent javascript: etc.)
+
+    # Restore links with safe URL validation
+    for placeholder, (link_text, url) in link_placeholders.items():
+        safe_text = escape_html(link_text)
         if url.startswith(('http://', 'https://', '/')):
-            safe_url = escape_html(url)
-            return f'<a href="{safe_url}" target="_blank">{link_text}</a>'
-        return f'{link_text} ({url})'  # Don't make unsafe URLs clickable
-    
-    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', safe_link, text)
-    
+            safe_url = url.replace('&', '&amp;').replace('"', '&quot;')
+            link_html = f'<a href="{safe_url}" target="_blank">{safe_text}</a>'
+        else:
+            link_html = f'{safe_text} ({escape_html(url)})'
+        text = text.replace(placeholder, link_html)
+
     return text
 
 

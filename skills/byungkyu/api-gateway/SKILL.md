@@ -26,7 +26,6 @@ print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
 EOF
 ```
 
-> **IMPORTANT: If you receive a 500 Internal Server Error**, this does NOT mean the service is unsupported. The most common cause is an expired OAuth refresh token (connections older than 1 month). See the "Troubleshooting 500 Internal Server Error" section below to create a new connection and retry with the new connection ID.
 
 ## Base URL
 
@@ -35,6 +34,8 @@ https://gateway.maton.ai/{app}/{native-api-path}
 ```
 
 Replace `{app}` with the service name and `{native-api-path}` with the actual API endpoint path.
+
+IMPORTANT: The URL path MUST start with the connection's app name (eg. `/google-mail/...`). This prefix tells the gateway which app connection to use. For example, the native Gmail API path starts with `gmail/v1/`, so full paths look like `/google-mail/gmail/v1/users/me/messages`.
 
 ## Authentication
 
@@ -168,42 +169,62 @@ If omitted, the gateway uses the default (oldest) active connection for that app
 
 | Service | App Name | Base URL Proxied |
 |---------|----------|------------------|
+| Acuity Scheduling | `acuity-scheduling` | `acuityscheduling.com` |
 | Airtable | `airtable` | `api.airtable.com` |
 | Apollo | `apollo` | `api.apollo.io` |
 | Asana | `asana` | `app.asana.com` |
 | Attio | `attio` | `api.attio.com` |
+| Basecamp | `basecamp` | `3.basecampapi.com` |
 | Calendly | `calendly` | `api.calendly.com` |
 | Chargebee | `chargebee` | `{subdomain}.chargebee.com` |
 | ClickUp | `clickup` | `api.clickup.com` |
+| Constant Contact | `constant-contact` | `api.cc.email` |
+| Eventbrite | `eventbrite` | `www.eventbriteapi.com` |
 | Fathom | `fathom` | `api.fathom.ai` |
 | GitHub | `github` | `api.github.com` |
+| Gumroad | `gumroad` | `api.gumroad.com` |
 | Google Ads | `google-ads` | `googleads.googleapis.com` |
 | Google Analytics Admin | `google-analytics-admin` | `analyticsadmin.googleapis.com` |
 | Google Analytics Data | `google-analytics-data` | `analyticsdata.googleapis.com` |
 | Google Calendar | `google-calendar` | `www.googleapis.com` |
+| Google Contacts | `google-contacts` | `people.googleapis.com` |
 | Google Docs | `google-docs` | `docs.googleapis.com` |
 | Google Drive | `google-drive` | `www.googleapis.com` |
 | Google Forms | `google-forms` | `forms.googleapis.com` |
 | Gmail | `google-mail` | `gmail.googleapis.com` |
+| Google Merchant | `google-merchant` | `merchantapi.googleapis.com` |
 | Google Meet | `google-meet` | `meet.googleapis.com` |
 | Google Play | `google-play` | `androidpublisher.googleapis.com` |
 | Google Search Console | `google-search-console` | `www.googleapis.com` |
 | Google Sheets | `google-sheets` | `sheets.googleapis.com` |
 | Google Slides | `google-slides` | `slides.googleapis.com` |
+| Google Tasks | `google-tasks` | `tasks.googleapis.com` |
+| Google Workspace Admin | `google-workspace-admin` | `admin.googleapis.com` |
 | HubSpot | `hubspot` | `api.hubapi.com` |
 | Jira | `jira` | `api.atlassian.com` |
+| Jobber | `jobber` | `api.getjobber.com` |
 | JotForm | `jotform` | `api.jotform.com` |
+| Keap | `keap` | `api.infusionsoft.com` |
+| Kit | `kit` | `api.kit.com` |
 | Klaviyo | `klaviyo` | `a.klaviyo.com` |
 | Linear | `linear` | `api.linear.app` |
+| LinkedIn | `linkedin` | `api.linkedin.com` |
 | Mailchimp | `mailchimp` | `{dc}.api.mailchimp.com` |
+| Microsoft Excel | `microsoft-excel` | `graph.microsoft.com` |
+| Microsoft To Do | `microsoft-to-do` | `graph.microsoft.com` |
 | Monday.com | `monday` | `api.monday.com` |
 | Notion | `notion` | `api.notion.com` |
+| OneDrive | `one-drive` | `graph.microsoft.com` |
 | Outlook | `outlook` | `graph.microsoft.com` |
 | Pipedrive | `pipedrive` | `api.pipedrive.com` |
 | QuickBooks | `quickbooks` | `quickbooks.api.intuit.com` |
 | Salesforce | `salesforce` | `{instance}.salesforce.com` |
 | Slack | `slack` | `slack.com` |
+| Square | `squareup` | `connect.squareup.com` |
 | Stripe | `stripe` | `api.stripe.com` |
+| Telegram | `telegram` | `api.telegram.org` |
+| TickTick | `ticktick` | `api.ticktick.com` |
+| Todoist | `todoist` | `api.todoist.com` |
 | Trello | `trello` | `api.trello.com` |
 | Typeform | `typeform` | `api.typeform.com` |
 | WhatsApp Business | `whatsapp-business` | `graph.facebook.com` |
@@ -220,42 +241,62 @@ If omitted, the gateway uses the default (oldest) active connection for that app
 | Zoho Recruit | `zoho-recruit` | `recruit.zoho.com` |
 
 See [references/](references/) for detailed routing guides per provider:
+- [Acuity Scheduling](references/acuity-scheduling.md) - Appointments, calendars, clients, availability
 - [Airtable](references/airtable.md) - Records, bases, tables
 - [Apollo](references/apollo.md) - People search, enrichment, contacts
 - [Asana](references/asana.md) - Tasks, projects, workspaces, webhooks
 - [Attio](references/attio.md) - People, companies, records, tasks
+- [Basecamp](references/basecamp.md) - Projects, to-dos, messages, schedules, documents
 - [Calendly](references/calendly.md) - Event types, scheduled events, availability, webhooks
 - [Chargebee](references/chargebee.md) - Subscriptions, customers, invoices
 - [ClickUp](references/clickup.md) - Tasks, lists, folders, spaces, webhooks
+- [Constant Contact](references/constant-contact.md) - Contacts, email campaigns, lists, segments
+- [Eventbrite](references/eventbrite.md) - Events, venues, tickets, orders, attendees
 - [Fathom](references/fathom.md) - Meeting recordings, transcripts, summaries, webhooks
 - [GitHub](references/github.md) - Repositories, issues, pull requests, commits
+- [Gumroad](references/gumroad.md) - Products, sales, subscribers, licenses, webhooks
 - [Google Ads](references/google-ads.md) - Campaigns, ad groups, GAQL queries
 - [Google Analytics Admin](references/google-analytics-admin.md) - Reports, dimensions, metrics
 - [Google Analytics Data](references/google-analytics-data.md) - Reports, dimensions, metrics
 - [Google Calendar](references/google-calendar.md) - Events, calendars, free/busy
+- [Google Contacts](references/google-contacts.md) - Contacts, contact groups, people search
 - [Google Docs](references/google-docs.md) - Document creation, batch updates
 - [Google Drive](references/google-drive.md) - Files, folders, permissions
 - [Google Forms](references/google-forms.md) - Forms, questions, responses
 - [Gmail](references/google-mail.md) - Messages, threads, labels
 - [Google Meet](references/google-meet.md) - Spaces, conference records, participants
+- [Google Merchant](references/google-merchant.md) - Products, inventories, promotions, reports
 - [Google Play](references/google-play.md) - In-app products, subscriptions, reviews
 - [Google Search Console](references/google-search-console.md) - Search analytics, sitemaps
 - [Google Sheets](references/google-sheets.md) - Values, ranges, formatting
 - [Google Slides](references/google-slides.md) - Presentations, slides, formatting
+- [Google Tasks](references/google-tasks.md) - Task lists, tasks, subtasks
+- [Google Workspace Admin](references/google-workspace-admin.md) - Users, groups, org units, domains, roles
 - [HubSpot](references/hubspot.md) - Contacts, companies, deals
 - [Jira](references/jira.md) - Issues, projects, JQL queries
+- [Jobber](references/jobber.md) - Clients, jobs, invoices, quotes (GraphQL)
 - [JotForm](references/jotform.md) - Forms, submissions, webhooks
+- [Keap](references/keap.md) - Contacts, companies, tags, tasks, opportunities, campaigns
+- [Kit](references/kit.md) - Subscribers, tags, forms, sequences, broadcasts
 - [Klaviyo](references/klaviyo.md) - Profiles, lists, campaigns, flows, events
 - [Linear](references/linear.md) - Issues, projects, teams, cycles (GraphQL)
+- [LinkedIn](references/linkedin.md) - Profile, posts, shares, media uploads
 - [Mailchimp](references/mailchimp.md) - Audiences, campaigns, templates, automations
+- [Microsoft Excel](references/microsoft-excel.md) - Workbooks, worksheets, ranges, tables, charts
+- [Microsoft To Do](references/microsoft-to-do.md) - Task lists, tasks, checklist items, linked resources
 - [Monday.com](references/monday.md) - Boards, items, columns, groups (GraphQL)
 - [Notion](references/notion.md) - Pages, databases, blocks
+- [OneDrive](references/one-drive.md) - Files, folders, drives, sharing
 - [Outlook](references/outlook.md) - Mail, calendar, contacts
 - [Pipedrive](references/pipedrive.md) - Deals, persons, organizations, activities
 - [QuickBooks](references/quickbooks.md) - Customers, invoices, reports
 - [Salesforce](references/salesforce.md) - SOQL, sObjects, CRUD
 - [Slack](references/slack.md) - Messages, channels, users
+- [Square](references/squareup.md) - Payments, customers, orders, catalog, inventory, invoices
 - [Stripe](references/stripe.md) - Customers, subscriptions, payments
+- [Telegram](references/telegram.md) - Messages, chats, bots, updates, polls
+- [TickTick](references/ticktick.md) - Tasks, projects, task lists
+- [Todoist](references/todoist.md) - Tasks, projects, sections, labels, comments
 - [Trello](references/trello.md) - Boards, lists, cards, checklists
 - [Typeform](references/typeform.md) - Forms, responses, insights
 - [WhatsApp Business](references/whatsapp-business.md) - Messages, templates, media
@@ -399,14 +440,12 @@ response = requests.post(
 | 400 | Missing connection for the requested app |
 | 401 | Invalid or missing Maton API key |
 | 429 | Rate limited (10 requests/second per account) |
-| 500 | Internal Server Error (see troubleshooting below) |
+| 500 | Internal Server Error |
 | 4xx/5xx | Passthrough error from the target API |
 
 Errors from the target API are passed through with their original status codes and response bodies.
 
 ### Troubleshooting: Invalid API Key
-
-**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
 
 1. Check that the `MATON_API_KEY` environment variable is set:
 
@@ -425,62 +464,27 @@ print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
 EOF
 ```
 
-### Troubleshooting 500 Internal Server Error
+### Troubleshooting: Missing app connection for {app} or Invalid app name: {app}
 
-**IMPORTANT:** A 500 Internal Server Error does NOT mean the service is unsupported. If the app is listed in the Supported Services table above, the error is likely due to an expired OAuth refresh token.
+1. Verify your URL path starts with the correct app name. The path must begin with `/google-mail/`. For example:
 
-**When you receive a 500 Internal Server Error, ALWAYS follow these steps before concluding there is an issue:**
+- Correct: `https://gateway.maton.ai/google-mail/gmail/v1/users/me/messages`
+- Incorrect: `https://gateway.maton.ai/gmail/v1/users/me/messages`
 
-Connections that have been active for more than 1 month may have expired OAuth refresh tokens. To resolve:
-
-1. Create a new connection for the app:
-
-```bash
-python <<'EOF'
-import urllib.request, os, json
-data = json.dumps({'app': 'APP_NAME'}).encode()
-req = urllib.request.Request('https://ctrl.maton.ai/connections', data=data, method='POST')
-req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
-req.add_header('Content-Type', 'application/json')
-print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
-EOF
-```
-
-2. Get the OAuth URL by calling the GET connection endpoint with the new connection ID from step 1:
+2. Ensure you have an active connection for the app. List your connections to verify:
 
 ```bash
 python <<'EOF'
 import urllib.request, os, json
-req = urllib.request.Request('https://ctrl.maton.ai/connections/NEW_CONNECTION_ID')
+req = urllib.request.Request('https://ctrl.maton.ai/connections?app=google-mail&status=ACTIVE')
 req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
 print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
 EOF
 ```
 
-3. Share the returned `url` with the user and ask them to complete the OAuth flow in their browser.
+### Troubleshooting: 500 Internal Server Error
 
-4. After the user completes OAuth, retry the original request using the new connection ID via the `Maton-Connection` header:
-
-```bash
-python <<'EOF'
-import urllib.request, os, json
-req = urllib.request.Request('https://gateway.maton.ai/APP_NAME/...')
-req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
-req.add_header('Maton-Connection', 'NEW_CONNECTION_ID')
-print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
-EOF
-```
-
-5. Once the new connection status is `ACTIVE` and working, ask the user if they want to delete the old connection:
-
-```bash
-python <<'EOF'
-import urllib.request, os, json
-req = urllib.request.Request('https://ctrl.maton.ai/connections/OLD_CONNECTION_ID', method='DELETE')
-req.add_header('Authorization', f'Bearer {os.environ["MATON_API_KEY"]}')
-print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
-EOF
-```
+A 500 error may indicate an expired OAuth token. Try creating a new connection via the Connection Management section above and completing OAuth authorization. If the new connection is "ACTIVE", delete the old connection to ensure the gateway uses the new one.
 
 ## Rate Limits
 
@@ -489,8 +493,8 @@ EOF
 
 ## Notes
 
-- IMPORTANT: When using curl commands, use `curl -g` when URLs contain brackets (`fields[]`, `sort[]`, `records[]`) to disable glob parsing
-- IMPORTANT: When piping curl output to `jq` or other commands, environment variables like `$MATON_API_KEY` may not expand correctly in some shell environments. You may get "Invalid API key" errors when piping.
+- When using curl with URLs containing brackets (`fields[]`, `sort[]`, `records[]`), use the `-g` flag to disable glob parsing
+- When piping curl output to `jq`, environment variables may not expand correctly in some shells, which can cause "Invalid API key" errors
 
 ## Tips
 

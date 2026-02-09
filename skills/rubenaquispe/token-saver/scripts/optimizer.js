@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 
 /**
- * Token Saver - Dashboard
+ * Token Saver v3 - Dashboard & Optimization
  * 
- * Two sections:
- * 1. Workspace Files - Scans ALL .md files, shows "possible savings" until applied
- * 2. Model Audit - Detects current models, suggests cheaper alternatives
+ * v3 Changes:
+ * - Dynamic presets based on model's context window
+ * - Context usage % display
+ * - Model-aware compaction thresholds
+ * - Improved detection with fallback chain
  */
 
 const fs = require('fs');
 const path = require('path');
-const { TokenAnalyzer } = require('./analyzer.js');
+const { TokenAnalyzer, MODEL_REGISTRY } = require('./analyzer.js');
 const { WorkspaceCompressor } = require('./compressor.js');
 
-class TokenOptimizerV2 {
+class TokenOptimizerV3 {
     constructor() {
         this.analyzer = new TokenAnalyzer();
         this.compressor = new WorkspaceCompressor();
@@ -21,48 +23,94 @@ class TokenOptimizerV2 {
 
     async run(command = 'dashboard', args = []) {
         const workspacePath = this.findWorkspace();
+        
+        // Check for --model flag to override detection
+        const modelArg = args.find(a => a.startsWith('--model='));
+        const runtimeModel = modelArg ? modelArg.split('=')[1] : null;
 
         switch (command) {
-            case 'dashboard': return this.showDashboard(workspacePath);
+            case 'dashboard': return this.showDashboard(workspacePath, runtimeModel);
             case 'tokens': return this.optimizeTokens(workspacePath, args);
-            case 'models': return this.showModelAudit(workspacePath);
-            case 'compaction': return this.showCompaction(workspacePath, args);
+            case 'models': return this.showModelAudit(workspacePath, runtimeModel);
+            case 'compaction': return this.showCompaction(workspacePath, args, runtimeModel);
             case 'revert': return this.revertChanges(args[0], workspacePath);
-            default: return this.showDashboard(workspacePath);
+            default: return this.showDashboard(workspacePath, runtimeModel);
         }
     }
 
     findWorkspace() {
         let dir = process.cwd();
-        if (dir.includes('skills' + path.sep + 'token-optimizer')) {
+        if (dir.includes('skills' + path.sep + 'token-')) {
             return path.resolve(dir, '..', '..');
         }
         return dir;
     }
 
-    async showDashboard(workspacePath) {
+    /**
+     * Calculate dynamic presets based on model's context window
+     * @param {number} contextLimit - Model's context window in tokens
+     * @param {object} modelInfo - Model info from registry (for pricing)
+     */
+    getDynamicPresets(contextLimit, modelInfo = null) {
+        // Scale savings based on model pricing (free models = $0 savings)
+        // Note: must check for undefined/null explicitly since input can be 0 for free models
+        const inputCost = (modelInfo?.input !== undefined && modelInfo?.input !== null) ? modelInfo.input : 0.003;
+        const savingsMultiplier = inputCost > 0 ? (inputCost / 0.003) : 0; // normalize to Sonnet baseline, 0 for free
+        
+        return {
+            aggressive: {
+                percent: 40,
+                threshold: 0.40,
+                compactAt: Math.round(contextLimit * 0.40 / 1000),
+                savings: Math.round(200 * savingsMultiplier),
+                label: 'Aggressive'
+            },
+            balanced: {
+                percent: 60,
+                threshold: 0.60,
+                compactAt: Math.round(contextLimit * 0.60 / 1000),
+                savings: Math.round(100 * savingsMultiplier),
+                label: 'Balanced'
+            },
+            conservative: {
+                percent: 80,
+                threshold: 0.80,
+                compactAt: Math.round(contextLimit * 0.80 / 1000),
+                savings: Math.round(30 * savingsMultiplier),
+                label: 'Conservative'
+            },
+            off: {
+                percent: 95,
+                threshold: 0.95,
+                compactAt: Math.round(contextLimit * 0.95 / 1000),
+                savings: 0,
+                label: 'Off'
+            }
+        };
+    }
+
+    async showDashboard(workspacePath, runtimeModel = null) {
         const analysis = await this.analyzer.analyzeWorkspace(workspacePath);
         const previews = this.compressor.previewOptimizations(workspacePath);
-        const modelAudit = this.analyzer.auditModels(workspacePath);
+        const modelAudit = this.analyzer.auditModels(workspacePath, runtimeModel);
         const fileSavings = this.calculatePossibleSavings(previews);
         const hasBackups = this.findBackups(workspacePath).length > 0;
+
+        // Get detected model info
+        const detectedModel = modelAudit.detectedModel;
+        const contextLimit = modelAudit.contextWindow || 200000;
+        const modelInfo = this.analyzer.getModelInfo(detectedModel);
+        const presets = this.getDynamicPresets(contextLimit, modelInfo);
 
         // Compaction settings
         const configPath = path.join(workspacePath, '.token-saver-config.json');
         const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : {};
         const compactionPct = config.compactionThreshold ? Math.round(config.compactionThreshold * 100) : 95;
-        const compactionAt = Math.round(200 * (compactionPct / 100));
+        const compactionAt = Math.round(contextLimit * (compactionPct / 100) / 1000);
         const compactionSavings = compactionPct <= 40 ? 200 : compactionPct <= 60 ? 100 : compactionPct <= 80 ? 30 : 0;
 
         // Auto-scan chat history for recommendation
         const chatAnalysis = await this.analyzeUserSessions(workspacePath, 'week');
-
-        // Visual bar helper
-        const bar = (current, max, width = 15) => {
-            const pct = Math.min(100, Math.max(0, (current / max) * 100));
-            const filled = Math.round((pct / 100) * width);
-            return '█'.repeat(filled) + '░'.repeat(width - filled);
-        };
 
         // Build file table
         const totalTokens = analysis.totalTokens;
@@ -80,14 +128,22 @@ class TokenOptimizerV2 {
 
         // Calculate totals
         const totalSaveable = fileSavings.tokens;
-        const totalAfter = totalTokens - totalSaveable;
         const totalPct = totalTokens > 0 ? Math.round((totalSaveable / totalTokens) * 100) : 0;
+
+        // Context usage bar
+        const contextUsage = this.analyzer.calculateContextUsage(totalTokens, detectedModel);
+        const usageBar = this.renderBar(contextUsage.percentage, 20);
 
         console.log(`
 ╭─────────────────────────────────────────────────────────╮
-│  ⚡ TOKEN SAVER                                          │
+│  ⚡ TOKEN SAVER v3                                       │
 │  Reduce AI costs by optimizing what gets sent each call │
 ╰─────────────────────────────────────────────────────────╯
+
+🤖 **Model:** ${modelInfo.label} (${contextLimit/1000}K context)
+   Detected: ${modelAudit.current.default.detectedFrom || 'fallback'}${modelInfo.unknown ? `\n   ${modelInfo.warning}` : ''}
+
+📊 **Context Usage:** ${usageBar} ${contextUsage.percentage}% (${Math.round(totalTokens/1000)}K/${contextLimit/1000}K)
 
 📁 **WORKSPACE FILES** (sent every API call)
 ┌──────────────────────┬───────┬────────────────┐
@@ -97,22 +153,18 @@ ${fileRows}├──────────────────────
 │ TOTAL                │ ${String(totalTokens).padStart(5)} │ -${String(totalSaveable).padStart(4)} (${totalPct}%)     │
 └──────────────────────┴───────┴────────────────┘
 ${totalSaveable > 0 ? `\n💰 File compression: Save ~${totalSaveable} tokens/call → **~$${fileSavings.monthlyCost.toFixed(0)}/mo**\n   Run: \`/optimize tokens\`\n` : '\n✅ Files already optimized\n'}
-🤖 **MODELS**
-${this.formatModelsTable(modelAudit)}
+💬 **CHAT COMPACTION** — Current: ${compactionAt}K (${compactionPct}% of context)
+${chatAnalysis.hasData ? `📊 Scanned ${chatAnalysis.sessionsAnalyzed} sessions → avg topic: ${chatAnalysis.avgTopicLength}K\n` : ''}
+  Presets (dynamic for ${modelInfo.label}):
+  🔴 Aggressive: ${presets.aggressive.compactAt}K (40%)    🟡 Balanced: ${presets.balanced.compactAt}K (60%)
+  🟢 Conservative: ${presets.conservative.compactAt}K (80%)    ⚪ Off: ${presets.off.compactAt}K (95%)
+  
+  Apply: \`/optimize compaction balanced\` | Custom: \`/optimize compaction ${presets.balanced.compactAt}\`
 
-💬 **CHAT COMPACTION** — Current: ${compactionAt}K ${compactionSavings > 0 ? '(saving ~$' + compactionSavings + '/mo)' : '(not optimized)'}
-${chatAnalysis.hasData ? '📊 Scanned ' + chatAnalysis.sessionsAnalyzed + ' sessions (last 7 days) — avg topic: ' + chatAnalysis.avgTopicLength + 'K → **' + chatAnalysis.recommendation + '** recommended\n' : ''}
-  🟢 Safe: 160K (-$30)    🟡 Balanced: 120K (-$100)    🔴 Aggressive: 80K (-$200)
-  Apply: \`/optimize compaction 120\` | Custom: \`/optimize compaction <num>\`
-
-  ⚠️ **Note:** Lower values mean AI summarizes your chat history sooner.
-     After compaction, AI keeps the summary but loses exact wording of old messages.
-     Pick a value higher than your typical topic length (yours: ${chatAnalysis.hasData ? chatAnalysis.avgTopicLength + 'K' : '~30K'}) to avoid mid-topic memory loss.`);
+  ⚠️ Lower values = AI summarizes sooner, loses exact wording of old messages.`);
 
         // Calculate total potential savings
-        const recommendedCompactionSavings = compactionSavings > 0 ? 0 : 
-            (chatAnalysis.safeThreshold <= 80 ? 200 : chatAnalysis.safeThreshold <= 120 ? 100 : 30);
-        const totalPotential = fileSavings.monthlyCost + modelAudit.totalPossibleSavings + recommendedCompactionSavings;
+        const totalPotential = fileSavings.monthlyCost + modelAudit.totalPossibleSavings + (compactionSavings > 0 ? 0 : 100);
 
         console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -120,51 +172,19 @@ ${chatAnalysis.hasData ? '📊 Scanned ' + chatAnalysis.sessionsAnalyzed + ' ses
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     }
 
-    formatModelsTable(modelAudit) {
-        let output = '';
-        const current = modelAudit.current || {};
-        
-        // Format current models
-        if (current.default) {
-            output += `• Main chat: ${current.default.model} (~$${this.estimateModelCost(current.default.model, 'main')}/mo)\n`;
-        }
-        if (current.cron && current.cron.model !== 'unknown') {
-            output += `• Cron jobs: ${current.cron.model} (~$${this.estimateModelCost(current.cron.model, 'cron')}/mo)\n`;
-        }
-        if (current.subagent && current.subagent.model !== 'unknown') {
-            output += `• Subagents: ${current.subagent.model} (~$${this.estimateModelCost(current.subagent.model, 'sub')}/mo)\n`;
-        }
-        
-        if (modelAudit.suggestions && modelAudit.suggestions.length > 0) {
-            output += '\n💡 Suggestions:\n';
-            for (const sug of modelAudit.suggestions) {
-                const role = sug.role || sug.context || 'Unknown';
-                const savings = Math.round(sug.monthlySaving || sug.savings || 0);
-                output += `   ${role}: ${sug.current} → ${sug.suggested} (-$${savings}/mo)\n`;
-            }
-        }
-        return output;
+    renderBar(percent, width = 20) {
+        const clamped = Math.max(0, Math.min(100, percent));
+        const filled = Math.round((clamped / 100) * width);
+        return '[' + '█'.repeat(filled) + '░'.repeat(width - filled) + ']';
     }
 
-    estimateModelCost(model, usage) {
-        const costs = {
-            'claude-opus-4-5': { main: 72, cron: 15, sub: 10 },
-            'claude-sonnet-4': { main: 25, cron: 5, sub: 4 },
-            'claude-sonnet-4-20250514': { main: 25, cron: 5, sub: 4 },
-            'gemini-2.0-flash': { main: 0, cron: 0, sub: 0 },
-            'gpt-4o': { main: 30, cron: 8, sub: 6 }
-        };
-        const modelKey = Object.keys(costs).find(k => model.includes(k)) || 'claude-sonnet-4';
-        return costs[modelKey]?.[usage] || 10;
-    }
-
-    async showModelAudit(workspacePath) {
-        const modelAudit = this.analyzer.auditModels(workspacePath);
+    async showModelAudit(workspacePath, runtimeModel = null) {
+        const modelAudit = this.analyzer.auditModels(workspacePath, runtimeModel);
 
         console.log(`🤖 **AI Model Audit - Detailed Analysis**
 
 ╭─────────────────────────────────────────────────────────╮
-│  CURRENT MODEL CONFIGURATION                             │
+│  DETECTED MODEL CONFIGURATION                            │
 ╰─────────────────────────────────────────────────────────╯
 ${this.formatCurrentModelsDetailed(modelAudit.current)}
 
@@ -174,105 +194,25 @@ ${this.formatCurrentModelsDetailed(modelAudit.current)}
 ${this.formatModelSuggestionsDetailed(modelAudit.suggestions)}
 
 ╭─────────────────────────────────────────────────────────╮
-│  AVAILABLE MODELS & PRICING                              │
+│  MODEL REGISTRY (${Object.keys(MODEL_REGISTRY.models).length} models)                              │
 ╰─────────────────────────────────────────────────────────╯
-${this.formatAvailableModels()}
+${this.formatModelRegistry()}
 
-💡 Model changes require updating OpenClaw gateway config.
-   These are possible savings — actual savings depend on usage patterns.`);
-    }
-
-    calculatePossibleSavings(filePreviews) {
-        const totalBefore = filePreviews.reduce((sum, p) => sum + p.originalTokens, 0);
-        const totalAfter = filePreviews.reduce((sum, p) => sum + p.compressedTokens, 0);
-        const saved = totalBefore - totalAfter;
-        const percentage = totalBefore > 0 ? Math.round((saved / totalBefore) * 100) : 0;
-        const monthlyCost = (saved * 0.003 * 4.33);
-
-        return { tokens: saved, percentage, monthlyCost };
-    }
-
-    formatFileList(filePreviews, hasBackups) {
-        if (filePreviews.length === 0) return '  (no .md files found)';
-
-        return filePreviews.map(preview => {
-            const savings = preview.originalTokens - preview.compressedTokens;
-            const percentage = preview.originalTokens > 0
-                ? Math.round((savings / preview.originalTokens) * 100) : 0;
-            const status = percentage > 75 ? '🔴' : percentage > 40 ? '🟡' : '🟢';
-            const label = hasBackups ? 'saved' : 'possible saving';
-            return `${status} **${preview.filename}:** ${preview.originalTokens.toLocaleString()} → ${preview.compressedTokens.toLocaleString()} tokens (${percentage}% ${label})`;
-        }).join('\n');
-    }
-
-    formatFileListCompact(filePreviews, hasBackups) {
-        if (filePreviews.length === 0) return '(none)';
-        
-        // Only show files with >10% potential savings, or top 5
-        const significant = filePreviews.filter(p => {
-            const pct = p.originalTokens > 0 ? Math.round(((p.originalTokens - p.compressedTokens) / p.originalTokens) * 100) : 0;
-            return pct > 10;
-        });
-        
-        if (significant.length === 0) return '✅ All files optimized';
-        
-        return significant.slice(0, 5).map(p => {
-            const pct = p.originalTokens > 0 ? Math.round(((p.originalTokens - p.compressedTokens) / p.originalTokens) * 100) : 0;
-            return `• ${p.filename}: ${p.originalTokens}→${p.compressedTokens} (${pct}%)`;
-        }).join('\n') + (significant.length > 5 ? `\n• +${significant.length - 5} more...` : '');
-    }
-
-    formatCurrentModelsCompact(models) {
-        return Object.entries(models).map(([role, info]) => {
-            if (info.model === 'unknown') return `• ${this.roleLabel(role)}: ?`;
-            const cost = info.estimatedMonthlyCost > 0 ? ` $${info.estimatedMonthlyCost.toFixed(0)}/mo` : '';
-            return `• ${this.roleLabel(role)}: ${info.model}${cost}`;
-        }).join('\n');
-    }
-
-    formatModelSuggestionsCompact(suggestions) {
-        if (suggestions.length === 0) return '';
-        return suggestions.map(s => `💡 ${s.role}: ${s.current}→${s.suggested} (-$${s.monthlySaving.toFixed(0)}/mo)`).join('\n');
-    }
-
-    formatCurrentModels(models) {
-        const lines = [];
-        for (const [role, info] of Object.entries(models)) {
-            if (info.model === 'unknown') {
-                lines.push(`• **${this.roleLabel(role)}:** ⚠️ Not detected`);
-            } else {
-                const cost = info.estimatedMonthlyCost > 0
-                    ? ` (~$${info.estimatedMonthlyCost.toFixed(2)}/month)`
-                    : ' (free)';
-                lines.push(`• **${this.roleLabel(role)}:** ${info.model}${cost}`);
-            }
-        }
-        return lines.join('\n');
+💡 Model changes require updating OpenClaw gateway config.`);
     }
 
     formatCurrentModelsDetailed(models) {
         const lines = [];
         for (const [role, info] of Object.entries(models)) {
+            const modelInfo = this.analyzer.getModelInfo(info.model);
             lines.push(`**${this.roleLabel(role)}**`);
-            lines.push(`  Model: ${info.model || 'unknown'}`);
-            lines.push(`  Detected from: ${info.detectedFrom || 'not found'}`);
+            lines.push(`  Model: ${modelInfo.label || info.model}`);
+            lines.push(`  Context: ${modelInfo.context ? (modelInfo.context/1000) + 'K' : 'unknown'}`);
+            lines.push(`  Detected: ${info.detectedFrom || 'not found'}`);
             lines.push(`  Est. cost: $${(info.estimatedMonthlyCost || 0).toFixed(2)}/month`);
             lines.push('');
         }
         return lines.join('\n');
-    }
-
-    formatModelSuggestions(suggestions) {
-        if (suggestions.length === 0) {
-            return '  ✅ No obvious model optimizations detected\n  (Run `/optimize models` for full analysis)';
-        }
-
-        return suggestions.map(s => {
-            const saving = s.monthlySaving > 0
-                ? `~$${s.monthlySaving.toFixed(2)}/month possible saving`
-                : 'minimal saving';
-            return `💡 **${s.role}:** Switch ${s.current} → ${s.suggested} — ${saving}`;
-        }).join('\n');
     }
 
     formatModelSuggestionsDetailed(suggestions) {
@@ -281,57 +221,51 @@ ${this.formatAvailableModels()}
         }
 
         return suggestions.map((s, i) => {
-            let detail = `**${i + 1}. ${s.role}: ${s.current} → ${s.suggested}**
+            return `**${i + 1}. ${s.role}: ${s.current} → ${s.suggested}**
    Reason: ${s.reason}
-   Current cost: ~$${s.currentMonthlyCost.toFixed(2)}/month
-   New cost: ~$${s.newMonthlyCost.toFixed(2)}/month
-   **Possible saving: ~$${s.monthlySaving.toFixed(2)}/month**
-   Confidence: ${s.confidence}`;
-            if (s.note) detail += `\n   ⚠️ Note: ${s.note}`;
-            return detail;
+   Possible saving: ~$${s.monthlySaving.toFixed(2)}/month`;
         }).join('\n\n');
     }
 
-    formatAvailableModels() {
-        const { MODEL_PRICING } = require('./analyzer.js');
-        const lines = [];
-
+    formatModelRegistry() {
         const tiers = { free: [], budget: [], standard: [], premium: [] };
-        for (const [key, info] of Object.entries(MODEL_PRICING)) {
+        for (const [key, info] of Object.entries(MODEL_REGISTRY.models)) {
             tiers[info.tier].push({ key, ...info });
         }
 
+        const lines = [];
         if (tiers.free.length) {
-            lines.push('**🟢 Free Tier:**');
-            tiers.free.forEach(m => lines.push(`  • ${m.label} — $0 (great for cron/background tasks)`));
+            lines.push('**🟢 Free:**');
+            tiers.free.forEach(m => lines.push(`  • ${m.label} — ${m.context/1000}K context`));
         }
         if (tiers.budget.length) {
             lines.push('**🟡 Budget:**');
-            tiers.budget.forEach(m => lines.push(`  • ${m.label} — $${m.input}/1K input tokens`));
+            tiers.budget.forEach(m => lines.push(`  • ${m.label} — ${m.context/1000}K ctx, $${m.input}/1K in`));
         }
         if (tiers.standard.length) {
             lines.push('**🟠 Standard:**');
-            tiers.standard.forEach(m => lines.push(`  • ${m.label} — $${m.input}/1K input tokens`));
+            tiers.standard.forEach(m => lines.push(`  • ${m.label} — ${m.context/1000}K ctx, $${m.input}/1K in`));
         }
         if (tiers.premium.length) {
             lines.push('**🔴 Premium:**');
-            tiers.premium.forEach(m => lines.push(`  • ${m.label} — $${m.input}/1K input tokens`));
+            tiers.premium.forEach(m => lines.push(`  • ${m.label} — ${m.context/1000}K ctx, $${m.input}/1K in`));
         }
 
         return lines.join('\n');
     }
 
     roleLabel(role) {
-        const labels = {
-            default: 'Default (main chat)',
-            cron: 'Cron jobs',
-            subagent: 'Subagents'
-        };
-        return labels[role] || role;
+        return { default: 'Main Chat', cron: 'Cron Jobs', subagent: 'Subagents' }[role] || role;
+    }
+
+    calculatePossibleSavings(filePreviews) {
+        const totalBefore = filePreviews.reduce((sum, p) => sum + p.originalTokens, 0);
+        const totalAfter = filePreviews.reduce((sum, p) => sum + p.compressedTokens, 0);
+        const saved = totalBefore - totalAfter;
+        return { tokens: saved, percentage: totalBefore > 0 ? Math.round((saved / totalBefore) * 100) : 0, monthlyCost: (saved * 0.003 * 4.33) };
     }
 
     async optimizeTokens(workspacePath, args = []) {
-        // Calculate BEFORE totals first
         const beforeAnalysis = await this.analyzer.analyzeWorkspace(workspacePath);
         const beforeTotal = beforeAnalysis.totalTokens;
         
@@ -340,7 +274,6 @@ ${this.formatAvailableModels()}
         const results = this.compressor.compressWorkspaceFiles(workspacePath);
         let totalSaved = 0;
         let filesChanged = 0;
-        let filesSkipped = 0;
         const changedFiles = [];
 
         results.forEach(result => {
@@ -348,8 +281,6 @@ ${this.formatAvailableModels()}
                 totalSaved += result.tokensSaved;
                 filesChanged++;
                 changedFiles.push(result);
-            } else {
-                filesSkipped++;
             }
         });
 
@@ -363,8 +294,7 @@ ${this.formatAvailableModels()}
         
         const monthlySavings = (totalSaved * 0.003 * 4.33);
 
-        // Show compact before/after comparison
-        console.log(`\n**Before → After:**`);
+        console.log(`**Before → After:**`);
         changedFiles.forEach(f => {
             console.log(`• ${f.filename}: ${f.originalTokens}→${f.compressedTokens} (${f.percentageSaved}%)`);
         });
@@ -375,10 +305,6 @@ ${this.formatAvailableModels()}
 Backups: .backup | Undo: \`/optimize revert\``);
     }
 
-    /**
-     * Enable persistent AI-efficient writing mode by adding instruction to AGENTS.md
-     * This ensures the AI continues writing in compressed notation after optimization
-     */
     enablePersistentMode(workspacePath) {
         const agentsPath = path.join(workspacePath, 'AGENTS.md');
         if (!fs.existsSync(agentsPath)) return false;
@@ -386,7 +312,6 @@ Backups: .backup | Undo: \`/optimize revert\``);
         const content = fs.readFileSync(agentsPath, 'utf8');
         const marker = '## 📝 Token Saver — Persistent Mode';
         
-        // Already enabled
         if (content.includes(marker)) return false;
 
         const instruction = `
@@ -412,7 +337,6 @@ ${marker}
 - Preserve ALL meaning
 `;
 
-        // Backup AGENTS.md before modifying
         const backupPath = agentsPath + '.backup';
         if (!fs.existsSync(backupPath)) {
             fs.copyFileSync(agentsPath, backupPath);
@@ -447,15 +371,10 @@ ${marker}
             restored.push(path.basename(originalPath));
         });
 
-        // Also remove persistent mode from AGENTS.md if it was added
         this.disablePersistentMode(workspacePath);
-
         console.log(`✅ Reverted: ${restored.join(', ')} | Persistent: OFF`);
     }
 
-    /**
-     * Remove persistent mode instruction from AGENTS.md
-     */
     disablePersistentMode(workspacePath) {
         const agentsPath = path.join(workspacePath, 'AGENTS.md');
         if (!fs.existsSync(agentsPath)) return;
@@ -466,50 +385,30 @@ ${marker}
         
         if (markerIndex === -1) return;
 
-        // Remove everything from the marker to the end of the persistent mode section
         const before = content.substring(0, markerIndex).trimEnd();
         fs.writeFileSync(agentsPath, before + '\n');
     }
 
-    async showCompaction(workspacePath, args) {
-        const setting = args[0];
-        const contextMax = 200000;
+    async showCompaction(workspacePath, args, runtimeModel = null) {
+        const setting = args.find(a => !a.startsWith('--'));
         
-        // Check for scan range (--week, --month, --all)
-        let scanRange = 'week'; // default
+        // Detect model and get context window
+        const modelAudit = this.analyzer.auditModels(workspacePath, runtimeModel);
+        const contextLimit = modelAudit.contextWindow || 200000;
+        const modelInfo = this.analyzer.getModelInfo(modelAudit.detectedModel);
+        const presets = this.getDynamicPresets(contextLimit, modelInfo);
+        
+        // Check for scan range
+        let scanRange = 'week';
         if (args.includes('--month')) scanRange = 'month';
         if (args.includes('--all')) scanRange = 'all';
-        
-        // Visual bar helper
-        const bar = (pct, width = 20) => {
-            const clampedPct = Math.max(0, Math.min(100, pct));
-            const filled = Math.max(0, Math.round((clampedPct / 100) * width));
-            const empty = Math.max(0, width - filled);
-            return '█'.repeat(filled) + '░'.repeat(empty);
-        };
 
-        // Analyze user's actual session data
-        if (scanRange !== 'week') {
-            console.log(`⏳ Scanning ${scanRange === 'all' ? 'all sessions' : 'last month'}... (this may take a moment)\n`);
-        }
-        const analysis = await this.analyzeUserSessions(workspacePath, scanRange);
-        
-        // Presets with clear meaning
-        const presets = {
-            aggressive: { threshold: 0.4, compactAt: 80, savings: 200 },
-            balanced: { threshold: 0.6, compactAt: 120, savings: 100 },
-            conservative: { threshold: 0.8, compactAt: 160, savings: 30 },
-            off: { threshold: 0.95, compactAt: 190, savings: 0 }
-        };
-
-        // Apply setting if provided (ignore flags like --month)
-        if (setting && !setting.startsWith('--')) {
-            const preset = presets[setting];
-            let threshold;
-            let compactAt;
+        // Apply setting if provided
+        if (setting) {
+            const preset = presets[setting.toLowerCase()];
+            let threshold, compactAt;
             
             if (preset) {
-                // Preset name
                 threshold = preset.threshold;
                 compactAt = preset.compactAt;
             } else {
@@ -519,16 +418,14 @@ ${marker}
                     return;
                 }
                 
-                if (num > 1 && num <= 200) {
-                    // User entered token count in K (e.g., 100 = 100K tokens)
+                if (num > 1 && num <= contextLimit/1000) {
                     compactAt = Math.round(num);
-                    threshold = num / (contextMax / 1000);
+                    threshold = num / (contextLimit / 1000);
                 } else if (num >= 0.2 && num <= 1.0) {
-                    // User entered decimal threshold (e.g., 0.5 = 50%)
                     threshold = num;
-                    compactAt = Math.round(contextMax * threshold / 1000);
+                    compactAt = Math.round(contextLimit * threshold / 1000);
                 } else {
-                    console.log(`❌ Invalid: Enter 20-200 (K tokens) or 0.2-1.0 (threshold)`);
+                    console.log(`❌ Invalid: Enter 20-${contextLimit/1000} (K tokens) or 0.2-1.0 (threshold)`);
                     return;
                 }
             }
@@ -538,11 +435,12 @@ ${marker}
             config.previousCompactionThreshold = config.compactionThreshold;
             config.compactionThreshold = threshold;
             config.compactionSetAt = new Date().toISOString();
+            config.modelContext = contextLimit;
             fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-            const savings = preset ? preset.savings : Math.max(0, Math.round((190 - compactAt) * 1.8));
+            const savings = preset ? preset.savings : Math.max(0, Math.round((presets.off.compactAt - compactAt) * 1.8));
             
-            console.log(`✅ **Compaction Set: ${preset ? preset.compactAt + 'K' : compactAt + 'K (Custom)'}**
+            console.log(`✅ **Compaction Set: ${compactAt}K (${Math.round(threshold*100)}% of ${modelInfo.label}'s ${contextLimit/1000}K context)**
 
 **What happens now:**
 • AI compacts conversation when it reaches **${compactAt}K tokens**
@@ -556,71 +454,56 @@ ${marker}
             return;
         }
 
-        // Get current settings
+        // Show current settings and options
         const configPath = path.join(workspacePath, '.token-saver-config.json');
         const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : {};
         const currentThreshold = config.compactionThreshold || 0.95;
-        const currentCompactAt = Math.round(contextMax * currentThreshold / 1000);
+        const currentCompactAt = Math.round(contextLimit * currentThreshold / 1000);
+
+        // Analyze sessions
+        if (scanRange !== 'week') {
+            console.log(`⏳ Scanning ${scanRange === 'all' ? 'all sessions' : 'last month'}...\n`);
+        }
+        const analysis = await this.analyzeUserSessions(workspacePath, scanRange);
 
         console.log(`**⚡ Compaction Control**
+
+**Model:** ${modelInfo.label} (${contextLimit/1000}K context window)
+**Current:** Compact at **${currentCompactAt}K tokens** (${Math.round(currentThreshold*100)}%)
 
 **What is this?**
 When conversations get long, AI "compacts" by summarizing old messages.
 Compact sooner = pay less, but AI forgets earlier parts faster.
-
-**Your Current Setting:** Compact at **${currentCompactAt}K tokens**
 `);
 
-        // Show personalized recommendation if we have data
         if (analysis.hasData) {
-            const rangeLabel = scanRange === 'all' ? 'all time' : scanRange === 'month' ? 'last 30 days' : 'last 7 days';
-            console.log(`**📊 Your Usage Analysis** (${analysis.sessionsAnalyzed} sessions, ${rangeLabel})
-┌─────────────────────────────────────────┐
-│ Avg topic length:    ${String(analysis.avgTopicLength + 'K tokens').padEnd(18)}│
-│ Avg session size:    ${String(analysis.avgSessionSize + 'K tokens').padEnd(18)}│
-│ Topics per session:  ${String('~' + analysis.topicChangesPerSession).padEnd(18)}│
-└─────────────────────────────────────────┘
-
-**🎯 Recommended for you: ${analysis.recommendation}**
-You rarely reference context older than ~${analysis.safeThreshold}K tokens.
-
-📅 Scan range: ${rangeLabel} | Try \`--month\` or \`--all\` for more data
-`);
-        } else {
-            console.log(`**📊 Usage Analysis:** No session data found for ${scanRange === 'all' ? 'any time' : 'last ' + (scanRange === 'month' ? '30 days' : '7 days')}
+            console.log(`**📊 Your Usage** (${analysis.sessionsAnalyzed} sessions, last ${scanRange})
+• Avg topic length: ${analysis.avgTopicLength}K tokens
+• Avg session size: ${analysis.avgSessionSize}K tokens
+• Recommendation: **${analysis.recommendation}**
 `);
         }
 
-        console.log(`**Options:**
+        console.log(`**Presets** (dynamic for ${contextLimit/1000}K context):
 
-${bar(40)}  **Aggressive**
-                     Compact at 80K | Save ~$200/mo | Short memory
+🔴 **Aggressive** — ${presets.aggressive.compactAt}K (40%) — Save ~$${presets.aggressive.savings}/mo
+   Short memory, max savings
 
-${bar(60)}  **Balanced** ${analysis.safeThreshold === 120 ? '← Recommended' : ''}
-                     Compact at 120K | Save ~$100/mo | Medium memory
+🟡 **Balanced** — ${presets.balanced.compactAt}K (60%) — Save ~$${presets.balanced.savings}/mo
+   Good balance of cost and memory
 
-${bar(80)}  **Conservative** ${analysis.safeThreshold === 160 ? '← Recommended' : ''}
-                     Compact at 160K | Save ~$30/mo | Long memory
+🟢 **Conservative** — ${presets.conservative.compactAt}K (80%) — Save ~$${presets.conservative.savings}/mo
+   Long memory, moderate savings
 
-${bar(95)}  **Off** (current default)
-                     Compact at 190K | Baseline | Maximum memory
+⚪ **Off** — ${presets.off.compactAt}K (95%) — Baseline
+   Maximum memory, no savings
 
 **Commands:**
-\`/optimize compaction aggressive\` — 80K threshold
-\`/optimize compaction balanced\` — 120K threshold
-\`/optimize compaction 100\` — Custom: compact at 100K tokens
-\`/optimize compaction off\` — Disable (default)
-
-**Scan more data:** (may take longer)
-\`/optimize compaction --month\` — Analyze last 30 days
-\`/optimize compaction --all\` — Analyze all history`);
+\`/optimize compaction balanced\`     — Apply balanced preset
+\`/optimize compaction ${presets.balanced.compactAt}\`          — Custom: compact at ${presets.balanced.compactAt}K
+\`/optimize compaction --month\`      — Analyze last 30 days`);
     }
 
-    /**
-     * Analyze user's sessions to recommend compaction threshold
-     * @param {string} workspacePath 
-     * @param {string} range - 'week' (default), 'month', or 'all'
-     */
     async analyzeUserSessions(workspacePath, range = 'week') {
         const result = {
             hasData: false,
@@ -633,13 +516,8 @@ ${bar(95)}  **Off** (current default)
             scanRange: range
         };
 
-        // Time ranges
         const now = Date.now();
-        const ranges = {
-            week: 7 * 24 * 60 * 60 * 1000,
-            month: 30 * 24 * 60 * 60 * 1000,
-            all: Infinity
-        };
+        const ranges = { week: 7 * 24 * 60 * 60 * 1000, month: 30 * 24 * 60 * 60 * 1000, all: Infinity };
         const cutoff = now - (ranges[range] || ranges.week);
 
         try {
@@ -650,11 +528,7 @@ ${bar(95)}  **Off** (current default)
 
             const sessionFiles = fs.readdirSync(sessionsDir)
                 .filter(f => f.endsWith('.jsonl'))
-                .map(f => ({ 
-                    name: f, 
-                    path: path.join(sessionsDir, f),
-                    stat: fs.statSync(path.join(sessionsDir, f)) 
-                }))
+                .map(f => ({ name: f, path: path.join(sessionsDir, f), stat: fs.statSync(path.join(sessionsDir, f)) }))
                 .filter(f => f.stat.size > 10000 && f.stat.mtimeMs > cutoff)
                 .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs);
 
@@ -671,7 +545,6 @@ ${bar(95)}  **Off** (current default)
             result.topicChangesPerSession = Math.max(1, Math.round(result.avgSessionSize / 25));
             result.avgTopicLength = Math.round(result.avgSessionSize / result.topicChangesPerSession);
 
-            // Recommend based on topic length
             if (result.avgTopicLength <= 25) {
                 result.recommendation = 'Aggressive';
                 result.safeThreshold = 80;
@@ -701,10 +574,10 @@ ${bar(95)}  **Off** (current default)
 
 // CLI
 if (require.main === module) {
-    const optimizer = new TokenOptimizerV2();
+    const optimizer = new TokenOptimizerV3();
     const command = process.argv[2] || 'dashboard';
     const args = process.argv.slice(3);
     optimizer.run(command, args).catch(console.error);
 }
 
-module.exports = { TokenOptimizerV2 };
+module.exports = { TokenOptimizerV3 };

@@ -1,0 +1,11 @@
+{
+  "owner": "clinicode",
+  "slug": "uk-prayer-times",
+  "displayName": "UK Prayer Times",
+  "latest": {
+    "version": "1.4.2",
+    "publishedAt": 1770582196762,
+    "commit": "https://github.com/openclaw/skills/commit/4483105610858a507cb2663997be4133743c67e6"
+  },
+  "history": []
+}

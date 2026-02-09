@@ -1,18 +1,12 @@
 ---
 name: baidu-search
 description: Search the web using Baidu AI Search Engine (BDSE). Use this when you need live information, documentation, or to research topics and the built-in web_search is unavailable.
-metadata: { "openclaw": { "emoji": "🔍︎",  "requires": { "bins": ["python"], "env":["BAIDU_API_KEY"]},"primaryEnv":"BAIDU_API_KEY" } }
+metadata: { "openclaw": { "emoji": "🔍︎",  "requires": { "bins": ["python3"], "env":["BAIDU_API_KEY"]},"primaryEnv":"BAIDU_API_KEY" } }
 ---
 
 # Baidu Search Skill
 
 This skill allows OpenClaw agents to perform web searches via Baidu AI Search Engine (BDSE).
-
-## Setup
-
-1.  **API Key:** Ensure the BAIDU_API_KEY environment variable is set with your valid API key.
-2.  **Environment:** The API key should be available in the runtime environment.
-3.  **BAIDU_API_KEY:** BAIDU_API_KEY available, need to go to the baidu cloud platform(https://login.bce.baidu.com) registered account, if you already have account will go to get the API KEY (https://console.bce.baidu.com/qianfan/ais/console/apiKey)
 
 ## Workflow
 
@@ -78,7 +72,7 @@ Parameter limitation description:
 ## Example Usage
 
 ```bash
-BAIDU_API_KEY=xxx python3 skills/baidu-search/scripts/search.py '{"query":"北京有哪些旅游景区","resource_type_filter":[{"type":"web","top_k":20}],"search_filter":{"match":{"site":["www.weather.com.cn"]}},"search_recency_filter":"year"}'
+python3 skills/baidu-search/scripts/search.py '{"query":"北京有哪些旅游景区","resource_type_filter":[{"type":"web","top_k":20}],"search_filter":{"match":{"site":["www.weather.com.cn"]}},"search_recency_filter":"year"}'
 ```
 
 ## Current Status

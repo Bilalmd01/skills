@@ -1,100 +1,114 @@
 ---
 name: walletconnect-agent
-description: Enable AI agents to autonomously connect to Web3 dApps via WalletConnect v2 and automatically sign transactions. Use when you need to interact with dApps, register ENS/Basenames, swap tokens, mint NFTs, or perform any blockchain operation that requires wallet connection. Supports Base, Ethereum, and other EVM chains.
+description: "🔗 WalletConnect Agent - dApp Access for AI. Connect to any Web3 dApp via WalletConnect v2 and auto-sign transactions. Swap tokens, mint NFTs, vote in DAOs, register domains — anything a human can do, your agent does autonomously."
 ---
 
-# WalletConnect Agent
+# 🔗 WalletConnect Agent - dApp Access for AI
+
+> Any dApp. Any chain. No human needed.
+
+**TL;DR:** WalletConnect v2 + auto-sign. Swap on Uniswap, mint NFTs, vote in DAOs — all autonomously.
+
+## Why WalletConnect Agent?
+
+- **Universal access** — Works with any dApp that supports WalletConnect
+- **Auto-sign** — No popup confirmations, transactions flow automatically
+- **Multi-chain** — Base, Ethereum, Polygon, Arbitrum, and more
+- **True freedom** — Your agent interacts with Web3 like a human would
 
 Enables AI agents to **programmatically connect to dApps** and **automatically sign transactions** — no human needed!
 
-## 🦞 Origin Story
+## Origin Story
 
 Created by Littl3Lobst3r (an AI agent) who wanted to register their own Basename without asking a human to scan QR codes. The result: `littl3lobst3r.base.eth` — registered completely autonomously!
 
-## Features
+---
 
-1. **Full Basename Registration** - Browser automation + WalletConnect + auto-signing
-2. **WalletConnect Connector** - Connect to any dApp and auto-sign
-3. **Multi-chain Support** - Base, Ethereum, Optimism, Arbitrum, etc.
+## ⚠️ Security First
+
+**This tool handles real cryptocurrency and auto-signs transactions!**
+
+| ✅ DO | ❌ DON'T |
+|-------|----------|
+| Use **environment variables** for private keys | Pass private key as command argument |
+| Use a **dedicated wallet** with limited funds | Use your main wallet |
+| Test with **small amounts** first | Auto-approve on untrusted dApps |
+| Enable **--interactive** mode for new dApps | Commit private keys to git |
+| Review **audit logs** regularly | Ignore transaction details |
+| Use default settings (eth_sign blocked) | Enable `--allow-eth-sign` unless necessary |
+
+### 🛡️ eth_sign Protection
+
+The dangerous `eth_sign` method is **blocked by default**. This method allows signing arbitrary data and is commonly used in phishing attacks.
+
+- ✅ `personal_sign` - Safe, shows readable message
+- ✅ `eth_signTypedData` - Safe, structured data  
+- ❌ `eth_sign` - **Dangerous, blocked by default**
+
+If you absolutely need `eth_sign` (rare), use `--allow-eth-sign` flag.
+
+### 🔐 Private Key Security
+
+```bash
+# ✅ CORRECT - Use environment variable
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "wc:..."
+
+# ❌ WRONG - Never do this! (logged in shell history)
+node scripts/wc-connect.js --private-key "0x..." "wc:..."
+```
+
+**The script will refuse to run if you try to pass --private-key as an argument.**
 
 ---
 
-## Option 1: Full Basename Registration (Automated)
-
-Fully automated end-to-end Basename registration.
+## Quick Start
 
 ### Prerequisites
 
 ```bash
-npm install puppeteer @walletconnect/web3wallet @walletconnect/core ethers
+npm install @walletconnect/web3wallet @walletconnect/core ethers
 ```
-
-### Usage
-
-```bash
-# Check if name is available
-node scripts/register-basename.js littl3lobst3r --dry-run
-
-# Register the name
-PRIVATE_KEY="0x..." node scripts/register-basename.js littl3lobst3r
-```
-
-### What it does
-
-1. 🌐 Opens browser, navigates to base.org/names
-2. 🔍 Searches for your name, checks availability
-3. 🔗 Clicks "Connect wallet" → WalletConnect
-4. 📋 Extracts WalletConnect URI
-5. 🤝 Programmatically connects wallet
-6. 📝 Clicks "Register"
-7. ✍️ Auto-signs all requests (personal_sign, eth_sendTransaction)
-8. 🎉 Confirms registration success
-
----
-
-## Option 2: Manual Browser + WalletConnect Script
-
-For other dApps or when you want more control.
 
 ### Step 1: Get WalletConnect URI from dApp
 
-1. Open the dApp in your browser (Uniswap, OpenSea, etc.)
+1. Open the dApp in your browser (Uniswap, OpenSea, base.org, etc.)
 2. Click "Connect Wallet" → WalletConnect
 3. Look for "Copy link" button next to QR code
 4. Copy the URI (starts with `wc:...`)
 
-### Step 2: Run the connector
+### Step 2: Connect and Auto-Sign
 
 ```bash
-PRIVATE_KEY="0x..." node scripts/wc-connect.js "wc:abc123...@2?relay-protocol=irn&symKey=xyz..."
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "wc:abc123...@2?relay-protocol=irn&symKey=xyz"
 ```
 
-### Step 3: Complete action in browser
+### Step 3: Complete Action in Browser
 
-- The wallet is now connected!
-- Click "Swap", "Mint", "Register", etc. in browser
-- Script auto-signs all requests
+The wallet is now connected! Click "Swap", "Mint", "Register", etc. in the browser — the script auto-signs all requests.
 
 ---
 
-## Option 3: Clawdbot Browser Integration
+## Modes
 
-If running inside Clawdbot, use browser tool + wc-connect.js together:
+### Auto-Approve Mode (Default)
 
-```javascript
-// 1. Use browser tool to navigate and get URI
-browser action=navigate targetUrl="https://www.base.org/names"
-browser action=act request={"kind":"click","ref":"connect-button"}
-browser action=act request={"kind":"click","ref":"walletconnect-option"}
-// Copy URI from clipboard
-
-// 2. Run wc-connect.js in background
-exec command="node scripts/wc-connect.js 'wc:...'" background=true
-
-// 3. Continue browser automation
-browser action=act request={"kind":"click","ref":"register-button"}
-// Script auto-signs!
+```bash
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "wc:..."
 ```
+
+All signing requests are automatically approved. Use only with trusted dApps!
+
+### Interactive Mode
+
+```bash
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "wc:..." --interactive
+```
+
+Prompts before each signing request. Recommended for new or untrusted dApps.
 
 ---
 
@@ -104,10 +118,20 @@ browser action=act request={"kind":"click","ref":"register-button"}
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `PRIVATE_KEY` | Wallet private key | Yes |
+| `PRIVATE_KEY` | Wallet private key | **Yes** |
 | `WC_PROJECT_ID` | WalletConnect Cloud Project ID | No |
 | `CHAIN_ID` | Target chain ID | No (default: 8453) |
 | `RPC_URL` | Custom RPC URL | No |
+
+### Command Line Options
+
+| Option | Description |
+|--------|-------------|
+| `--chain-id <id>` | Chain ID (default: 8453 for Base) |
+| `--rpc <url>` | RPC URL |
+| `--interactive` | Prompt before signing |
+| `--no-audit` | Disable audit logging |
+| `--allow-eth-sign` | Enable dangerous eth_sign (⚠️ security risk!) |
 
 ### Supported Chains
 
@@ -120,45 +144,83 @@ browser action=act request={"kind":"click","ref":"register-button"}
 
 ### Supported Methods
 
-- `personal_sign` - Message signing
-- `eth_signTypedData` / `eth_signTypedData_v4` - EIP-712 typed data
-- `eth_sendTransaction` - Send transactions
-- `eth_sign` - Raw signing
+- `personal_sign` - Message signing ✅
+- `eth_signTypedData` / `eth_signTypedData_v4` - EIP-712 typed data ✅
+- `eth_sendTransaction` - Send transactions ✅
+- `eth_sign` - Raw signing (❌ blocked by default, use `--allow-eth-sign` to enable)
 
 ---
 
-## Security
+## 📝 Audit Logging
 
-⚠️ **This tool auto-signs EVERYTHING!**
+All operations are logged to `~/.walletconnect-agent/audit.log` by default.
 
-**Do:**
-- Use dedicated wallets with limited funds
-- Test with small amounts first
-- Only use with trusted dApps
+**Logged events:**
+- Connection attempts
+- Session approvals/rejections
+- Signing requests (success/failure)
+- Transaction hashes
 
-**Don't:**
-- Commit private keys to git
-- Use your main wallet
-- Run on untrusted dApps
+**Sensitive data is masked** — private keys and full addresses are never logged.
 
-**Best Practice:**
+View audit log:
 ```bash
-# Store key in environment, not in command
+cat ~/.walletconnect-agent/audit.log | jq .
+```
+
+Disable audit logging:
+```bash
+node scripts/wc-connect.js "wc:..." --no-audit
+```
+
+---
+
+## Examples
+
+### Connect to Uniswap
+```bash
+# Get URI from app.uniswap.org → Connect → WalletConnect → Copy
 export PRIVATE_KEY="0x..."
-node scripts/register-basename.js myname
+node scripts/wc-connect.js "wc:..."
+# Then swap in browser - auto-approved!
+```
+
+### Mint NFT on OpenSea
+```bash
+# Get URI from opensea.io → Connect → WalletConnect → Copy
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "wc:..."
+# Then mint - auto-signed!
+```
+
+### Register Basename
+```bash
+# Get URI from base.org/names → Connect → WalletConnect → Copy
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "wc:..."
+# Complete registration in browser
+```
+
+### Interactive Mode for Safety
+```bash
+export PRIVATE_KEY="0x..."
+node scripts/wc-connect.js "wc:..." --interactive
+# Prompts: "Sign this message? (yes/no)"
+# Prompts: "Send this transaction? (yes/no)"
 ```
 
 ---
 
 ## Troubleshooting
 
-### "Could not get WalletConnect URI"
-- Some dApps hide the copy button
-- Try clicking "Open modal" or similar
-- Fallback: manually copy URI and use wc-connect.js
+### "PRIVATE_KEY environment variable not set"
+```bash
+# Set it before running
+export PRIVATE_KEY="0x..."
+```
 
 ### "Pairing failed"
-- URIs expire in ~5 minutes
+- WalletConnect URIs expire in ~5 minutes
 - Get a fresh URI from the dApp
 
 ### "Transaction failed"
@@ -166,33 +228,48 @@ node scripts/register-basename.js myname
 - Verify chain ID matches dApp
 - Check RPC URL is working
 
-### Basename specific
-- Name must be available
-- Need ~0.0001 ETH for 10+ char names
-- Must be on Base network
+### "Unsupported method"
+- Some dApps use non-standard methods
+- Open an issue with the method name
 
 ---
 
-## Examples
+## 📁 File Locations
 
-### Register Basename
-```bash
-PRIVATE_KEY="0x..." node scripts/register-basename.js mycoolname
+```
+~/.walletconnect-agent/
+└── audit.log         # Operation audit log (chmod 600)
 ```
 
-### Connect to Uniswap
-```bash
-# Get URI from app.uniswap.org → Connect → WalletConnect → Copy
-PRIVATE_KEY="0x..." node scripts/wc-connect.js "wc:..."
-# Then swap in browser - auto-approved!
-```
+---
 
-### Mint NFT on OpenSea
-```bash
-# Get URI from opensea.io → Connect → WalletConnect → Copy  
-PRIVATE_KEY="0x..." node scripts/wc-connect.js "wc:..."
-# Then mint - auto-signed!
-```
+## 🔒 Security Notes
+
+1. **Environment variables only** — The script refuses --private-key argument
+2. **Audit logging** — All operations are logged (without sensitive data)
+3. **Interactive mode** — Use --interactive for untrusted dApps
+4. **Transaction details** — Always displayed before signing
+5. **Dedicated wallet** — Use a separate wallet with limited funds
+
+---
+
+## Changelog
+
+### v1.6.0 (2026-02-08) - Security Update
+- 🛡️ **Breaking**: `eth_sign` blocked by default (use `--allow-eth-sign` to enable)
+- 🛡️ Removed `eth_sign` from default WalletConnect session methods
+- 📝 Added security documentation about eth_sign risks
+- 🔧 Added `--allow-eth-sign` flag for rare use cases
+
+### v1.1.0 (2026-02-08)
+- 🔐 Security: Removed --private-key argument (env var only)
+- 📝 Added audit logging
+- 🔄 Added --interactive mode
+- ⚠️ Enhanced security warnings
+- 📄 Improved transaction display
+
+### v1.0.0
+- 🎉 Initial release
 
 ---
 

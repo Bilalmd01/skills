@@ -1,5 +1,5 @@
 ---
-name: zohomail
+name: zoho-mail
 description: |
   Zoho Mail API integration with managed OAuth. Send, receive, and manage emails, folders, and labels.
   Use this skill when users want to send emails, read messages, manage folders, or work with email labels in Zoho Mail.

@@ -32,9 +32,68 @@ from urllib.parse import urlencode
 
 
 # =============================================================================
-# Configuration
+# Configuration (config.json > env vars > defaults)
 # =============================================================================
 
+def _load_config(schema, skill_file, config_filename="config.json"):
+    """Load config with priority: config.json > env vars > defaults."""
+    config_path = Path(skill_file).parent / config_filename
+    file_cfg = {}
+    if config_path.exists():
+        try:
+            with open(config_path) as f:
+                file_cfg = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    result = {}
+    for key, spec in schema.items():
+        if key in file_cfg:
+            result[key] = file_cfg[key]
+        elif spec.get("env") and os.environ.get(spec["env"]):
+            val = os.environ.get(spec["env"])
+            type_fn = spec.get("type", str)
+            try:
+                result[key] = type_fn(val) if type_fn != str else val
+            except (ValueError, TypeError):
+                result[key] = spec.get("default")
+        else:
+            result[key] = spec.get("default")
+    return result
+
+def _get_config_path(skill_file, config_filename="config.json"):
+    """Get path to config file."""
+    return Path(skill_file).parent / config_filename
+
+def _update_config(updates, skill_file, config_filename="config.json"):
+    """Update config values and save to file."""
+    config_path = Path(skill_file).parent / config_filename
+    existing = {}
+    if config_path.exists():
+        try:
+            with open(config_path) as f:
+                existing = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    existing.update(updates)
+    with open(config_path, "w") as f:
+        json.dump(existing, f, indent=2)
+    return existing
+
+# Aliases for compatibility
+load_config = _load_config
+get_config_path = _get_config_path
+update_config = _update_config
+
+# Configuration schema
+CONFIG_SCHEMA = {
+    "fetch_limit": {"env": "SIMMER_JOURNAL_FETCH_LIMIT", "default": 100, "type": int},
+    "auto_sync_outcomes": {"env": "SIMMER_JOURNAL_AUTO_SYNC", "default": "true", "type": str},
+}
+
+# Load configuration
+_config = load_config(CONFIG_SCHEMA, __file__)
+
+# API config (always from env for security)
 SIMMER_API_KEY = os.environ.get("SIMMER_API_KEY", "")
 SIMMER_API_URL = os.environ.get("SIMMER_API_URL", "https://api.simmer.markets")
 
@@ -44,8 +103,8 @@ DATA_DIR = SCRIPT_DIR / "data"
 TRADES_FILE = DATA_DIR / "trades.json"
 CONTEXT_FILE = DATA_DIR / "context.json"  # For log_trade() enrichment
 
-# Sync settings
-DEFAULT_FETCH_LIMIT = 100
+# Sync settings - from config
+DEFAULT_FETCH_LIMIT = _config["fetch_limit"]
 REQUEST_TIMEOUT_SECONDS = 30
 
 
@@ -452,12 +511,19 @@ def generate_report(period: str = "weekly"):
         print("No trades in this period.")
         return
 
-    # Calculate stats
-    total_cost = sum(t.get("cost", 0) for t in period_trades)
+    # Calculate stats - separate buys (cost) from sells (proceeds)
+    buys = [t for t in period_trades if t.get("action") == "buy"]
+    sells = [t for t in period_trades if t.get("action") == "sell"]
+    total_bought = sum(t.get("cost", 0) for t in buys)
+    total_sold = sum(t.get("cost", 0) for t in sells)
+    net_spent = total_bought - total_sold
+    
     resolved = [t for t in period_trades if t.get("outcome", {}).get("resolved")]
     wins = len([t for t in resolved if t.get("outcome", {}).get("was_correct")])
 
-    print(f"Total cost: ${total_cost:.2f}")
+    print(f"Bought: ${total_bought:.2f} ({len(buys)} trades)")
+    print(f"Sold: ${total_sold:.2f} ({len(sells)} trades)")
+    print(f"Net: ${net_spent:+.2f}")
     print(f"Resolved: {len(resolved)} / {len(period_trades)}")
 
     if resolved:

@@ -1,59 +1,121 @@
 ---
 name: odoo
-description: Advanced Odoo financial intelligence tool for automated accounting audits, VAT reports, cash flow analysis, and natural language financial queries.
+description: Use when the user asks for Odoo accounting audits, VAT/cashflow analysis, inventory valuation, or financial reporting that must come directly from Odoo via RPC with reproducible, evidence-backed numbers.
 ---
 
-# Odoo Financial Intelligence
+# Odoo Financial Intelligence (Read-Only, Evidence-First)
 
-This skill enables interaction with the Odoo financial system to perform audits, generate reports, and analyze business intelligence.
+Use this skill for **deterministic Odoo financial reporting**.
 
-## Tools and Commands
+## Hard Rules
 
-The core functionality is provided by the `cfo-cli` (bundled in `scripts/`).
+1. Odoo RPC output is the source of truth; AI text is advisory.
+2. Skill is **strict read-only**. Mutating methods are blocked (`create`, `write`, `unlink`, and similar actions).
+3. No proactive Odoo actions unless explicitly requested in-session.
+4. Every material number must include method/scope assumptions.
 
-### Core Capabilities
+## Entrypoint
 
-1.  **Financial Summary**: Get a snapshot of invoices and expenses.
-2.  **Cash Flow**: Check bank balances and petty cash status.
-3.  **VAT Reporting**: Calculate Output/Input VAT and net liability.
-4.  **Trend Analysis**: Monthly revenue vs. spending comparisons with visualization.
-5.  **Anomaly Detection**: Use AI (Gemini) or rules to find duplicate bills, missing taxes, or payment outliers.
-6.  **Natural Language Query**: Ask complex questions about the financial data.
+```bash
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py
+```
 
-## Usage
+## Runtime/Backend Policy
 
-### Environment Setup
-The skill requires the following environment variables (stored in `autonomous-cfo/.env`):
+- `--rpc-backend auto` (default): prefers JSON-2 for Odoo 19+, falls back to XML-RPC.
+- `--rpc-backend json2`
+- `--rpc-backend xmlrpc`
+
+Quick health check:
+
+```bash
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py doctor
+```
+
+## Required Environment
+
+From `assets/autonomous-cfo/.env`:
 - `ODOO_URL`
 - `ODOO_DB`
 - `ODOO_USER`
 - `ODOO_PASSWORD`
-- `GOOGLE_API_KEY` (for Gemini intelligence)
 
-### Common Workflows
+Recommended: use Odoo API key as `ODOO_PASSWORD` and least-privilege bot user.
 
-#### 1. Quick Financial Pulse
-Check the last 30 days:
-`./scripts/cfo-cli summary --days 30`
+## Primary Workflows
 
-#### 2. VAT Liability Check
-`./scripts/cfo-cli vat --date-from 2026-01-01 --date-to 2026-03-31`
+```bash
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py summary --days 30
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py cash_flow
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py vat --date-from YYYY-MM-DD --date-to YYYY-MM-DD
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py trends --months 12 --visualize
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py anomalies
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py anomalies --ai
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py ask "..."
+python3 ./skills/odoo/assets/autonomous-cfo/src/tools/cfo_cli.py rpc-call --model <model> --method <read_method> --payload '<json>'
+```
 
-#### 3. Monthly Trends with Charts
-`./scripts/cfo-cli trends --months 12 --visualize`
+Useful controls:
+- `--company-id` for single-entity scope
+- `--lang`, `--tz` for consistent localization
+- `--timeout`, `--retries` for network stability
 
-#### 4. Forensic Audit (AI Anomaly Detection)
-`./scripts/cfo-cli anomalies --ai`
+## Accuracy Protocol (Mandatory)
 
-#### 5. Natural Language Questions
-"What was my most expensive month in 2025?"
-`./scripts/cfo-cli ask "What was my most expensive month in 2025?"`
+Before final output, always:
 
-## Delivery Guidelines
+1. Declare scope (date range, states, company).
+2. Declare method (models/domains/fields used).
+3. Cross-check key totals through one alternate view.
+4. State currency handling explicitly.
+5. Note assumptions and unresolved ambiguities.
 
-When the skill generates files (charts, reports, data exports):
-1.  **Proactive Sending**: Do NOT just provide a download link. Use the `message` tool to send the file directly to the chat.
-2.  **Formatting**:
-    - **Images (PNG, JPG)**: Send as an image with a summary caption.
-    - **Documents (PDF, XLSX, CSV)**: Send as a document attachment.
-3.  **Captions**: Always include a brief summary of the file's content in the message caption.
+If checks disagree, report as **provisional** and drill down.
+
+## VAT Protocol
+
+Minimum output:
+- `output_vat`
+- `input_vat`
+- `net_vat_liability = output_vat - input_vat`
+
+Rules:
+- posted tax lines only (unless user requests otherwise)
+- explicit handling for refunds/credit notes
+- mention localization caveats if custom tax setup exists
+
+## Edge-Case Checklist
+
+- Multi-company leakage (must isolate when requested)
+- Timezone boundary drift (month/day close)
+- Draft contamination
+- Large dataset partial reads (use pagination)
+- Concurrent updates between calls
+- JSON-2 per-call transaction semantics
+- Custom fields/localization mismatches (`fields_get`)
+- Negative/reversal lines and null refs in anomaly logic
+
+## AI Guardrails
+
+Allowed: narrative, prioritization, risk commentary.
+
+Not allowed: replacing deterministic numbers or claiming audited certainty without evidence.
+
+For AI-assisted output, include source scope + deterministic basis + confidence.
+
+## Output Contract
+
+Use this structure in user-facing reports:
+1. Executive summary
+2. Key numbers
+3. Method and scope
+4. Confidence level
+5. Actionable next steps
+
+## Failure Handling
+
+On failure:
+1. Return exact error class and context.
+2. Suggest one concrete remediation step.
+3. Re-run `doctor` if connection/auth/model access is suspect.
+4. Never fabricate fallback financial values.

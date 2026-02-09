@@ -39,7 +39,7 @@ if __name__ == "__main__":
     api_key = os.getenv("BAIDU_API_KEY")
 
     if not api_key:
-        print("Error: BAIDU_API_KEY  must be set in environment.")
+        print("Error: BAIDU_API_KEY must be set in environment.")
         sys.exit(1)
 
     request_body = {

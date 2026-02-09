@@ -1,0 +1,17 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-liquidbot",
+  "displayName": "LiquidBot",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770580779940,
+    "commit": "https://github.com/openclaw/skills/commit/c45f28df00e740b487ac00408b0fbb7f3999a098"
+  },
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770580557908,
+      "commit": "https://github.com/openclaw/skills/commit/a8f07b73ffc05c0708dc886ed4c50e7f9475f856"
+    }
+  ]
+}

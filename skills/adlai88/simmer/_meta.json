@@ -3,11 +3,21 @@
   "slug": "simmer",
   "displayName": "Simmer",
   "latest": {
-    "version": "1.5.9",
-    "publishedAt": 1770187662627,
-    "commit": "https://github.com/clawdbot/skills/commit/76eae53aa85a9a0a76ca81334f632185fde96eb4"
+    "version": "1.7.0",
+    "publishedAt": 1770548731267,
+    "commit": "https://github.com/openclaw/skills/commit/f82a0704d01078e1e2a97792e0e3675d4fd74496"
   },
   "history": [
+    {
+      "version": "1.6.0",
+      "publishedAt": 1770475654753,
+      "commit": "https://github.com/openclaw/skills/commit/05125ded950e45dbf0555dc44712002f02ca872f"
+    },
+    {
+      "version": "1.5.9",
+      "publishedAt": 1770187662627,
+      "commit": "https://github.com/clawdbot/skills/commit/76eae53aa85a9a0a76ca81334f632185fde96eb4"
+    },
     {
       "version": "1.5.7",
       "publishedAt": 1770146769248,

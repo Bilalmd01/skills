@@ -18,3 +18,17 @@ Provide a stateless symbolic memory workflow:
 
 Rule:
 Store semantics. Compute meaning. Never confuse the two.
+
+NOTE
+
+This skill does not rely on agent-local persistent memory for long-term state.
+
+Durable knowledge is stored in a shared, versioned symbolic memory substrate
+(as defined in the JIT Symbolic Memory design pattern).
+
+The skill may operate without symbolic memory, but long-term coherence
+and multi-agent consistency are only guaranteed when it is present.
+
+## Design pattern
+
+https://github.com/Th3Hypn0tist/random/blob/main/jit-symbolic-memory-design-pattern

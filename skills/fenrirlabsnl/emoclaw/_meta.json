@@ -1,0 +1,17 @@
+{
+  "owner": "fenrirlabsnl",
+  "slug": "emoclaw",
+  "displayName": "EmoClaw",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1770497047708,
+    "commit": "https://github.com/openclaw/skills/commit/5c07004840ea5f4030403ee09424fa02870b1ab5"
+  },
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770495358081,
+      "commit": "https://github.com/openclaw/skills/commit/a0211d1d31b88bedea091ccf8b1773dc686f5549"
+    }
+  ]
+}

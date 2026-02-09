@@ -1,0 +1,11 @@
+{
+  "owner": "eyebots",
+  "slug": "eyebot-tokenforge",
+  "displayName": "TokenForge",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1770580772771,
+    "commit": "https://github.com/openclaw/skills/commit/608f2bcdee0cf9dd84a98a0775585384c2463597"
+  },
+  "history": []
+}

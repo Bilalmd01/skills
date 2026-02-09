@@ -1,5 +1,5 @@
 ---
-name: zohorecruit
+name: zoho-recruit
 description: |
   Zoho Recruit API integration with managed OAuth. Manage candidates, job openings, interviews, and recruitment workflows.
   Use this skill when users want to read, create, update, or search recruitment data like candidates, job openings, interviews, and applications in Zoho Recruit.

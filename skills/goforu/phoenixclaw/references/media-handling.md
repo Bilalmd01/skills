@@ -22,20 +22,54 @@
 
 ### Image Extraction Commands
 
-**Find session files modified today:**
+**Filter session messages by target day (not file mtime):**
 ```bash
-# Step 1: Identify today's session files (by modification time)
-find ~/.openclaw/sessions -name "*.jsonl" -mtime 0
+# Step 1: Define target day and timezone
+TARGET_DAY="$(date +%Y-%m-%d)"
+TARGET_TZ="${TARGET_TZ:-Asia/Shanghai}"
+
+# Step 2: Build timezone-aware [start, end) epoch range for TARGET_DAY
+read START_EPOCH END_EPOCH < <(
+  python3 - <<'PY' "$TARGET_DAY" "$TARGET_TZ"
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+import sys
+
+day, tz = sys.argv[1], sys.argv[2]
+start = datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=ZoneInfo(tz))
+end = start + timedelta(days=1)
+print(int(start.timestamp()), int(end.timestamp()))
+PY
+)
+
+# Step 3: Read all session files from both locations and keep only messages inside TARGET_DAY
+for dir in "$HOME/.openclaw/sessions" "$HOME/.agent/sessions"; do
+  [ -d "$dir" ] || continue
+  find "$dir" -name "*.jsonl" -print0
+done |
+  xargs -0 jq -cr --argjson start "$START_EPOCH" --argjson end "$END_EPOCH" '
+    (.timestamp // .created_at // empty) as $ts
+    | ($ts | fromdateiso8601?) as $epoch
+    | select($epoch != null and $epoch >= $start and $epoch < $end)
+  '
 ```
 
-**Extract image entries from today's sessions:**
+**Extract image entries from target-day messages:**
 ```bash
-# Step 2: Find images in today's session files only
-find ~/.openclaw/sessions -name "*.jsonl" -mtime 0 -exec grep -l '"type":"image"' {} \;
-
-# Step 3: Extract image paths
-find ~/.openclaw/sessions -name "*.jsonl" -mtime 0 -exec grep -h '"type":"image"' {} \; | jq -r '.file_path // .url'
+# Keep image entries whose message timestamp is in TARGET_DAY
+for dir in "$HOME/.openclaw/sessions" "$HOME/.agent/sessions"; do
+  [ -d "$dir" ] || continue
+  find "$dir" -name "*.jsonl" -print0
+done |
+  xargs -0 jq -r --argjson start "$START_EPOCH" --argjson end "$END_EPOCH" '
+    (.timestamp // .created_at // empty) as $ts
+    | ($ts | fromdateiso8601?) as $epoch
+    | select($epoch != null and $epoch >= $start and $epoch < $end and .type == "image")
+    | (.file_path // .url)
+  '
 ```
+
+> Do not classify images by session file modification time. Always classify by each image message's `timestamp`.
 
 **Copy images to journal assets:**
 ```bash

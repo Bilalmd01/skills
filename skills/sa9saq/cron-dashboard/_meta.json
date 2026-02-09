@@ -1,0 +1,17 @@
+{
+  "owner": "sa9saq",
+  "slug": "cron-dashboard",
+  "displayName": "Cron Dashboard",
+  "latest": {
+    "version": "1.1.0",
+    "publishedAt": 1770526210867,
+    "commit": "https://github.com/openclaw/skills/commit/51b87c6d35dc702df070a078adfa80154de8b659"
+  },
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770503754537,
+      "commit": "https://github.com/openclaw/skills/commit/9a2fd9cca7d15af2cb848de51118d027d18c9e61"
+    }
+  ]
+}

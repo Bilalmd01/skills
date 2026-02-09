@@ -1,5 +1,5 @@
 ---
-name: zohopeople
+name: zoho-people
 description: |
   Zoho People API integration with managed OAuth. Manage employees, departments, designations, attendance, and leave.
   Use this skill when users want to read, create, update, or query HR data like employees, departments, designations, and forms in Zoho People.

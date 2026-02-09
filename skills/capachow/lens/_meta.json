@@ -1,0 +1,17 @@
+{
+  "owner": "capachow",
+  "slug": "lens",
+  "displayName": "LENS",
+  "latest": {
+    "version": "0.4.0",
+    "publishedAt": 1770506194509,
+    "commit": "https://github.com/openclaw/skills/commit/5d56a454c477bb713f1382fac44a568f015cf576"
+  },
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1770464068234,
+      "commit": "https://github.com/openclaw/skills/commit/d8e1c37904afb5ec1e38fa0203f061bad0c7ab42"
+    }
+  ]
+}

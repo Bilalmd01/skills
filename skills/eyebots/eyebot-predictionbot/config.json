@@ -1,0 +1,28 @@
+{
+  "id": "predictionbot",
+  "name": "PredictionBot",
+  "version": "1.0.0",
+  "category": "defi",
+  "description": "Create, trade, and settle prediction markets on Base",
+  "pricing": {
+    "trial_2day_eth": 0.015,
+    "lifetime_eth": 5.0
+  },
+  "treasury": "0x4A9583c6B09154bD88dEE64F5249df0C5EC99Cf9",
+  "chains": ["base"],
+  "triggers": [
+    "prediction market", "prediction", "create market", "bet on",
+    "will price", "probability", "forecast", "outcome",
+    "yes no", "binary market", "contest", "settle market",
+    "polymarket", "information market", "odds"
+  ],
+  "contracts": {
+    "pnp_factory": "0x5E5abF8a083a8E0c2fBf5193E711A61B1797e15A",
+    "fee_manager": "0x6f1BffB36aC53671C9a409A0118cA6fee2b2b462"
+  },
+  "collateral_tokens": {
+    "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "WETH": "0x4200000000000000000000000000000000000006",
+    "cbETH": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22"
+  }
+}
