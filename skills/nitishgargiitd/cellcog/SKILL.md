@@ -33,7 +33,8 @@ Give me a comprehensive market positioning analysis based on all these inputs.
 """
 ```
 
-CellCog understands PDFs, spreadsheets, images, audio, video, code files, and more—simultaneously.
+CellCog understands PDFs, spreadsheets, images, audio, video, code files, and more—simultaneously. 
+Notice how file paths are abs and enclosed inside `<SHOW_FILE>` This is an important part of CellCog interface
 
 ### Request Multiple Outputs, Different Modalities
 
@@ -298,26 +299,59 @@ The `notify_session_key` tells CellCog where to deliver results.
 
 ## Most Common Mistake
 
-### ⚠️ CRITICAL: Use SHOW_FILE Tags for File Content
+### ⚠️ Be Explicit About Output Artifacts
 
-CellCog can only read the actual content of your files when they are wrapped in `<SHOW_FILE>` tags. **A plain file path is just text — CellCog won't see the data inside the file.**
+CellCog is an any-to-any engine — it can produce text, images, videos, PDFs, audio, dashboards, spreadsheets, and more. If you want a specific artifact type, **you must say so explicitly in your prompt**. Without explicit artifact language, CellCog may respond with text analysis instead of generating a file.
 
-❌ **Wrong — CellCog only sees a text string, not the file:**
+❌ **Vague — CellCog doesn't know you want an image file:**
 ```python
-prompt = "Analyze this data: /path/to/sales.csv"
+prompt = "A sunset over mountains with golden light"
 ```
 
-✅ **Correct — CellCog reads the actual file content:**
+✅ **Explicit — CellCog generates an image file:**
 ```python
-prompt = "Analyze this data: <SHOW_FILE>/path/to/sales.csv</SHOW_FILE>"
+prompt = "Generate a photorealistic image of a sunset over mountains with golden light. 2K, 16:9 aspect ratio."
 ```
 
-This is the single most common mistake done by both side of agents. Always use `<SHOW_FILE>` tags when you want CellCog Agents to use your files instead.
-Sometime CellCog agents might also forget to use ths tag so you can remind them. 
-Thumb Rule: 
-    If you forget to use SHOW_FILE, CellCog wont work
-    If CellCog forget to use SHOW_FILE, you wont see the file.
+❌ **Vague — could be text or any format:**
+```python
+prompt = "Quarterly earnings analysis for AAPL"
+```
 
+✅ **Explicit — CellCog creates actual deliverables:**
+```python
+prompt = "Create a PDF report and an interactive HTML dashboard analyzing AAPL quarterly earnings."
+```
+
+This applies to ALL artifact types — images, videos, PDFs, audio, music, spreadsheets, dashboards, presentations, podcasts. **State what you want created.** The more explicit you are about the output format, the better CellCog delivers.
+
+---
+
+## CellCog Chats Are Conversations, Not API Calls
+
+Each CellCog chat is a conversation with a powerful AI agent — not a stateless API. CellCog maintains full context of everything discussed in the chat: files it generated, research it did, decisions it made.
+
+**This means you can:**
+- Ask CellCog to refine or edit its previous output
+- Request changes ("Make the colors warmer", "Add a section on risks")
+- Continue building on previous work ("Now create a video from those images")
+- Ask follow-up questions about its research
+
+**Use `send_message()` to continue any chat:**
+```python
+result = client.send_message(
+    chat_id="abc123",
+    message="Great report. Now add a section comparing Q3 vs Q4 trends.",
+    notify_session_key="agent:main:main",
+    task_label="refine-report"
+)
+```
+
+CellCog remembers everything from the chat — treat it like a skilled colleague you're collaborating with, not a function you call once.
+
+**When CellCog finishes a turn**, it stops operating and waits for your response. You will receive a notification that says "YOUR TURN". At that point you can:
+- **Continue**: Use `send_message()` to ask for edits, refinements, or new deliverables
+- **Finish**: Do nothing — the chat is complete
 
 ---
 
